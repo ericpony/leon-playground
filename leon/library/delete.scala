@@ -29,7 +29,7 @@ object DeleteSpec {
   def delete_not_contains (list: List[BigInt], m: BigInt): Boolean = {
     require(!list.contains(m))
     delete(list, m) == list
-  } holds /* verified by leon */
+  } holds
 
   @induct
   def delete_contains (list : List[BigInt], a : BigInt, b : BigInt) = {
@@ -52,7 +52,7 @@ object DeleteOps {
   } ensuring { res =>
     res.size == (if (list contains e) list.size - 1 else list.size) &&
       res.content.subsetOf(list.content)
-  } /* verified by Leon */
+  }
 }
 
 object DeleteLemmas {

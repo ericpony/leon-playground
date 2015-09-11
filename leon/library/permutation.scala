@@ -32,10 +32,11 @@ object PermutationSpec {
     l1.content == l2.content because permutation_content_lemma (l1, l2)
   } holds
 
-  def permutation_size (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
-    require (permutation (l1, l2))
-    l1.size == l2.size because permutation_size_lemma (l1, l2)
-  } holds
+  /* Proven in the post-condition of `permutation` */
+//  def permutation_size (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
+//    require (permutation (l1, l2))
+//    l1.size == l2.size because permutation_size_lemma (l1, l2)
+//  } holds
 
   def permutation_concat (l1 : List[BigInt], l2 : List[BigInt], ll : List[BigInt]) = {
     require (permutation (l1, l2))
@@ -73,6 +74,11 @@ object PermutationOps {
       val h1 = l1.head
       l2.contains (h1) && permutation (l1.tail, delete (l2, h1))
     }
+  } ensuring { res => !res ||
+    l1.size == l2.size &&
+    permutation(l2, l1) &&
+    l1.content.subsetOf(l2.content) &&
+    l2.content.subsetOf(l1.content)
   }
 }
 
@@ -89,15 +95,15 @@ object PermutationLemmas {
       check { permutation_refl (e :: l2) }
     } else {
       val h1 = l1.head
-      permutation (l1 ++ (e :: l2), (e :: l1) ++ l2) because 
+      permutation (l1 ++ (e :: l2), (e :: l1) ++ l2) because
       check {
         // permutation (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2)
         permutation_cons_tail (l1.tail, l2, e) &&
         // permutation (h1 :: (l1.tail ++ (e :: l2)), h1 :: (e :: l1.tail) ++ l2)
-        permutation_cons (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2, h1) && 
+        permutation_cons (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2, h1) &&
         // permutation (h1 :: e :: l1.tail ++ l2, e :: h1 :: l1.tail ++ l2)
         permutation_car_swap (l1.tail ++ l2, h1, e) &&
-        permutation_tran_lemma (l1 ++ (e :: l2), 
+        permutation_tran_lemma (l1 ++ (e :: l2),
                                 h1 :: e :: l1.tail ++ l2,
                                 (e :: l1) ++ l2)
       }
@@ -144,7 +150,7 @@ object PermutationLemmas {
         permutation_cons_delete (l2, l1) &&
         // permutation (l2 ++ l1.tail, delete (l2 ++ l1, h1))
         permutation_comm_lemma (delete (l2 ++ l1, h1), l2 ++ l1.tail) &&
-        permutation_tran_lemma (l1.tail ++ l2, l2 ++ l1.tail, delete (l2 ++ l1, h1)) 
+        permutation_tran_lemma (l1.tail ++ l2, l2 ++ l1.tail, delete (l2 ++ l1, h1))
       }
     }
   } holds
@@ -183,7 +189,7 @@ object PermutationLemmas {
     } else {
       val h1 = l1.head
       if (h1 == h2) {
-        permutation (l1, Cons (h2, t2)) 
+        permutation (l1, Cons (h2, t2))
       } else {
         permutation (l1, Cons (h2, t2)) because
         check { (Cons (h2, t2) contains h1) &&
@@ -198,9 +204,9 @@ object PermutationLemmas {
   def permutation_comm_lemma (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require (permutation (l1, l2))
     if (l1 == Nil[BigInt]()) {
-      permutation (l2, l1) 
+      permutation (l2, l1)
     } else {
-      permutation (l2, l1) because 
+      permutation (l2, l1) because
       check { permutation_content (l1, l2) &&
               l1.contains (l2.head) &&
               permutation_comm (l1.tail, delete (l2, l1.head)) &&
@@ -228,25 +234,26 @@ object PermutationLemmas {
       }
     }
   } holds
-  
+
   @induct
   def permutation_cons (l1 : List[BigInt], l2 : List[BigInt], e : BigInt) : Boolean = {
     require (permutation (l1, l2))
     permutation (Cons (e, l1), Cons (e, l2))
   } holds
 
-  @induct
-  def permutation_size_lemma (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
-    require (permutation (l1, l2))
-    if (l1 == Nil[BigInt]()) {
-      l1.size == l2.size
-    } else {
-      l1.size == l2.size because
-      check {
-        permutation_size_lemma (l1.tail, delete (l2, l1.head))
-      }
-    }
-  } holds
+    /* Proven in the post-condition of `permutation` */
+//  @induct
+//  def permutation_size_lemma (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
+//    require (permutation (l1, l2))
+//    if (l1 == Nil[BigInt]()) {
+//      l1.size == l2.size
+//    } else {
+//      l1.size == l2.size because
+//      check {
+//        permutation_size_lemma (l1.tail, delete (l2, l1.head))
+//      }
+//    }
+//  } holds
 
   @induct
   def permutation_content_lemma (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
@@ -300,7 +307,7 @@ object PermutationLemmas {
     } else {
       val h1 = l1.head
       permutation (l1 ++ ll, l2 ++ ll) because
-        check { 
+        check {
           permutation_concat_lemma (l1.tail, delete (l2, h1), ll) &&
           l1.tail ++ ll == (l1 ++ ll).tail &&
           delete (l2, h1) ++ ll == delete (l2 ++ ll, h1) &&
@@ -327,11 +334,11 @@ object PermutationLemmas {
     require (list contains e)
     val h = list.head
     if (h == e) {
-      permutation (list, Cons (e, delete (list, e))) because 
+      permutation (list, Cons (e, delete (list, e))) because
         permutation_refl (list)
     } else {
       permutation (list, Cons (e, delete (list, e))) because
-        delete (list, e) == Cons (h, delete (list.tail, e)) 
+        delete (list, e) == Cons (h, delete (list.tail, e))
     }
   } holds
 

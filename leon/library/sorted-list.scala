@@ -18,26 +18,12 @@ object SortedListSpec {
   def insert_commutative_prop (list: List[BigInt], e1: BigInt, e2: BigInt) = {
     require(isSorted(list))
     insert(insert(list, e1), e2) == insert(insert(list, e2), e1)
-  } holds /* verified by Leon */
+  } holds
 
   /* Merge operations are associative. */
   def sort_associative_prop (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt]) = {
     sort (sort (l1 ++ l2) ++ l3) == sort (l1 ++ sort (l2 ++ l3)) because
-      // permutation (l1 ++ l2, sort (l1 ++ l2))
-      sort_permutation (l1 ++ l2) &&
-      // permutation (sort (l1 ++ l2), l1 ++ l2)
-      permutation_comm (l1 ++ l2, sort (l1 ++ l2)) &&
-      // permutation (sort (l1 ++ l2) ++ l3, l1 ++ l2 ++ l3)
-      permutation_concat (sort (l1 ++ l2), l1 ++ l2, l3) &&
-      // permutation (l2 ++ l3, sort (l2 ++ l3))
-      sort_permutation (l2 ++ l3) &&
-      // permutation (l1 ++ (l2 ++ l3), l1 ++ sort (l2 ++ l3)
-      concat_permutation (l1, l2 ++ l3, sort (l2 ++ l3)) &&
-      // permutation (l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3))
-      permutation_concat_assoc (l1, l2, l3) &&
-      permutation_tran (sort (l1 ++ l2) ++ l3, l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) &&
-      permutation_tran (sort (l1 ++ l2) ++ l3, l1 ++ (l2 ++ l3), l1 ++ sort (l2 ++ l3)) &&
-      permutation_sort (sort (l1 ++ l2) ++ l3, l1 ++ sort (l2 ++ l3))
+      sort_assoc_lemma(l1, l2, l3)
   } holds
 
   /* Merge operations are commutative. */
@@ -45,21 +31,21 @@ object SortedListSpec {
     sort (l1 ++ l2) == sort (l2 ++ l1) because
       permutation_concat_comm (l1, l2) &&
       permutation_sort (l1 ++ l2, l2 ++ l1)
-  } holds /* verified by Leon */
+  } holds
 
   /* Sort operations are idempotent. */
   def sort_idempotent_prop (list: List[BigInt]) = {
-    sort(list) == sort(sort(list)) because 
+    sort (list) == sort (sort (list)) because
     check {
       sort_permutation (list) &&
       permutation_sort (list, sort (list))
     }
-  } holds /* verified by Leon */
+  } holds
 
   /* Sort any permutation of a list give the same result */
   def sort_permutation_prop (l1: List[BigInt], l2: List[BigInt]) = {
     require(permutation (l1, l2))
-    sort(l1) == sort(l2) because permutation_sort (l1, l2)
+    sort (l1) == sort (l2) because permutation_sort (l1, l2)
   } holds
 
   /* Sort is permutation */
@@ -114,7 +100,7 @@ object SortedListOps {
     }
   } ensuring {
     res => res.content == list.content && isSorted(res)
-  } /* verified by Leon */
+  }
 
   /**
    * Tell whether a list is sorted in ascending order.
@@ -133,26 +119,23 @@ object SortedListOps {
 }
 
 object SortedListLemmas {
-  /**
-   * Check that the sort(list).head == min(list).
-   */
   @induct
   def min_head_lemma (list: List[BigInt]) = {
     require(list != Nil[BigInt]())
-    sort(list).head == min(list)
-  } holds /* verified by Leon */
+    sort (list).head == min(list)
+  } holds
 
   @induct
   def min_sort_lemma (list: List[BigInt]) = {
     require(list != Nil[BigInt]())
-    min(sort(list)) == min(list)
+    min(sort (list)) == min(list)
   } holds
 
   @induct
   def sort_delete_lemma (list: List[BigInt], m: BigInt): Boolean = {
-    require(list != Nil[BigInt]() && m == sort(list).head)
-    sort(delete(list, m)) == delete(sort(list), m)
-  } holds /* verified by leon */
+    require(list != Nil[BigInt]() && m == sort (list).head)
+    sort (delete(list, m)) == delete(sort (list), m)
+  } holds
 
   @induct
   def sort_not_contains_lemma (list : List[BigInt], e : BigInt) : Boolean = {
@@ -188,13 +171,13 @@ object SortedListLemmas {
         delete (Cons (e, list), e) == list
 /*
       permutation (Cons (e, sort (list)), sort (Cons (e, list))) because
-        (sort (Cons (e, list)) contains e) && 
+        (sort (Cons (e, list)) contains e) &&
         delete (sort (Cons (e, list)), e) == sort (list) &&
         permutation_refl (sort (list))
  */
     }
   } holds
-  
+
   @induct
   def insert_sort_delete (list : List[BigInt], e : BigInt) : Boolean = {
     require (list.contains (e))
@@ -206,7 +189,7 @@ object SortedListLemmas {
         sort (list) == insert (sort (delete (list, e)), e)
       } else {
         sort (list) == insert (sort (delete (list, e)), e) because
-          check { 
+          check {
             insert_sort_delete (list.tail, e) &&
             insert_comm (sort (delete (list.tail, e)), e, h)
           }
@@ -221,7 +204,7 @@ object SortedListLemmas {
       sort (l1) == sort (l2)
     } else {
       val h1 = l1.head
-      sort (l1) == sort (l2) because 
+      sort (l1) == sort (l2) because
         check { permutation_sort (l1.tail, delete (l2, h1)) } &&
         check { insert_sort_delete (l2, h1) }
     }
@@ -238,4 +221,23 @@ object SortedListLemmas {
                 sort_cons_delete (list.tail, list.head) }
     }
   } holds
+
+  def sort_assoc_lemma (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt]) = {
+    sort (sort (l1 ++ l2) ++ l3) == sort (l1 ++ sort (l2 ++ l3)) because
+      // permutation (l1 ++ l2, sort (l1 ++ l2))
+      sort_permutation (l1 ++ l2) &&
+      // permutation (sort (l1 ++ l2), l1 ++ l2)
+      permutation_comm (l1 ++ l2, sort (l1 ++ l2)) &&
+      // permutation (sort (l1 ++ l2) ++ l3, l1 ++ l2 ++ l3)
+      permutation_concat (sort (l1 ++ l2), l1 ++ l2, l3) &&
+      // permutation (l2 ++ l3, sort (l2 ++ l3))
+      sort_permutation (l2 ++ l3) &&
+      // permutation (l1 ++ (l2 ++ l3), l1 ++ sort (l2 ++ l3)
+      concat_permutation (l1, l2 ++ l3, sort (l2 ++ l3)) &&
+      // permutation (l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3))
+      permutation_concat_assoc (l1, l2, l3) &&
+      permutation_tran (sort (l1 ++ l2) ++ l3, l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) &&
+      permutation_tran (sort (l1 ++ l2) ++ l3, l1 ++ (l2 ++ l3), l1 ++ sort (l2 ++ l3)) &&
+      permutation_sort (sort (l1 ++ l2) ++ l3, l1 ++ sort (l2 ++ l3))
+  }
 }
