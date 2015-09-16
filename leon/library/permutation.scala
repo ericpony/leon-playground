@@ -116,19 +116,15 @@ object PermutationLemmas {
     val h2 = l2.head
     if (l1 == Nil[V]) {
       permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because
-        check { permutation_refl(l2.tail) }
+        permutation_refl(l2.tail)
     } else {
       val h1 = l1.head
       if (h1 == h2) {
         permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because
-          check {
-            permutation_cons_tail(l1.tail, l2.tail, h1)
-          }
+          permutation_cons_tail(l1.tail, l2.tail, h1)
       } else {
         permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because
-          check {
-            permutation_cons_delete(l1.tail, l2)
-          }
+          permutation_cons_delete(l1.tail, l2)
       }
     }
   } holds
@@ -273,7 +269,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_contains_lemma[V] (l1: List[V], l2: List[V], e: V): Boolean = {
     require(permutation(l1, l2) && l1.contains(e))
     val h = l1.head

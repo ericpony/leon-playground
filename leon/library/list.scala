@@ -1,9 +1,9 @@
 package duck.collection
 
-//import leon.collection._
-
+import leon.proof._
 import leon.lang._
 import leon.annotation._
+import KListOps._
 
 case class Item[V] (key: BigInt, value: V)
 
@@ -180,10 +180,15 @@ sealed abstract class KList[V] {
   def getLast (key: BigInt) = this.reverse.getFirst(key)
 
   def getAll (key: BigInt): KList[V] = {
-    this match {
-      case Nil()      => Nil[V]()
-      case Cons(h, t) => if (h.key == key) Cons(h, t.getAll(key)) else t.getAll(key)
-    }
+    this.filter(item => item.key == key)
+    //    this match {
+    //      case Nil()      => Nil[V]()
+    //      case Cons(h, t) => if (h.key == key) Cons(h, t.getAll(key)) else t.getAll(key)
+    //    }
+  } ensuring { res =>
+    res.size <= this.size &&
+      res.content.subsetOf(this.content) &&
+      res.forall(item => item.key == key)
   }
 
   def get = getFirst _
@@ -194,23 +199,37 @@ sealed abstract class KList[V] {
       case Cons(h, t) => if (h.key == key) t else Cons(h, t.deleteFirst(key))
     }
   } ensuring { res =>
-    if (this.hasKey(key)) res.size == this.size - 1
-    else res.size == this.size
+    if (hasKey(key)) {
+      res.content.subsetOf(content) && res.size == size - 1
+    } else {
+      res.content == content && res.size == size
+    }
   }
 
   def deleteLast (key: BigInt) = this.reverse.deleteFirst(key)
 
   def deleteAll (key: BigInt): KList[V] = {
-    this match {
-      case Nil()      => this
-      case Cons(h, t) => if (h.key == key) t.deleteAll(key) else Cons(h, t.deleteAll(key))
-    }
-  } ensuring { res => true
-//    res.size == this.size - this.getAll(key).size &&
-//      res.content == this.content -- this.getAll(key).content
+    this.filter(item => item.key != key)
+    //    this match {
+    //      case Nil()      => this
+    //      case Cons(h, t) => if (h.key == key) t.deleteAll(key) else Cons(h, t.deleteAll(key))
+    //    }
+  } ensuring { res =>
+    res.size <= this.size &&
+      res.content.subsetOf(this.content) &&
+      res.forall(item => item.key != key)
   }
 
-  def delete = deleteFirst _
+  def deleteFirst (e: Item[V]): KList[V] = {
+    this match {
+      case Nil()      => this
+      case Cons(h, t) => if (h == e) t else Cons(h, t.deleteFirst(e))
+    }
+  } ensuring { res =>
+    res.content.subsetOf(content) && {
+      if (contains(e)) res.size == size - 1 else res.size == size
+    }
+  }
 
   def init: KList[V] = {
     require(!isEmpty)
