@@ -4,6 +4,7 @@ import leon.lang._
 import leon.proof._
 import MinOps._
 import MinLemmas._
+import SortedListOps._
 import scala.language.postfixOps
 
 object MinSpec {
@@ -40,10 +41,9 @@ object MinOps {
         if (xs == Nil[BigInt]()) x
         else min(x, min(xs))
     }
-  } ensuring {
-    res => (list contains res) &&
-      list.forall(res <= _) because min_lemma(list, res)
-  } /* verified by Leon */
+  } ensuring { res => (list contains res) &&
+    list.forall(res <= _) because min_lemma(list, res)
+  }
 
   def min (x: BigInt, y: BigInt) = if (x < y) x else y
 }
@@ -53,18 +53,28 @@ object MinLemmas {
   def min_lemma (list: List[BigInt], m: BigInt): Boolean = {
     require(list != Nil[BigInt]())
     m > min(list) || list.forall(m <= _)
-  } holds /* verified by Leon */
+  } holds
 
-  /* Check that min(list) is indeed the minimal element of list. */
+  /* min(list) is indeed the minimal element of list */
   def min_lemma2 (list: List[BigInt]): Boolean = {
     require(list != Nil[BigInt]())
     val m = min(list)
     list.contains(m) && list.forall(m <= _) because min_lemma(list, m)
-  } holds /* verified by Leon */
+  } holds
 
-  /**
-   * Check that min(l1 ++ l2) == min(l2 ++ l1).
-   */
+  @induct
+  def min_head_lemma (list: List[BigInt]) = {
+    require(list != Nil[BigInt]())
+    sort (list).head == min(list)
+  } holds
+
+  @induct
+  def min_sort_lemma (list: List[BigInt]) = {
+    require(list != Nil[BigInt]())
+    min(sort (list)) == min(list)
+  } holds
+
+  /* min(l1 ++ l2) == min(l2 ++ l1) */
   def min_concat_lemma (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     l2 == Nil[BigInt]() ||
       l1 == Nil[BigInt]() || {
@@ -74,17 +84,15 @@ object MinLemmas {
           min(min(l1), min(l2)) == min(min(l2), min(l1))
       }
     }
-  } holds /* verified by Leon */
+  } holds
 
-  /**
-   * Check that min(l1 ++ l2) == min(min(l1), min(l2)).
-   */
+  /* min(l1 ++ l2) == min(min(l1), min(l2)) */
   @induct
   def min_concat_lemma2 (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     l2 == Nil[BigInt]() ||
       l1 == Nil[BigInt]() ||
       min(l1 ++ l2) == min(min(l1), min(l2))
-  } holds /* verified by Leon */
+  } holds
 
   @induct
   def min_contains (list : List[BigInt], m : BigInt) : Boolean = {
