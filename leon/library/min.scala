@@ -13,6 +13,12 @@ object MinSpec {
     min (list) <= m
   } holds
 
+  @induct
+  def min_not_contains (list : List[BigInt], e : BigInt) : Boolean = {
+    require (e < min (list))
+    !(list contains e)
+  } holds
+
   def min_content (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require (l1.content == l2.content && l1 != Nil[BigInt]())
     min (l1) == min (l2) because

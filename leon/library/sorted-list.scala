@@ -20,6 +20,12 @@ object SortedListSpec {
     insert(insert(list, e1), e2) == insert(insert(list, e2), e1)
   } holds /* verified by Leon */
 
+  @induct
+  def sort_head_min (list : List[BigInt]) : Boolean = {
+    require(list != Nil[BigInt]() && isSorted (list))
+    list.head == min(list)
+  } holds
+
   /* Merge operations are associative. */
   def sort_associative_prop (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt]) = {
     sort (sort (l1 ++ l2) ++ l3) == sort (l1 ++ sort (l2 ++ l3)) because
