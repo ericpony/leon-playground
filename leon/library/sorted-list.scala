@@ -75,7 +75,7 @@ object SortedListOps {
     }
   } ensuring (res => res.content == list.content ++ Set[BigInt](e) &&
     res.size == list.size + 1 &&
-    isSorted(res)) /* verified by Leon */
+    isSorted(res))
 
   /**
    * Merge two sorted lists to obtain one sorted list.
@@ -92,7 +92,7 @@ object SortedListOps {
     }
   } ensuring {
     res => isSorted(res) && res.content == l1.content ++ l2.content
-  } /* verified by Leon */
+  }
 
   /**
    * Obtain a sorted version of the provided list (in ascending order).
@@ -164,24 +164,6 @@ object SortedListLemmas {
   def sort_cons_delete (list : List[BigInt], e : BigInt) : Boolean = {
     sort (list) == delete (sort (Cons (e, list)), e) because
       check { insert_delete (sort (list), e) }
-  } holds
-
-  @ignore
-  @induct
-  def permutation_cons_sort (list : List[BigInt], e : BigInt) : Boolean = {
-    if (list.size == 0) {
-      permutation (Cons (e, sort (list)), sort (Cons (e, list)))
-    } else {
-      delete (sort (Cons (e, list)), e) == sort (list) because
-        sort_delete_lemma (Cons (e, list), e) &&
-        delete (Cons (e, list), e) == list
-/*
-      permutation (Cons (e, sort (list)), sort (Cons (e, list))) because
-        (sort (Cons (e, list)) contains e) &&
-        delete (sort (Cons (e, list)), e) == sort (list) &&
-        permutation_refl (sort (list))
- */
-    }
   } holds
 
   @induct

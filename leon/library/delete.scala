@@ -60,7 +60,7 @@ object DeleteLemmas {
   def delete_concat_lemma1[V] (l1: List[V], l2: List[V], m: V): Boolean = {
     require(!l1.contains(m))
     l1 ++ delete(l2, m) == delete(l1 ++ l2, m)
-  } holds /* verified by leon */
+  } holds
 
   def delete_concat_lemma2[V] (l1: List[V], l2: List[V], m: V): Boolean = {
     require(!l2.contains(m))
@@ -70,7 +70,7 @@ object DeleteLemmas {
         case Cons(h, t) => delete_concat_lemma2(t, l2, m)
       }
     }
-  } holds /* verified by leon */
+  } holds
 
   @induct
   def delete_content[V] (list: List[V], e: V): Boolean = {

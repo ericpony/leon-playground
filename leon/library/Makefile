@@ -1,5 +1,5 @@
 SRC := delete.scala distinct.scala min.scala permutation.scala \
-	sorted-list.scala
+	sorted-list.scala distinct-sorted-list.scala
 LEON := leon
 FUNS ?=
 TIMEOUT ?= 5

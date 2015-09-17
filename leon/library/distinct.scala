@@ -10,6 +10,23 @@ import DistinctLemmas._
 import scala.language.postfixOps
 
 object DistinctSpec {
+  @induct
+  def distinct_delete[V] (list : List[V], e : V) : Boolean = {
+    require (distinct (list))
+    distinct (delete (list, e))
+  } holds
+
+  @induct
+  def distinct_cons_not_contains[V] (list : List[V], e : V) : Boolean = {
+    require (distinct (list) && !list.contains (e))
+    distinct (e::list)
+  } holds
+
+  def distinct_delete_content[V] (l1 : List[V], l2 : List[V], e : V) : Boolean = {
+    require (distinct (l1) && distinct (l2) && l1.content == l2.content)
+    delete (l1, e).content == delete (l2, e).content because 
+      distinct_delete_content (l1, l2, e)
+  } holds
 }
 
 object DistinctOps {
