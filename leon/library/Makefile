@@ -1,5 +1,4 @@
-SRC := delete.scala distinct.scala min.scala permutation.scala \
-	sorted-list.scala distinct-sorted-list.scala
+SRC := $(shell ls *.scala)
 LEON := leon
 FUNS ?=
 TIMEOUT ?= 5
