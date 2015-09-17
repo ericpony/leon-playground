@@ -22,8 +22,23 @@ object SortedListTakeSpec {
 }
 
 object SortedListTakeOps {
+  def sorted_take(list : List[BigInt], i: BigInt) : List[BigInt] = {
+    require(isSorted(list))
+    (list, i) match {
+      case (Nil(), _) => Nil[BigInt]()
+      case (Cons(h, t), i) =>
+        if (i <= BigInt(0)) {
+          Nil[BigInt]()
+        } else {
+          Cons(h, sorted_take(t, i - 1))
+        }
+    }
+  } ensuring {
+    res => res == list.take(i) && isSorted(res)
+  }
+
   def sort_take (list : List[BigInt], n : BigInt) : List[BigInt] = {
-    sort (list).take (n)
+    sorted_take (sort (list), n)
   } ensuring {
     res => isSorted (res) && res.size == (
       if (n <= 0) BigInt(0)
