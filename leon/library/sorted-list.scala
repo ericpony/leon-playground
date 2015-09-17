@@ -105,7 +105,7 @@ object SortedListOps {
       case Cons(x, xs) => insert(sort(xs), x)
     }
   } ensuring {
-    res => res.content == list.content && isSorted(res)
+    res => res.content == list.content && isSorted(res) && res.size == list.size
   }
 
   /**

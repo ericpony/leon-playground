@@ -25,7 +25,11 @@ object SortedListTakeOps {
   def sort_take (list : List[BigInt], n : BigInt) : List[BigInt] = {
     sort (list).take (n)
   } ensuring {
-    res => isSorted (res) && res.size <= n
+    res => isSorted (res) && res.size == (
+      if (n <= 0) BigInt(0)
+      else if (n > list.size) list.size
+      else n
+    )
   }
 
   def seqOp (list : List[BigInt], e : BigInt, n : BigInt) = {
