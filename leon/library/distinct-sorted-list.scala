@@ -106,14 +106,16 @@ object DistinctSortedListLemmas {
     } else {
       val h1 = l1.head
       val h2 = l2.head
+
+      distinct (merge (l1, l2))
+      /*
       if (h1 < h2) {
         distinct (merge (l1, l2)) because {
           distinct_cons_not_contains (merge (l1.tail, l2), h1) because {
-            merge_not_contains (l1.tail, l2, h1) because {
-              merge_distinct (l1.tail, l2) &&
-              !l2.contains (h1) because {
-                sort_head_min (l2) && min_not_contains (l2, h1) }
-            }
+            merge_not_contains (l1.tail, l2, h1) &&
+            merge_distinct (l1.tail, l2)
+            !l2.contains (h1) because {
+              sort_head_min (l2) && min_not_contains (l2, h1) }
           }
         }
       } else {
@@ -128,12 +130,13 @@ object DistinctSortedListLemmas {
             }
           }
         } else {
-          distinct (merge (l1, l2)) because {
+          check { distinct (merge (l1, l2)) } because {
             merge_distinct (l1.tail, l2.tail) &&
-            check { distinct_cons_not_contains (merge (l1.tail, l2.tail), h1) }
+            distinct_cons_not_contains (merge (l1.tail, l2.tail), h1)
           }
         }
       }
+       */
     }
   } holds
 
