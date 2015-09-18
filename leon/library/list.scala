@@ -1,9 +1,10 @@
 package duck.collection
 
+import duck.suger._
+import duck.proof.KListLemmas._
 import leon.proof._
 import leon.lang._
 import leon.annotation._
-import KListOps._
 
 case class Item[V] (key: BigInt, value: V)
 
@@ -15,6 +16,7 @@ case class Nil[V] () extends KList[V]
  * KList
  * List of key-value pairs with integer keys
  */
+@library
 sealed abstract class KList[V] {
 
   def size: BigInt = (this match {
@@ -31,7 +33,9 @@ sealed abstract class KList[V] {
     case Cons(h, t) if h == v => true
     case Cons(_, t)           => t.contains(v)
     case Nil()                => false
-  }) ensuring { _ == (content contains v) }
+  }) ensuring {
+    _ == (content contains v) && hasKey(v.key)
+  }
 
   def ++ (that: KList[V]): KList[V] = (this match {
     case Nil()       => that
@@ -168,30 +172,41 @@ sealed abstract class KList[V] {
       case Nil()               => false
       case Cons(Item(k, v), t) => k == key || t.hasKey(key)
     }
+  } ensuring { res =>
+    res implies
+      get(key).isDefined &&
+        contains(get(key).get) &&
+        getAll(key) != Nil[V]()
   }
 
-  def getFirst (key: BigInt): Option[V] = {
+  def getFirst (key: BigInt): Option[Item[V]] = {
     this match {
-      case Nil()               => None[V]()
-      case Cons(Item(k, v), t) => if (k == key) Some[V](v) else t.get(key)
+      case Nil()      => None[Item[V]]()
+      case Cons(h, t) => if (h.key == key) Some[Item[V]](h) else t.getFirst(key)
     }
+  } ensuring { res =>
+    res.isDefined implies
+      res.get.key == key &&
+        res.get == getAll(key).head
   }
 
   def getLast (key: BigInt) = this.reverse.getFirst(key)
 
   def getAll (key: BigInt): KList[V] = {
-    this.filter(item => item.key == key)
-    //    this match {
-    //      case Nil()      => Nil[V]()
-    //      case Cons(h, t) => if (h.key == key) Cons(h, t.getAll(key)) else t.getAll(key)
-    //    }
+    this match {
+      case Nil()      => Nil[V]()
+      case Cons(h, t) => if (h.key == key) Cons(h, t.getAll(key)) else t.getAll(key)
+    }
   } ensuring { res =>
-    res.size <= this.size &&
-      res.content.subsetOf(this.content) &&
-      res.forall(item => item.key == key)
+    res.size <= size and
+      res.content.subsetOf(content) and
+      res.forall(item => item.key == key) and
+      (res != Nil[V]() implies hasKey(key))
   }
 
   def get = getFirst _
+
+  def deleteFirst (e: Item[V]) = KListOps.delete(this, e)
 
   def deleteFirst (key: BigInt): KList[V] = {
     this match {
@@ -200,35 +215,26 @@ sealed abstract class KList[V] {
     }
   } ensuring { res =>
     if (hasKey(key)) {
-      res.content.subsetOf(content) && res.size == size - 1
+      val e = getFirst(key).get
+      res.size == size - 1 &&
+        res.content == content -- Set(e) because delete_content(this, e)
     } else {
-      res.content == content && res.size == size
+      res.size == size &&
+        res.content == content
     }
   }
 
   def deleteLast (key: BigInt) = this.reverse.deleteFirst(key)
 
   def deleteAll (key: BigInt): KList[V] = {
-    this.filter(item => item.key != key)
-    //    this match {
-    //      case Nil()      => this
-    //      case Cons(h, t) => if (h.key == key) t.deleteAll(key) else Cons(h, t.deleteAll(key))
-    //    }
-  } ensuring { res =>
-    res.size <= this.size &&
-      res.content.subsetOf(this.content) &&
-      res.forall(item => item.key != key)
-  }
-
-  def deleteFirst (e: Item[V]): KList[V] = {
     this match {
       case Nil()      => this
-      case Cons(h, t) => if (h == e) t else Cons(h, t.deleteFirst(e))
+      case Cons(h, t) => if (h.key == key) t.deleteAll(key) else Cons(h, t.deleteAll(key))
     }
   } ensuring { res =>
-    res.content.subsetOf(content) && {
-      if (contains(e)) res.size == size - 1 else res.size == size
-    }
+    res.size <= this.size and
+      res.content.subsetOf(this.content) and
+      res.forall(item => item.key != key)
   }
 
   def init: KList[V] = {
@@ -416,16 +422,22 @@ sealed abstract class KList[V] {
 }
 
 object KListOps {
-
+  @library
   def delete[V] (list: KList[V], e: Item[V]): KList[V] = {
     if (list == Nil[V]()) list
     else if (list.head == e) list.tail
     else Cons(list.head, delete(list.tail, e))
   } ensuring { res =>
-    res.size == (if (list contains e) list.size - 1 else list.size) &&
-      res.content.subsetOf(list.content)
+    if (list contains e) {
+      res.size == list.size - 1 &&
+        res.content == list.content -- Set(e) because delete_content(list, e)
+    } else {
+      res.size == list.size &&
+        res.content == list.content
+    }
   }
 
+  @library
   def permutation[V] (l1: KList[V], l2: KList[V]): Boolean = {
     if (l1 == Nil[V]) {
       l1 == l2
@@ -433,7 +445,7 @@ object KListOps {
       val h1 = l1.head
       l2.contains(h1) && permutation(l1.tail, delete(l2, h1))
     }
-  } ensuring { res => !res ||
+  } ensuring { res => res implies
     l1.size == l2.size &&
       permutation(l2, l1) &&
       l1.content.subsetOf(l2.content) &&
