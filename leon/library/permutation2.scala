@@ -486,7 +486,13 @@ object KListLemmas {
   } holds /* proven by Leon */
 
   @induct
-  def filter_in[V] (list: KList[V], p: Item[V] => Boolean, e: Item[V]): Boolean = {
+  def filter_sound[V] (list : KList[V], p : Item[V] => Boolean, e : Item[V]) : Boolean = {
+    require(list.filter(p).contains(e))
+    list.contains(e) && p(e)
+  } holds /* proven by Leon */
+
+  @induct
+  def filter_complete[V] (list : KList[V], p : Item[V] => Boolean, e : Item[V]) : Boolean = {
     require(list.contains(e) && p(e))
     list.filter(p).contains(e)
   } holds /* proven by Leon */
@@ -506,6 +512,13 @@ object KListLemmas {
   def filter_disjoint[V] (list: KList[V], p: Item[V] => Boolean): Boolean = {
     (list.filter(p) & list.filterNot(p)) == KNil[V]() because
       disjoint_by_pred(list.filter(p), list.filterNot(p), p)
+  } holds /* proven by Leon */
+
+  def permutation_filter_contains [V] (list1 : KList[V], list2 : KList[V], p : Item[V] => Boolean, x : Item[V]) : Boolean = {
+    require(permutation(list1, list2) && list1.filter(p).contains(x))
+    list2.filter(p).contains(x) because {
+      filter_sound(list1, p, x) && permutation_contains_lemma(list1, list2, x) && filter_complete(list2, p, x)
+    }
   } holds /* proven by Leon */
 
 }
