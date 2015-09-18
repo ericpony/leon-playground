@@ -11,21 +11,21 @@ import scala.language.postfixOps
 
 object DistinctSpec {
   @induct
-  def distinct_delete[V] (list : List[V], e : V) : Boolean = {
-    require (distinct (list))
-    distinct (delete (list, e))
+  def distinct_delete[V] (list: List[V], e: V): Boolean = {
+    require(distinct(list))
+    distinct(delete(list, e))
   } holds
 
   @induct
-  def distinct_cons_not_contains[V] (list : List[V], e : V) : Boolean = {
-    require (distinct (list) && !list.contains (e))
-    distinct (e::list)
+  def distinct_cons_not_contains[V] (list: List[V], e: V): Boolean = {
+    require(distinct(list) && !list.contains(e))
+    distinct(e :: list)
   } holds
 
-  def distinct_delete_content[V] (l1 : List[V], l2 : List[V], e : V) : Boolean = {
-    require (distinct (l1) && distinct (l2) && l1.content == l2.content)
-    delete (l1, e).content == delete (l2, e).content because 
-      distinct_delete_content (l1, l2, e)
+  def distinct_delete_content[V] (l1: List[V], l2: List[V], e: V): Boolean = {
+    require(distinct(l1) && distinct(l2) && l1.content == l2.content)
+    delete(l1, e).content == delete(l2, e).content because
+      distinct_delete_content_lemma(l1, l2, e)
   } holds
 }
 
@@ -58,7 +58,6 @@ object DistinctLemmas {
   def distinct_delete_lemma1[V] (l1: List[V], l2: List[V], m: V): Boolean = {
     require(distinct(l1 ++ l2))
     distinct(delete(l1, m) ++ l2) because distinct_delete_lemma3(l1, m)
-
   } holds /* verified by Leon */
 
   @induct
@@ -80,7 +79,7 @@ object DistinctLemmas {
   } holds
 
   @induct
-  def distinct_delete_content[V] (l1: List[V], l2: List[V], e: V): Boolean = {
+  def distinct_delete_content_lemma[V] (l1: List[V], l2: List[V], e: V): Boolean = {
     require(distinct(l1) && distinct(l2) && l1.content == l2.content)
     val L1 = delete(l1, e)
     val L2 = delete(l2, e)

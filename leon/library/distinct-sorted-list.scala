@@ -140,7 +140,6 @@ object DistinctSortedListLemmas {
     }
   } holds
 
-  @induct
   def merge_comm_lemma (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require (distinct_sorted (l1) && distinct_sorted (l2))
     if (l1 == Nil[BigInt]() || l2 == Nil[BigInt]) {
