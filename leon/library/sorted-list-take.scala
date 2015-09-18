@@ -40,7 +40,7 @@ object SortedListTakeOps {
   def sort_take (list : List[BigInt], n : BigInt) : List[BigInt] = {
     sorted_take (sort (list), n)
   } ensuring {
-    res => isSorted (res) && res.size == (
+    res => res.content.subsetOf(list.content) && isSorted (res) && res.size == (
       if (n <= 0) BigInt(0)
       else if (n > list.size) list.size
       else n

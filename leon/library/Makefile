@@ -1,7 +1,7 @@
 SRC := $(shell ls *.scala)
 LEON := leon
 FUNS ?=
-TIMEOUT ?= 10
+TIMEOUT ?= 5
 LEON_FLAGS = --timeout=$(TIMEOUT)
 
 ifneq ($(FUNS),)
