@@ -407,4 +407,113 @@ object KListLemmas {
     delete(delete(list, a), b) == delete(delete(list, b), a)
   } holds
 
+  /* Apply this to prove permutation(l1, l3) by transitivity. */
+  def permutation_by_tran[V] (l1 : KList[V], l2 : KList[V], l3 : KList[V]) : Boolean = {
+    permutation(l1, l2) && permutation(l2, l3) && permutation_tran(l1, l2, l3)
+  } ensuring {
+    res => !res || permutation(l1, l3)
+  }
+
+  def cons_merge_assoc[V] (e : Item[V], list1 : KList[V], list2 : KList[V]) : Boolean = {
+    e::(list1 ++ list2) == (e::list1) ++ list2
+  } holds /* proven by Leon */
+
+  def cons_delete_perm[V] (list : KList[V], e : Item[V]) : Boolean = {
+    require(list.contains(e))
+    permutation(e::delete(list, e), list) because { permutation_refl(delete(list, e)) && permutation_cons_delete(list, e, delete(list, e)) }
+  } holds /* proven by Leon */
+
+  /* This lemma is applied in filter_union_perm. */
+  def filter_union_perm1[V] (h : Item[V], t : KList[V], pos : KList[V], neg : KList[V]) : Boolean = {
+    require(permutation(delete(pos, h) ++ neg, t) && pos.contains(h))
+    permutation(pos ++ neg, h::t) because {
+      permutation_by_tran(pos ++ neg, h::(delete(pos, h) ++ neg), h::t) because {
+        /* for permutation(pos ++ neg, h::(delete(pos, h))) */
+        cons_merge_assoc(h, delete(pos, h), neg) && permutation(pos ++ neg, (h::delete(pos, h)) ++ neg) because {
+          permutation(pos, h::delete(pos, h)) because {
+            cons_delete_perm(pos, h) && permutation_comm(h::delete(pos, h), pos)
+          } && permutation_concat(pos, h::delete(pos, h), neg)
+        } &&
+        /* for permutation(h::(delete(pos, h)), h::t) */
+        permutation_cons(delete(pos, h) ++ neg, t, h)
+      }
+    }
+  } holds /* proven by Leon */
+
+  /* This lemma is applied in filter_union_perm. */
+  def filter_union_perm2[V] (h : Item[V], t : KList[V], pos : KList[V], neg : KList[V]) : Boolean = {
+    require(permutation(pos ++ delete(neg, h), t) && neg.contains(h))
+    permutation(pos ++ neg, h::t) because {
+      permutation_by_tran(pos ++ neg, h::(pos ++ delete(neg, h)), h::t) because {
+        /* for permutation(pos ++ neg, h::(pos ++ delete(neg, h))) */
+        cons_merge_assoc(h, pos, delete(neg, h)) && permutation(pos ++ neg, (h::pos) ++ delete(neg, h)) because {
+          permutation_by_tran(pos ++ neg, pos ++ (h::delete(neg, h)), (h::pos) ++ delete(neg, h)) because {
+            /* for permutation(pos ++ neg, pos ++ (h::delete(neg, h))) */
+            permutation_by_tran(pos ++ neg, neg ++ pos, pos ++ (h::delete(neg, h))) because {
+              /* for permutation(pos ++ neg, neg ++ pos) */
+              permutation_concat_comm(pos, neg) &&
+              /* for permutation(neg ++ pos, pos ++ (h::delete(neg, h))) */
+              permutation_by_tran(neg ++ pos, (h::delete(neg, h)) ++ pos, pos ++ (h::delete(neg, h))) because {
+                cons_delete_perm(neg, h) && permutation_comm(h::delete(neg, h), neg) && permutation_concat(neg, h::delete(neg, h), pos) &&
+                permutation_concat_comm(h::delete(neg, h), pos)
+              }
+            } &&
+            /* for permutation(pos ++ (h::delete(neg, h)), (h::pos) ++ delete(neg, h)) */
+            permutation_cons_tail(pos, delete(neg, h), h)
+          }
+        } &&
+        /* for permutation(h::(pos ++ delete(neg, h)), h::t) */
+        permutation_cons(pos ++ delete(neg, h), t, h)
+      }
+    }
+  } holds /* proven by Leon */
+
+  def filter_union_perm[V] (list : KList[V], p : Item[V] => Boolean) : Boolean = {
+    permutation(list.filter(p) ++ list.filterNot(p), list) because {
+      list match {
+        case Nil() => trivial
+        case Cons(h, t) if p(h) => filter_union_perm(t, p) && filter_union_perm1(h, t, list.filter(p), list.filterNot(p))
+        case Cons(h, t) => filter_union_perm(t, p) && filter_union_perm2(h, t, list.filter(p), list.filterNot(p))
+      }
+    }
+  } holds /* proven by Leon */
+
+  def filter_union_size[V] (list : KList[V], p : Item[V] => Boolean) : Boolean = {
+    (list.filter(p) ++ list.filterNot(p)).size == list.size because {
+      filter_union_perm(list, p)
+    }
+  } holds /* proven by Leon */
+
+  def filter_union_content[V] (list : KList[V], p : Item[V] => Boolean) : Boolean = {
+    (list.filter(p) ++ list.filterNot(p)).content == list.content because {
+      filter_union_perm(list, p)
+    }
+  } holds /* proven by Leon */
+
+  @induct
+  def forall_p_not_in[V] (list : KList[V], p : Item[V] => Boolean, e : Item[V]) : Boolean = {
+    require(list.forall(p) && !p(e))
+    !list.contains(e)
+  } holds /* proven by Leon */
+
+  @induct
+  def filter_in[V] (list : KList[V], p : Item[V] => Boolean, e : Item[V]) : Boolean = {
+    require(list.contains(e) && p(e))
+    list.filter(p).contains(e)
+  } holds /* proven by Leon */
+
+  def disjoint_by_pred[V] (pos : KList[V], neg : KList[V], p : Item[V] => Boolean) : Boolean = {
+    require(pos.forall(p) && neg.forall(!p(_)))
+    (pos & neg) == Nil[V]() because {
+      pos match {
+        case Nil() => trivial
+        case Cons(h, t) => !neg.contains(h) because { forall_p_not_in(neg, (x : Item[V]) => !p(x), h) } && disjoint_by_pred(t, neg, p)
+      }
+    }
+  } holds /* proven by Leon */
+
+  def filter_disjoint[V] (list : KList[V], p : Item[V] => Boolean) : Boolean = {
+    (list.filter(p) & list.filterNot(p)) == Nil[V]() because { disjoint_by_pred(list.filter(p), list.filterNot(p), p) }
+  } holds /* proven by Leon */
+
 }
