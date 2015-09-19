@@ -295,6 +295,8 @@ object KListLemmas {
     permutation(l1, l2) because {
       if (l1 == Nil[V]())
         permutation(l1, l2) because
+          l1 == Nil[V]() iff !l1.hasKey(key) &&
+          l2 == Nil[V]() iff !l2.hasKey(key) &&
           permutation_hasKey_lemma(map1, map2, key)
       else {
         val h1 = map1.get(key).get
@@ -313,7 +315,7 @@ object KListLemmas {
             permutation(m1.getAll(key), m2.getAll(key)) because
               permutation_getAll_lemma(m1, m2, key)
           } &&
-          check { m1.getAll(key) == delete(l1, h1) because getAll_delete_lemma(map1, h1, key) } &&
+          check { m1.getAll(key) == l1.tail because getAll_delete_lemma(map1, h1, key) } &&
           check { m2.getAll(key) == delete(l2, h1) because getAll_delete_lemma(map2, h1, key) } &&
           permutation(delete(l2, h1), l1.tail) &&
           permutation_cons_delete(l2, h1, l1.tail)
@@ -331,9 +333,8 @@ object KListLemmas {
   def getAll_contain_lemma[V] (map: KList[V], e: Item[V]): Boolean = {
     require(map contains e)
     map.getAll(e.key) contains e
-  } holds
+  } holds /* verified by Leon */
 
-  /* verified by Leon */
   def concat_permutation[V] (ll: KList[V], l1: KList[V], l2: KList[V]) = {
     require(permutation(l1, l2))
     permutation(ll ++ l1, ll ++ l2) because
@@ -489,13 +490,16 @@ object KListLemmas {
     (pos & neg) == Nil[V]() because {
       pos match {
         case Nil()      => trivial
-        case Cons(h, t) => !neg.contains(h) because { forall_p_not_in(neg, (x: Item[V]) => !p(x), h) } && disjoint_by_pred(t, neg, p)
+        case Cons(h, t) => check {
+          !neg.contains(h) because forall_p_not_in(neg, (x: Item[V]) => !p(x), h)
+        } && disjoint_by_pred(t, neg, p)
       }
     }
   } holds /* proven by Leon */
 
   def filter_disjoint[V] (list: KList[V], p: Item[V] => Boolean): Boolean = {
-    (list.filter(p) & list.filterNot(p)) == Nil[V]() because { disjoint_by_pred(list.filter(p), list.filterNot(p), p) }
+    (list.filter(p) & list.filterNot(p)) == Nil[V]() because
+      disjoint_by_pred(list.filter(p), list.filterNot(p), p)
   } holds /* proven by Leon */
 
 }

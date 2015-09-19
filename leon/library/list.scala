@@ -179,6 +179,9 @@ sealed abstract class KList[V] {
         getAll(key) != Nil[V]()
   }
 
+  /**
+   * Get the first element in this list with the provided key.
+   */
   def getFirst (key: BigInt): Option[Item[V]] = {
     this match {
       case Nil()      => None[Item[V]]()
@@ -190,8 +193,19 @@ sealed abstract class KList[V] {
         res.get == getAll(key).head
   }
 
+  /**
+   * Get the last element in this list with the provided key.
+   */
   def getLast (key: BigInt) = this.reverse.getFirst(key)
 
+  /**
+   * Get all elements in this list with the provided key.
+   * The order in which the elements are stored in the returned list
+   * is consistent with the order they are stored in the original list.
+   * Note: This version of getAll is easier to verify for Leon than
+   * the concise version
+   * def getAll (key: BigInt) = this.filter(item => item.key == key).
+   */
   def getAll (key: BigInt): KList[V] = {
     this match {
       case Nil()      => Nil[V]()
@@ -204,10 +218,20 @@ sealed abstract class KList[V] {
       (res != Nil[V]() implies hasKey(key))
   }
 
+  /**
+   * Get an element from the list with the provided key.
+   */
   def get = getFirst _
 
+  /**
+   * Obtain a list by removing the provided element from this list.
+   */
   def deleteFirst (e: Item[V]) = KListOps.delete(this, e)
 
+  /**
+   * Obtain a list by removing the first element with the provided
+   * key from this list.
+   */
   def deleteFirst (key: BigInt): KList[V] = {
     this match {
       case Nil()      => this
@@ -224,8 +248,16 @@ sealed abstract class KList[V] {
     }
   }
 
+  /**
+   * Obtain a list by removing the last element with the provided
+   * key from this list.
+   */
   def deleteLast (key: BigInt) = this.reverse.deleteFirst(key)
 
+  /**
+   * Obtain a list by removing all element with the provided
+   * key from this list.
+   */
   def deleteAll (key: BigInt): KList[V] = {
     this match {
       case Nil()      => this
