@@ -1,4 +1,6 @@
-import leon.annotation.{ignore, induct}
+package duck.proof
+
+import leon.annotation.induct
 import leon.collection._
 import leon.lang._
 import leon.proof._
@@ -8,22 +10,22 @@ import scala.language.postfixOps
 
 object MinSpec {
   @induct
-  def min_contains (list : List[BigInt], m : BigInt) : Boolean = {
-    require (list contains m)
-    min (list) <= m
+  def min_contains (list: List[BigInt], m: BigInt): Boolean = {
+    require(list contains m)
+    min(list) <= m
   } holds
 
   @induct
-  def min_not_contains (list : List[BigInt], e : BigInt) : Boolean = {
-    require (e < min (list))
+  def min_not_contains (list: List[BigInt], e: BigInt): Boolean = {
+    require(e < min(list))
     !(list contains e)
   } holds
 
-  def min_content (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
-    require (l1.content == l2.content && l1 != Nil[BigInt]())
-    min (l1) == min (l2) because
-      check { min_contains (l1, min (l2)) } &&
-      check { min_contains (l2, min (l1)) }
+  def min_content (l1: List[BigInt], l2: List[BigInt]): Boolean = {
+    require(l1.content == l2.content && l1 != Nil[BigInt]())
+    min(l1) == min(l2) because
+      check { min_contains(l1, min(l2)) } &&
+        check { min_contains(l2, min(l1)) }
   } holds
 }
 
@@ -35,11 +37,8 @@ object MinOps {
    */
   def min (list: List[BigInt]): BigInt = {
     require(list != Nil[BigInt]())
-    list match {
-      case Cons(x, xs) =>
-        if (xs == Nil[BigInt]()) x
-        else min(x, min(xs))
-    }
+    if (list.tail == Nil[BigInt]()) list.head
+    else min(list.head, min(list.tail))
   } ensuring { res => (list contains res) &&
     list.forall(res <= _) because min_lemma(list, res)
   }
@@ -63,7 +62,7 @@ object MinLemmas {
 
   /* min(l1 ++ l2) == min(l2 ++ l1) */
   def min_concat_lemma (l1: List[BigInt], l2: List[BigInt]): Boolean = {
-    require (l1 != Nil[BigInt]() && l2 != Nil[BigInt]())
+    require(l1 != Nil[BigInt]() && l2 != Nil[BigInt]())
     min(l1 ++ l2) == min(l2 ++ l1) because {
       min_concat_lemma2(l1, l2) && min_concat_lemma2(l2, l1)
     }
@@ -72,13 +71,13 @@ object MinLemmas {
   /* min(l1 ++ l2) == min(min(l1), min(l2)) */
   @induct
   def min_concat_lemma2 (l1: List[BigInt], l2: List[BigInt]): Boolean = {
-    require (l1 != Nil[BigInt]() && l2 != Nil[BigInt]())
+    require(l1 != Nil[BigInt]() && l2 != Nil[BigInt]())
     min(l1 ++ l2) == min(min(l1), min(l2))
   } holds
 
   @induct
-  def min_contains (list : List[BigInt], m : BigInt) : Boolean = {
-    require (list contains m)
-    min (list) <= m
+  def min_contains (list: List[BigInt], m: BigInt): Boolean = {
+    require(list contains m)
+    min(list) <= m
   } holds
 }

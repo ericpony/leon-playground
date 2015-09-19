@@ -1,8 +1,8 @@
 package duck.collection
 
-import leon.annotation._
 import leon.lang._
-import leon.proof._
+import leon.annotation._
+import leon.collection._
 import scala.language.postfixOps
 
 /**

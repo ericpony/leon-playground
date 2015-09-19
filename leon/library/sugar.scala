@@ -2,7 +2,7 @@ package duck
 
 import scala.language.implicitConversions
 
-package object suger {
+package object sugar {
 
   case class LogicalOps (a: Boolean) {
     def and (b: => Boolean) = a && b

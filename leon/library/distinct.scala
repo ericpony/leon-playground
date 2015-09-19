@@ -1,3 +1,5 @@
+package duck.proof
+
 import leon.annotation.{ignore, induct}
 import leon.collection._
 import leon.lang._

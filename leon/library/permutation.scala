@@ -1,4 +1,7 @@
-import leon.annotation.{ignore, induct}
+package duck.proof
+
+import duck.sugar._
+import leon.annotation._
 import leon.collection._
 import leon.lang._
 import leon.proof._
@@ -74,11 +77,10 @@ object PermutationOps {
       val h1 = l1.head
       l2.contains(h1) && permutation(l1.tail, delete(l2, h1))
     }
-  } ensuring { res => !res ||
+  } ensuring { res => res implies
     l1.size == l2.size &&
       permutation(l2, l1) &&
-      l1.content.subsetOf(l2.content) &&
-      l2.content.subsetOf(l1.content)
+      l1.content == l2.content
   }
 }
 

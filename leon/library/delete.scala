@@ -1,12 +1,14 @@
-import leon.annotation.{ignore, induct}
+package duck.proof
+
+import leon.annotation._
 import leon.collection._
 import leon.lang._
 import leon.proof._
 import DeleteSpec._
 import DeleteOps._
-import DeleteLemmas._
 import scala.language.postfixOps
 
+@library
 object DeleteSpec {
   @induct
   def delete_comm[V] (list: List[V], a: V, b: V): Boolean = {
@@ -38,6 +40,7 @@ object DeleteSpec {
   } holds
 }
 
+@library
 object DeleteOps {
   /**
    * Remove an element from a list.
@@ -55,6 +58,7 @@ object DeleteOps {
   }
 }
 
+@library
 object DeleteLemmas {
   @induct
   def delete_concat_lemma1[V] (l1: List[V], l2: List[V], m: V): Boolean = {
