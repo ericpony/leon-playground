@@ -3,6 +3,8 @@ package duck.proof
 import duck.proof.PermutationSpec._
 import duck.collection.SortedListOps._
 import duck.collection.SortedListSpec._
+import duck.collection.SortedListLemmas._
+import duck.proof.MinOps._
 import leon.annotation._
 import leon.collection._
 import leon.lang._
@@ -54,11 +56,51 @@ object SortedListTakeOps {
 }
 
 object SortedListTakeLemmas {
-  @induct
+
+  def take_all (l : List[BigInt], n : BigInt) : Boolean = {
+    require(n >= l.size)
+    l.take(n) == l because {
+      l match {
+        case Nil() => trivial
+        case Cons(h, t) =>
+          if (n <= BigInt(0)) {
+            trivial
+          } else {
+            take_all(t, n - 1)
+          }
+      }
+    }
+  } holds
+
+  def take_n_m (l : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
+    l.take(n).take(m) == l.take(min(n, m)) because {
+      l match {
+        case Nil() => trivial
+        case Cons(h, t) =>
+          if (n <= 0 || m <= 0)
+            trivial
+          else if (n < m) {
+            take_all(l.take(n), m)
+          } else {
+            take_n_m(t, n - 1, m - 1)
+          }
+      }
+    }
+  } holds
+
+  def take_idempotent (l : List[BigInt], n : BigInt) : Boolean = {
+    l.take(n).take(n) == l.take(n) because { take_n_m(l, n, n) }
+  } holds
+
+  def sort_take_idempotent (l : List[BigInt], n : BigInt) : Boolean = {
+    sort_take(sort_take(l, n), n) == sort_take(l, n) because {
+      sort_sorted(sorted_take(sort(l), n)) && take_idempotent(sort(l), n)
+    }
+  } holds
+
   def combOp_comm_lemma (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
     combOp(l1, l2, n) == combOp(l2, l1, n) because {
-      permutation_concat_comm(l1, l2) &&
-        sort_permutation_prop(l1 ++ l2, l2 ++ l1)
+      sort_commutative_prop(l1, l2)
     }
   } holds
 

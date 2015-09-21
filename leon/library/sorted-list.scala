@@ -231,4 +231,11 @@ object SortedListLemmas {
         permutation_tran(sort(l1 ++ l2) ++ l3, l1 ++ (l2 ++ l3), l1 ++ sort(l2 ++ l3)) &&
         permutation_sort(sort(l1 ++ l2) ++ l3, l1 ++ sort(l2 ++ l3))
   }
+
+  @induct
+  def sort_sorted (l : List[BigInt]) : Boolean = {
+    require(isSorted(l))
+    sort(l) == l
+  } holds
+
 }
