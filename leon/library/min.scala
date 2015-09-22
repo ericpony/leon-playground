@@ -4,6 +4,7 @@ import leon.annotation.induct
 import leon.collection._
 import leon.lang._
 import leon.proof._
+import DeleteOps._
 import MinOps._
 import MinLemmas._
 import scala.language.postfixOps
@@ -80,4 +81,11 @@ object MinLemmas {
     require(list contains m)
     min(list) <= m
   } holds
+
+  @induct
+  def min_delete (l : List[BigInt]) : Boolean = {
+    require(l.size > 1)
+    min(l) <= min(delete(l, min(l)))
+  } holds
+
 }
