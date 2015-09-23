@@ -1,5 +1,4 @@
-package duck.collection
-
+import duck.collection.KList._
 import leon.collection._
 import leon.annotation._
 import leon.lang._
@@ -14,21 +13,21 @@ import scala.language.postfixOps
 object FIFOMapSpec {
 
   @induct
-  def insert_commu_lemma[V] (map: KList[V], p1: Item[V], p2: Item[V], key: BigInt) = {
+  def insert_commu_lemma[K, V] (map: KList[K, V], p1: Item[K, V], p2: Item[K, V], key: K) = {
     require(p1.key != p2.key)
     (p2 :: p1 :: map).getAll(key) == (p1 :: p2 :: map).getAll(key)
   } holds /* verified by Leon */
 
-  def merge_commu_lemma[V] (map1: KList[V], map2: KList[V], key: BigInt): Boolean = {
+  def merge_commu_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], key: K): Boolean = {
     require(!map1.hasKey(key) || !map2.hasKey(key))
     (map1 ++ map2).getAll(key) == (map2 ++ map1).getAll(key)
   } holds /* verified by Leon */
 
   @induct
-  def merge_assoc_lemma[V] (map1: KList[V], map2: KList[V], map3: KList[V], key: BigInt) = {
-    require((map1.keys & map2.keys) == Nil[BigInt]() &&
-      (map2.keys & map3.keys) == Nil[BigInt]() &&
-      (map3.keys & map1.keys) == Nil[BigInt]())
+  def merge_assoc_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], map3: KList[K, V], key: K) = {
+    require((map1.keys & map2.keys) == Nil[K]() &&
+      (map2.keys & map3.keys) == Nil[K]() &&
+      (map3.keys & map1.keys) == Nil[K]())
     (map1 ++ (map2 ++ map3)).getAll(key) == ((map1 ++ map2) ++ map3).getAll(key)
   } holds /* verified by Leon */
 }
@@ -36,22 +35,22 @@ object FIFOMapSpec {
 @library
 object FIFOMapLemmas {
   @induct
-  def get_swap_lemma[V] (map: KList[V], p1: Item[V], p2: Item[V], key: BigInt) = {
+  def get_swap_lemma[K, V] (map: KList[K, V], p1: Item[K, V], p2: Item[K, V], key: K) = {
     require(p1.key != p2.key)
     (p2 :: p1 :: map).get(key) == (p1 :: p2 :: map).get(key)
   } holds /* verified by Leon */
 
   @induct
-  def getAll_delete_lemma[V] (map: KList[V], e: Item[V], key: BigInt): Boolean = {
+  def getAll_delete_lemma[K, V] (map: KList[K, V], e: Item[K, V], key: K): Boolean = {
     require(map.contains(e) && e.key == key)
     map.delete(e).getAll(key) == map.getAll(key).delete(e)
   } holds
 
   @induct
-  def get_commu_lemma[V] (map1: KList[V], map2: KList[V], key: BigInt): Boolean = {
+  def get_commu_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], key: K): Boolean = {
     require(!map1.hasKey(key))
     (map2 ++ map1).get(key) == (map1 ++ map2).get(key) because {
-      if (map2 == KNil[V]()) trivial
+      if (map2 == KNil[K, V]()) trivial
       else {
         val KCons(h, t) = map2
         if (h.key == key) trivial

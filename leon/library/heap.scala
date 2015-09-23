@@ -1,5 +1,3 @@
-package duck.collection
-
 import duck.sugar._
 import leon.lang._
 import leon.annotation._

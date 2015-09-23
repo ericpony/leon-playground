@@ -1,7 +1,5 @@
-package duck.collection
-
+import duck.collection.KList._
 import duck.proof.KListLemmas._
-import duck.collection.KListOps._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
@@ -15,23 +13,23 @@ import scala.language.postfixOps
  */
 object SetMapSpec {
   @induct
-  def insert_commu_lemma[V] (map: KList[V], p1: Item[V], p2: Item[V], key: BigInt): Boolean = {
+  def insert_commu_lemma[K, V] (map: KList[K, V], p1: Item[K, V], p2: Item[K, V], key: K): Boolean = {
     (p2 :: p1 :: map).getAll(key) ~ (p1 :: p2 :: map).getAll(key)
   } holds /* verified by Leon */
 
-  def merge_commu_lemma[V] (map1: KList[V], map2: KList[V], key: BigInt): Boolean = {
+  def merge_commu_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], key: K): Boolean = {
     (map1 ++ map2).getAll(key) ~ (map2 ++ map1).getAll(key) because
       merge_perm_lemma(map1, map2, key)
   } holds /* verified by Leon */
 
   @induct
-  def merge_assoc_lemma[V] (map1: KList[V], map2: KList[V], map3: KList[V], key: BigInt): Boolean = {
+  def merge_assoc_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], map3: KList[K, V], key: K): Boolean = {
     (map1 ++ (map2 ++ map3)).getAll(key) ~ ((map1 ++ map2) ++ map3).getAll(key)
   } holds /* verified by Leon */
 }
 
 object SetMapLemmas {
-  def merge_perm_lemma[V] (map1: KList[V], map2: KList[V], key: BigInt): Boolean = {
+  def merge_perm_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], key: K): Boolean = {
     val l1 = map1 ++ map2
     val l2 = map2 ++ map1
     permutation(l1.getAll(key), l2.getAll(key)) because

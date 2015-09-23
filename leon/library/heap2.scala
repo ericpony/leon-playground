@@ -1,5 +1,3 @@
-package duck.collection
-
 import duck.sugar._
 import duck.proof.MinOps._
 import leon.lang._
@@ -112,7 +110,7 @@ object HeapOps {
 
   private def getMin (h: Heap): (Node, Heap) = {
     require(h != Empty)
-    h match {
+    (h: @unchecked) match {
       case Nodes(t, Empty) => (t, Empty)
       case Nodes(t, ts)    =>
         val (t0, ts0) = getMin(ts)
