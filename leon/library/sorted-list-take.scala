@@ -154,86 +154,48 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def sort_take_concat_min (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
-    require(!l1.isEmpty && !l2.isEmpty && n > 0 && m > 0)
-    min(sort(l1).take(n) ++ sort(l2).take(m)) == min(l1 ++ l2) because {
-      // min(sort(l1).take(n) ++ sort(l2).take(m))
-      // == min(min(sort(l1).take(n)), min(sort(l2).take(m)))
-      min_concat_lemma2(sort(l1).take(n), sort(l2).take(m)) &&
-      // min(min(l1), min(l2))
-      sort_take_min(l1, n) && sort_take_min(l2, m) &&
-      // min(l1 ++ l2)
-      min_concat_lemma2(l1, l2)
+  def sort_take_concat_decomp_l (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
+    require (!l1.isEmpty && n >= m && m > 0 && (l2.isEmpty || min(l1) <= min(l2)))
+    sort(sort(l1).take(n) ++ l2).take(m) == min(l1)::sort(sort(delete(l1, min(l1))).take(n - 1) ++ l2).take(m - 1) because {
+      val min12 = min(sort(l1).take(n) ++ l2)
+      // sort_take(sort(l1).take(n) ++ l2, m)
+      sort_take_decomp(sort(l1).take(n) ++ l2, m) &&
+      // == min12::sort(delete(sort(l1).take(n) ++ l2, min12)).take(m - 1)
+      (if (l2.isEmpty)
+        rightUnitAppend(sort(l1).take(n)) && sort_take_min(l1, n)
+      else
+        min_concat_lemma2(sort(l1).take(n), l2) && sort_take_min(l1, n)) &&
+      // == min(l1)::sort(delete(sort(l1).take(n) ++ l2, min(l1))).take(m - 1)
+      min_lemma2(sort(l1).take(n)) && delete_concat(sort(l1).take(n), l2, min(sort(l1).take(n))) &&
+      // == min(l1)::sort(delete(sort(l1).take(n), min(l1)) ++ l2).take(m - 1)
+      take_delete(sort(l1), n, min(l1))
+      // == min(l1)::sort(delete(sort(l1), min(l1)).take(n - 1) ++ l2).take(m - 1)
     }
   } holds
 
-  def sort_take_concat_decomp_l (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt) : Boolean = {
-    require (!l1.isEmpty && !l2.isEmpty && n >= r && m >= r && r > 0 && min(l1) <= min(l2))
-    sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r) == min(l1)::sort(sort(delete(l1, min(l1))).take(n - 1) ++ sort(l2).take(m)).take(r - 1) because {
-      val min12 = min(sort(l1).take(n) ++ sort(l2).take(m))
-      // sort_take(sort(l1).take(n) ++ sort(l2).take(m), r)
-      // == min12::sort(delete(sort(l1).take(n) ++ sort(l2).take(m), min12)).take(r - 1)
-      sort_take_decomp(sort(l1).take(n) ++ sort(l2).take(m), r) &&
-      // == min(l1)::sort(delete(sort(l1).take(n) ++ sort(l2).take(m), min(l1))).take(r - 1)
-      sort_take_concat_min(l1, l2, n, m) && min_concat_lemma2(l1, l2) &&
-      // == min(l1)::sort(delete(sort(l1).take(n), min(l1)) ++ sort(l2).take(m)).take(r - 1)
-      sort_take_min(l1, n) && min_lemma2(sort(l1).take(n)) && delete_concat(sort(l1).take(n), sort(l2).take(m), min(sort(l1).take(n))) &&
-      // == min(l1)::sort(delete(sort(l1), min(l1)).take(n - 1) ++ sort(l2).take(m)).take(r - 1)
-      sort_take_min(l1, n) && min_lemma2(sort(l1).take(n)) && take_delete(sort(l1), n, min(l1))
-    }
-  } holds
-
-  def sort_take_concat_decomp_r (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt) : Boolean = {
-    require (!l1.isEmpty && !l2.isEmpty && n >= r && m >= r && r > 0 && min(l2) <= min(l1))
-    sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r) == min(l2)::sort(sort(l1).take(n) ++ sort(delete(l2, min(l2))).take(m - 1)).take(r - 1) because {
-      sort_commutative_prop(sort(l1).take(n), sort(l2).take(m)) &&
-      sort_take_concat_decomp_l(l2, l1, m, n, r) &&
-      sort_commutative_prop(sort(delete(l2, min(l2))).take(m - 1), sort(l1).take(n))
+  def sort_take_concat_decomp_r (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
+    require (!l2.isEmpty && m > 0 && (l1.isEmpty || n <= 0 || min(l2) < min(l1)))
+    sort(sort(l1).take(n) ++ l2).take(m) == min(l2)::sort(sort(l1).take(n) ++ delete(l2, min(l2))).take(m - 1) because {
+      val min12 = min(sort(l1).take(n) ++ l2)
+      // sort_take(sort(l1).take(n) ++ l2, m)
+      sort_take_decomp(sort(l1).take(n) ++ l2, m) &&
+      // == min12::sort(delete(sort(l1).take(n) ++ l2, min12)).take(m - 1)
+      (if (l1.isEmpty || n <= 0) leftUnitAppend(l2) else min_concat_lemma2(sort(l1).take(n), l2) && sort_take_min(l1, n)) &&
+      // == min(l2)::sort(delete(sort(l1).take(n) ++ l2, min(l2))).take(m - 1)
+      (
+        if (l1.isEmpty || n <= 0)
+          leftUnitAppend(l2) && leftUnitAppend(delete(l2, min(l2)))
+        else
+          min_not_contains(sort(l1).take(n), min(l2)) && delete_concat_lemma1(sort(l1).take(n), l2, min(l2))
+      )
+      // == min(l2)::sort(sort(l1).take(n) ++ delete(l2, min(l2))).take(m - 1)
     }
   } holds
 
   def sort_take_concat_more (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt, i : BigInt, j : BigInt) : Boolean = {
     require(n >= r && m >= r && i >= 0 && j >= 0)
     sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r) == sort(sort(l1).take(n + i) ++ sort(l2).take(m + j)).take(r) because {
-      if (r <= 0) {
-        trivial
-      } else if (l1.isEmpty) {
-        // sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r)
-        leftUnitAppend(sort(l2).take(m)) &&
-        // == sort(sort(l2).take(m)).take(r)
-        sort_take_sorted(l2, m) && sort_sorted(sort(l2).take(m)) &&
-        // == sort(l2).take(min(m, r))
-        take_n_m(sort(l2), m, r) &&
-        // sort(sort(l1).take(n + i) ++ sort(l2).take(m + j)).take(r)
-        leftUnitAppend(sort(l2).take(m + j)) &&
-        // == sort(sort(l2).take(m + j)).take(r)
-        sort_take_sorted(l2, m + j) && sort_sorted(sort(l2).take(m + j)) &&
-        // == sort(l2).take(min(m + j, r))
-        take_n_m(sort(l2), m + j, r)
-      } else if (l2.isEmpty) {
-        // sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r)
-        sort_commutative_prop(sort(l1).take(n), sort(l2).take(n)) &&
-        // == sort(sort(l2).take(m) ++ sort(l1).take(n)).take(r)
-        sort_take_concat_more(l2, l1, m, n, r, j, i) &&
-        // == sort(sort(l2).take(m + j) ++ sort(l1).take(n + i)).take(r)
-        sort_commutative_prop(sort(l2).take(m + j), sort(l1).take(n + i))
-      } else if (min(l1) <= min(l2)) {
-        // sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r)
-        // == min(l1)::sort(sort(delete(l1, min(l1)).take(n - 1) ++ sort(l2).take(m)).take(r - 1)
-        sort_take_concat_decomp_l(l1, l2, n, m, r) &&
-        // == min(l1)::sort(sort(delete(l1, min(l1)).take(n - 1 + i) ++ sort(l2).take(m + j)).take(r - 1)
-        sort_take_concat_more(delete(l1, min(l1)), l2, n - 1, m, r - 1, i, j) &&
-        // == sort(sort(l1).take(n + i) ++ sort(l2).take(m + j)).take(r)
-        sort_take_concat_decomp_l(l1, l2, n + i, m + j, r)
-      } else {
-        // sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r)
-        // == min(l2)::sort(sort(l1).take(n) ++ sort(delete(l2, min(l2)).take(m - 1)).take(r - 1)
-        sort_take_concat_decomp_r(l1, l2, n, m, r) &&
-        // == min(l2)::sort(sort(l1).take(n + i) ++ sort(delete(l2, min(l2)).take(m - 1 + j)).take(r - 1)
-        sort_take_concat_more(l1, delete(l2, min(l2)), n, m - 1, r - 1, i, j) &&
-        // == sort(sort(l1).take(n + i) ++ sort(l2).take(m + j)).take(r)
-        sort_take_concat_decomp_r(l1, l2, n + i, m + j, r)
-      }
+      sort_take_concat_sort_take(l1, l2, n, m, r) && sort_take_concat_sort_take(l1, l2, n + i, m + j, r)
     }
   } holds
 
@@ -249,62 +211,50 @@ object SortedListTakeLemmas {
     sort_take(l1, n) == sort_take(l2, n) because { sort_permutation_prop(l1, l2) }
   } holds
 
-  def sort_take_concat (l1 : List[BigInt], l2 : List[BigInt], n : BigInt) : Boolean = {
-    sort_take(sort_take(l1, n) ++ sort_take(l2, n), n) == sort_take(l1 ++ l2, n) because {
-      if (n <= 0) {
+  def sort_take_concat (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
+    require(n >= m)
+    sort_take(sort_take(l1, n) ++ l2, m) == sort_take(l1 ++ l2, m) because {
+      if (n <= 0 || m <= 0 || l1.isEmpty) {
         trivial
-      } else if (l1.isEmpty) {
-        check {
-          // sort_take(sort_take(l1, n) ++ sort_take(l2, n), n)
-          leftUnitAppend(sort(l2).take(n)) &&
-          // == sort(sort(l2).take(n)).take(n)
-          sort_take_sorted(l2, n) && sort_sorted(sort(l2).take(n)) &&
-          // == sort(l2).take(n).take(n)
-          take_n_m(sort(l2), n, n) &&
-          // == sort(l2).take(min(n, n)) == sort(l2).take(n)
-          // sort_take(l1 ++ l2, n)
-          leftUnitAppend(l2)
-          // == sort(l2).take(n)
-        }
       } else if (l2.isEmpty) {
-        check {
-          // sort_take(sort_take(l1, n) ++ sort_take(l2, n), n)
-          sort_commutative_prop(sort(l1).take(n), sort(l2).take(n)) &&
-          // == sort_take(sort_take(l2, n) ++ sort_take(l1, n), n)
-          sort_take_concat(l2, l1, n) &&
-          // == sort_take(l2 ++ l1, n) &&
-          sort_commutative_prop(l2, l1)
-          // == sort_take(l1 ++ l2, n)
-        }
+        rightUnitAppend(sort_take(l1, n)) && sort_sorted(sort_take(l1, n)) && take_n_m(sort(l1), n, m) &&
+        rightUnitAppend(l1)
       } else if (min(l1) <= min(l2)) {
-        check {
-          // sort_take(sort_take(l1, n) ++ sort_take(l2, n), n)
-          sort_take_concat_decomp_l(l1, l2, n, n, n) &&
-          // == min(l1)::sort(sort(delete(l1, min(l1))).take(n - 1) ++ sort(l2).take(n)).take(n - 1)
-          sort_take_concat_norm(delete(l1, min(l1)), l2, n - 1, n, n - 1) &&
-          // == min(l1)::sort(sort(delete(l1, min(l1))).take(n - 1) ++ sort(l2).take(n - 1)).take(n - 1)
-          sort_take_concat(delete(l1, min(l1)), l2, n - 1) &&
-          // == min(l1)::sort(delete(l1, min(l1)) ++ l2).take(n - 1)
-          delete_concat (l1, l2, min(l1)) && min_lemma2(l1) &&
-          // == min(l1)::sort(delete(l1 ++ l2, min(l1))).take(n - 1)
-          min_concat_lemma2(l1, l2) && sort_take_decomp(l1 ++ l2, n)
-          // == sort_take(l1 ++ l2, n)
-        }
+        // sort_take(sort_take(l1, n) ++ l2, m)
+        sort_take_concat_decomp_l(l1, l2, n, m) &&
+        // == min(l1)::sort(sort(delete(l1, min(l1))).take(n - 1) ++ l2).take(m - 1)
+        sort_take_concat(delete(l1, min(l1)), l2, n - 1, m -1) &&
+        // == min(l1)::sort(delete(l1, min(l1)) ++ l2).take(m - 1)
+        delete_concat (l1, l2, min(l1)) && min_lemma2(l1) &&
+        // == min(l1)::sort(delete(l1 ++ l2, min(l1))).take(m - 1)
+        min_concat_lemma2(l1, l2) && sort_take_decomp(l1 ++ l2, m)
+        // == sort_take(l1 ++ l2, n)
       } else {
-        check {
-          // sort_take(sort_take(l1, n) ++ sort_take(l2, n), n)
-          sort_take_concat_decomp_r(l1, l2, n, n, n) &&
-          // == min(l2)::sort(sort(l1).take(n) ++ sort(delete(l2, min(l2))).take(n - 1)).take(n - 1)
-          sort_take_concat_norm(l1, delete(l2, min(l2)), n, n - 1, n - 1) &&
-          // == min(l2)::sort(sort(l1).take(n - 1) ++ sort(delete(l2, min(l2))).take(n - 1)).take(n - 1)
-          sort_take_concat(l1, delete(l2, min(l2)), n - 1) &&
-          // == min(l2)::sort(l1 ++ delete(l2, min(l2))).take(n - 1)
-          min_not_contains(l1, min(l2)) && !l1.contains(min(l2)) && delete_concat_lemma1(l1, l2, min(l2)) &&
-          // == min(l2)::sort(delete(l1 ++ l2, min(l2))).take(n - 1)
-          min_concat_lemma2(l1, l2) && min(l1 ++ l2) == min(l2) && sort_take_decomp(l1 ++ l2, n)
-          // == sort_take(l1 ++ l2, n)
-        }
+        // sort_take(sort_take(l1, n) ++ l2, m)
+        sort_take_concat_decomp_r(l1, l2, n, m) &&
+        // == min(l2)::sort(sort(l1).take(n) ++ delete(l2, min(l2))).take(m - 1)
+        sort_take_concat(l1, delete(l2, min(l2)), n, m - 1) &&
+        // == min(l2)::sort(l1 ++ delete(l2, min(l2))).take(m - 1)
+        min_not_contains(l1, min(l2)) && !l1.contains(min(l2)) && delete_concat_lemma1(l1, l2, min(l2)) &&
+        // == min(l2)::sort(delete(l1 ++ l2, min(l2))).take(m - 1)
+        min_concat_lemma2(l1, l2) && min(l1 ++ l2) == min(l2) && sort_take_decomp(l1 ++ l2, m)
+        // == sort_take(l1 ++ l2, m)
       }
+    }
+  } holds
+
+  def sort_take_concat_sort_take (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt) : Boolean = {
+    require(n >= r && m >= r)
+    sort_take(sort_take(l1, n) ++ sort_take(l2, m), r) == sort_take(l1 ++ l2, r) because {
+      // sort_take(sort_take(l1, n) ++ sort_take(l2, m), r)
+      sort_take_concat (l1, sort_take(l2, m), n, r) &&
+      // == sort_take(l1 ++ sort_take(l2, m), r)
+      combOp_comm_lemma(l1, sort_take(l2, m), r) &&
+      // == sort_take(sort_take(l2, m) ++ l1, r)
+      sort_take_concat (l2, l1, m, r) &&
+      // == sort_take(l2 ++ l1, r)
+      combOp_comm_lemma(l2, l1, r)
+      // == sort_take(l1 ++ l2, r)
     }
   } holds
 
@@ -314,25 +264,25 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  @induct
   def combOp_assoc_lemma (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt], n: BigInt) = {
     combOp(combOp(l1, l2, n), l3, n) == combOp(l1, combOp(l2, l3, n), n) because {
       // sort_take(sort_take(l1 ++ l2, n) ++ l3, n)
-      sort_take_concat(sort_take(l1 ++ l2, n), l3, n) &&
+      sort_take_concat_sort_take(sort_take(l1 ++ l2, n), l3, n, n, n) &&
       // == sort_take(sort_take(sort_take(l1 ++ l2, n), n) ++ sort_take(l3, n), n)
       sort_take_idempotent(l1 ++ l2, n) &&
       // == sort_take(sort_take(l1 ++ l2, n) ++ sort_take(l3, n), n)
-      sort_take_concat(l1 ++ l2, l3, n) &&
+      sort_take_concat_sort_take(l1 ++ l2, l3, n, n, n) &&
       // == sort_take((l1 ++ l2) ++ l3, n)
       // sort_take(l1 ++ sort_take(l2 ++ l3, n), n)
-      sort_take_concat(l1, sort_take(l2 ++ l3, n), n) &&
+      sort_take_concat_sort_take(l1, sort_take(l2 ++ l3, n), n, n, n) &&
       // == sort_take(sort_take(l1, n) ++ sort_take(sort_take(l2 ++ l3, n), n), n)
       sort_take_idempotent(l2 ++ l3, n) &&
       // == sort_take(sort_take(l1, n) ++ sort_take(l2 ++ l3, n), n)
-      sort_take_concat(l1, l2 ++ l3, n) &&
+      sort_take_concat_sort_take(l1, l2 ++ l3, n, n, n) &&
       // == sort_take(l1 ++ (l2 ++ l3), n)
       appendAssoc(l1, l2, l3)
       // == sort_take(l1 ++ l2 ++ l3, n)
     }
   } holds
+
 }
