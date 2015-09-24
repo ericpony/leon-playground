@@ -1,11 +1,12 @@
 package duck.collection
 
-import duck.sugar._
+import duck.proof.sugar._
 import duck.proof.KListLemmas._
+import duck.collection.List._
+
 import leon.proof._
 import leon.lang._
 import leon.annotation._
-import leon.collection._
 
 /**
  * KList

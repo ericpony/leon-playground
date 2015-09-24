@@ -1,4 +1,4 @@
-package duck
+package duck.proof
 
 import scala.language.implicitConversions
 

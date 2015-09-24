@@ -1,9 +1,14 @@
+package duck.spec
+
 import duck.collection.KList._
 import duck.proof.KListLemmas._
+
 import leon.annotation._
 import leon.lang._
 import leon.proof._
+
 import SetMapLemmas._
+
 import scala.language.postfixOps
 
 /**

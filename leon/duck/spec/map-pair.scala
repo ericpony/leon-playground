@@ -1,7 +1,10 @@
+package duck.spec
+
 import duck.collection.KList._
+import duck.collection.List._
 import leon.lang._
 import leon.annotation._
-import leon.collection._
+
 import scala.language.postfixOps
 
 /**

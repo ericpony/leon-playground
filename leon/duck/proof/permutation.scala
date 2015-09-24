@@ -1,10 +1,12 @@
 package duck.proof
 
-import duck.sugar._
+import duck.proof.sugar._
+import duck.collection.List._
+
 import leon.annotation._
-import leon.collection._
 import leon.lang._
 import leon.proof._
+
 import MinSpec._
 import MinOps._
 import DeleteSpec._
@@ -12,6 +14,7 @@ import DeleteOps._
 import PermutationSpec._
 import PermutationOps._
 import PermutationLemmas._
+
 import scala.language.postfixOps
 
 object PermutationSpec {

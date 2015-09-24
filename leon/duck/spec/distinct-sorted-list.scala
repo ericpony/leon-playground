@@ -1,18 +1,21 @@
-package duck.collection
+package duck.spec
 
 import duck.proof.MinSpec._
 import duck.proof.DeleteOps._
 import duck.proof.DistinctOps._
 import duck.proof.DistinctSpec._
 import duck.proof.PermutationOps._
+import duck.collection.List._
+
 import leon.annotation._
-import leon.collection._
 import leon.lang._
 import leon.proof._
+
 import SortedListOps._
 import SortedListSpec._
 import DistinctSortedListOps._
 import DistinctSortedListLemmas._
+
 import scala.language.postfixOps
 
 object DistinctSortedListSpec {

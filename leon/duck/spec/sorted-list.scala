@@ -1,16 +1,19 @@
-package duck.collection
+package duck.spec
 
-import duck.sugar._
+import duck.proof.sugar._
 import duck.proof.MinOps._
 import duck.proof.DeleteOps._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationSpec._
+import duck.collection.List._
+
 import leon.annotation._
-import leon.collection._
 import leon.lang._
 import leon.proof._
+
 import SortedListOps._
 import SortedListLemmas._
+
 import scala.language.postfixOps
 
 object SortedListSpec {

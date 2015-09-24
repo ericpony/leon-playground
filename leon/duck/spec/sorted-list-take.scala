@@ -3,23 +3,24 @@ package duck.proof
 import duck.proof.PermutationSpec._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
-import duck.collection.SortedListOps._
-import duck.collection.SortedListSpec._
-import duck.collection.SortedListLemmas._
 import duck.proof.MinSpec._
 import duck.proof.MinOps._
 import duck.proof.MinLemmas._
+import duck.spec.SortedListOps._
+import duck.spec.SortedListSpec._
+import duck.spec.SortedListLemmas._
+import duck.spec.ListSpecs._
+import duck.collection.List._
 import leon.annotation._
-import leon.collection.ListSpecs._
-import leon.collection._
 import leon.lang._
 import leon.proof._
-import SortedListTakeOps._
-import SortedListTakeLemmas._
-import scala.language.postfixOps
 import DeleteSpec._
 import DeleteOps._
 import DeleteLemmas._
+import SortedListTakeOps._
+import SortedListTakeLemmas._
+
+import scala.language.postfixOps
 
 object SortedListTakeSpec {
   def combOp_comm (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {

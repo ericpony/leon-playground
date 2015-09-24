@@ -1,7 +1,7 @@
 package duck.proof
 
-import leon.annotation.{ignore, induct}
-import leon.collection._
+import duck.collection.List._
+import leon.annotation._
 import leon.lang._
 import leon.proof._
 import DeleteSpec._
@@ -9,8 +9,10 @@ import DeleteOps._
 import DistinctSpec._
 import DistinctOps._
 import DistinctLemmas._
+
 import scala.language.postfixOps
 
+@library
 object DistinctSpec {
   @induct
   def distinct_delete[V] (list: List[V], e: V): Boolean = {
@@ -31,6 +33,7 @@ object DistinctSpec {
   } holds
 }
 
+@library
 object DistinctOps {
   /**
    * Tell whether a list contains no duplicate elements.
@@ -38,11 +41,12 @@ object DistinctOps {
    * @return whether list contains no duplicate elements
    */
   def distinct[V] (list: List[V]): Boolean = {
-    if (list == List[V]()) trivial
+    if (list == Nil[V]()) trivial
     else !list.tail.contains(list.head) && distinct(list.tail)
   }
 }
 
+@library
 object DistinctLemmas {
   @induct
   def distinct_sublist_lemma[V] (l1: List[V], l2: List[V]): Boolean = {

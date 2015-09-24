@@ -1,11 +1,12 @@
 package duck.proof
 
+import duck.collection.List._
 import leon.annotation._
-import leon.collection._
 import leon.lang._
 import leon.proof._
 import DeleteSpec._
 import DeleteOps._
+
 import scala.language.postfixOps
 
 @library

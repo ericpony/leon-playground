@@ -1,4 +1,4 @@
-import duck.sugar._
+import duck.proof.sugar._
 import leon.lang._
 import leon.annotation._
 import leon.proof._

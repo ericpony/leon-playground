@@ -1,6 +1,6 @@
 package duck.proof
 
-import duck.sugar._
+import duck.proof.sugar._
 import duck.collection.KList._
 import leon.annotation._
 import leon.lang._

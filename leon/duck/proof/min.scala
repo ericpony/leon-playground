@@ -1,12 +1,15 @@
 package duck.proof
 
+import duck.collection.List._
+
 import leon.annotation.induct
-import leon.collection._
 import leon.lang._
 import leon.proof._
+
 import DeleteOps._
 import MinOps._
 import MinLemmas._
+
 import scala.language.postfixOps
 
 object MinSpec {
