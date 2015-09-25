@@ -1,7 +1,5 @@
 #! /usr/bin/bash
 
-DEBUG_MODE=
-
 [[ -z $LEON_LIB_DIR ]] && LEON_LIB_DIR=$(dirname $0)/library
 
 if [[ ! -d $LEON_LIB_DIR ]]
@@ -28,8 +26,9 @@ declare -A obj_map
 libs=$(find "$LEON_LIB_DIR" -name '*.scala')
 
 function find_dep {
-  [[ -n ${lib_map[$1]} ]] && exit
-  lib_map[$1]=1
+  id=$(realpath $1)
+  [[ -n ${lib_map[$id]} ]] && exit
+  lib_map[$id]=$1
 
   #local objs=`( grep '^package duck\.' $1; grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.' ) | sed 's/^.*[\. ] *\([^\.]*\)\.[^\.]*$/\1/'`
   local objs=`grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.' | sed 's/^.*[ \.]\([^\._]\+\)[\.]\?[^\.]*$/\1/'`
@@ -44,15 +43,19 @@ function find_dep {
 
     for pattern in "object $obj" "class $obj" "package $obj" "package duck\\.$obj"
     do
-      local lib=$(grep -Hw "$pattern" $libs | head -n1 | grep -o '^[^:]*')
-      [[ -n $lib ]] && found=$lib && break
+      local lib=$(grep -Hw "$pattern" $libs | grep -o '^[^:]*')
+      [[ -n $lib ]] && found="$lib $found"
     done
     if [[ -n $found ]]
     then
       obj_map[$obj]=1
-      [[ -n ${lib_map[$found]} ]] && continue
-      [[ -n $DEBUG_MODE ]] && echo "Found dependency $found for symbol $obj" 1>&2
-      find_dep $found
+      for lib in $found
+      do
+        lid=$(realpath $lib)
+        [[ -n ${lib_map[$lid]} ]] && continue
+        [[ -n $DEBUG_MODE ]] && echo "Found dependency $lib for symbol $obj" 1>&2
+        find_dep $lib
+      done
     else
       echo "[Error] Cannot resolve dependency for '$obj'." 1>&2
       exit 1
@@ -70,16 +73,22 @@ do
   then
     echo "[Error] File $1 does not exist." 1>&2
     exit 1
-  elif [[ -n ${lib_map[$1]} ]]
-  then
-    continue
   fi
-  libs="$1 $libs"
-  find_dep $1
+
+  id=$(realpath $1)
+  if [[ -z ${lib_map[$id]} ]]
+  then
+    libs="$libs $1"
+    find_dep $1
+  fi
   shift
 done
 
-deps=$(echo ${!lib_map[@]})
+deps=
+for id in ${!lib_map[@]}
+do
+  deps="$deps ${lib_map[$id]}"
+done
 
 command="$LEON_SCRIPT $deps $@"
 echo $command 1>&2
