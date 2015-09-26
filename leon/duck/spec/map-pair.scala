@@ -1,7 +1,7 @@
 package duck.spec
 
 import duck.collection.KList._
-import duck.collection.List._
+import duck.collection._
 import leon.lang._
 import leon.annotation._
 

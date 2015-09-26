@@ -1,6 +1,6 @@
 package duck.proof
 
-import duck.collection.List._
+import duck.collection._
 import leon.annotation._
 import leon.lang._
 import leon.proof._

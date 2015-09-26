@@ -1,17 +1,15 @@
 package duck.proof
 
-import duck.collection.List._
-
-import leon.annotation.induct
+import duck.collection._
+import leon.annotation._
 import leon.lang._
 import leon.proof._
-
-import DeleteOps._
 import MinOps._
 import MinLemmas._
 
 import scala.language.postfixOps
 
+@library
 object MinSpec {
   @induct
   def min_contains (list: List[BigInt], m: BigInt): Boolean = {
@@ -33,6 +31,7 @@ object MinSpec {
   } holds
 }
 
+@library
 object MinOps {
   /**
    * Obtain the minimal element of the input list.
@@ -50,6 +49,7 @@ object MinOps {
   def min (x: BigInt, y: BigInt) = if (x < y) x else y
 }
 
+@library
 object MinLemmas {
   @induct
   def min_lemma (list: List[BigInt], m: BigInt): Boolean = {
@@ -84,11 +84,4 @@ object MinLemmas {
     require(list contains m)
     min(list) <= m
   } holds
-
-  @induct
-  def min_delete (l : List[BigInt]) : Boolean = {
-    require(l.size > 1)
-    min(l) <= min(delete(l, min(l)))
-  } holds
-
 }

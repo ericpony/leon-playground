@@ -1,6 +1,6 @@
 package duck.spec
 
-import duck.collection.List._
+import duck.collection._
 import duck.collection.KList._
 
 import leon.annotation._

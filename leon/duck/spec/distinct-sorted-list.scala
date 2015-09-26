@@ -5,7 +5,7 @@ import duck.proof.DeleteOps._
 import duck.proof.DistinctOps._
 import duck.proof.DistinctSpec._
 import duck.proof.PermutationOps._
-import duck.collection.List._
+import duck.collection._
 
 import leon.annotation._
 import leon.lang._
@@ -18,6 +18,7 @@ import DistinctSortedListLemmas._
 
 import scala.language.postfixOps
 
+@library
 object DistinctSortedListSpec {
   def merge_comm (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     require(distinct_sorted(l1) && distinct_sorted(l2))
@@ -32,6 +33,7 @@ object DistinctSortedListSpec {
   } holds
 }
 
+@library
 object DistinctSortedListOps {
   def distinct_sorted (list: List[BigInt]): Boolean = {
     distinct(list) && isSorted(list)
@@ -78,6 +80,7 @@ object DistinctSortedListOps {
   }
 }
 
+@library
 object DistinctSortedListLemmas {
   @induct
   def add_distinct (list: List[BigInt], e: BigInt): Boolean = {

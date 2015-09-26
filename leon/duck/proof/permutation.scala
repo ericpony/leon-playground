@@ -1,14 +1,12 @@
 package duck.proof
 
 import duck.proof.sugar._
-import duck.collection.List._
+import duck.collection._
 
 import leon.annotation._
 import leon.lang._
 import leon.proof._
 
-import MinSpec._
-import MinOps._
 import DeleteSpec._
 import DeleteOps._
 import PermutationSpec._
@@ -17,6 +15,7 @@ import PermutationLemmas._
 
 import scala.language.postfixOps
 
+@library
 object PermutationSpec {
   @induct
   def permutation_refl[V] (list: List[V]): Boolean = {
@@ -67,6 +66,7 @@ object PermutationSpec {
   } holds
 }
 
+@library
 object PermutationOps {
   /**
    * Tell whether a list is a permutation of the other
@@ -87,6 +87,7 @@ object PermutationOps {
   }
 }
 
+@library
 object PermutationLemmas {
   @induct
   def permutation_car_swap[V] (list: List[V], a: V, b: V): Boolean = {
@@ -95,13 +96,12 @@ object PermutationLemmas {
 
   @induct
   def permutation_cons_tail[V] (l1: List[V], l2: List[V], e: V): Boolean = {
-    if (l1 == Nil[V]()) {
-      permutation(l1 ++ (e :: l2), (e :: l1) ++ l2) because
-        check { permutation_refl(e :: l2) }
-    } else {
-      val h1 = l1.head
-      permutation(l1 ++ (e :: l2), (e :: l1) ++ l2) because
-        check {
+    permutation(l1 ++ (e :: l2), (e :: l1) ++ l2) because
+      check {
+        val h1 = l1.head
+        if (l1 == Nil[V]()) {
+          check { permutation_refl(e :: l2) }
+        } else {
           // permutation (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2)
           permutation_cons_tail(l1.tail, l2, e) &&
             // permutation (h1 :: (l1.tail ++ (e :: l2)), h1 :: (e :: l1.tail) ++ l2)
@@ -112,23 +112,21 @@ object PermutationLemmas {
               h1 :: e :: l1.tail ++ l2,
               (e :: l1) ++ l2)
         }
-    }
+      }
   } holds
 
   @induct
   def permutation_cons_delete[V] (l1: List[V], l2: List[V]): Boolean = {
     require(l2 != Nil[V]())
     val h2 = l2.head
-    if (l1 == Nil[V]) {
-      permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because
+    permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because {
+      if (l1 == Nil[V])
         permutation_refl(l2.tail)
-    } else {
-      val h1 = l1.head
-      if (h1 == h2) {
-        permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because
+      else {
+        val h1 = l1.head
+        if (h1 == h2)
           permutation_cons_tail(l1.tail, l2.tail, h1)
-      } else {
-        permutation(delete(l1 ++ l2, h2), l1 ++ (l2.tail)) because
+        else
           permutation_cons_delete(l1.tail, l2)
       }
     }
@@ -136,23 +134,21 @@ object PermutationLemmas {
 
   @induct
   def permutation_concat_comm_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
-    if (l1 == Nil[V]()) {
-      permutation(l1 ++ l2, l2 ++ l1) because
+    permutation(l1 ++ l2, l2 ++ l1) because {
+      if (l1 == Nil[V]())
         permutation_refl(l2)
-    } else {
-      val h1 = l1.head
-      permutation(l1 ++ l2, l2 ++ l1) because
-        check {
-          (l2 ++ l1 contains h1) &&
-            // permutation (l1.tail ++ l2, l2 ++ l1.tail)
-            permutation_concat_comm(l1.tail, l2) &&
-            (l1 ++ l2).tail == l1.tail ++ l2 &&
-            // permutation (delete (l2 ++ l1, h1), l2 ++ l1.tail)
-            permutation_cons_delete(l2, l1) &&
-            // permutation (l2 ++ l1.tail, delete (l2 ++ l1, h1))
-            permutation_comm_lemma(delete(l2 ++ l1, h1), l2 ++ l1.tail) &&
-            permutation_tran_lemma(l1.tail ++ l2, l2 ++ l1.tail, delete(l2 ++ l1, h1))
-        }
+      else {
+        val h1 = l1.head
+        (l2 ++ l1 contains h1) &&
+          // permutation (l1.tail ++ l2, l2 ++ l1.tail)
+          permutation_concat_comm(l1.tail, l2) &&
+          (l1 ++ l2).tail == l1.tail ++ l2 &&
+          // permutation (delete (l2 ++ l1, h1), l2 ++ l1.tail)
+          permutation_cons_delete(l2, l1) &&
+          // permutation (l2 ++ l1.tail, delete (l2 ++ l1, h1))
+          permutation_comm_lemma(delete(l2 ++ l1, h1), l2 ++ l1.tail) &&
+          permutation_tran_lemma(l1.tail ++ l2, l2 ++ l1.tail, delete(l2 ++ l1, h1))
+      }
     }
   } holds
 
@@ -285,14 +281,6 @@ object PermutationLemmas {
         check { permutation_contains_lemma(l1.tail, delete(l2, h), e) }
       }
     }
-  } holds
-
-  @induct
-  def permutation_min (l1: List[BigInt], l2: List[BigInt]): Boolean = {
-    require(permutation(l1, l2) && l1 != Nil[BigInt]())
-    min(l1) == min(l2) because
-      check { permutation_content_lemma(l1, l2) } &&
-        check { min_content(l1, l2) }
   } holds
 
   @induct

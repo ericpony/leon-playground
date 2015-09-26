@@ -111,6 +111,8 @@ object LeftistHeapOps {
           rightHeight(left) >= rightHeight(right) &&
           isPartiallyOrdered(v, left, right)
     }
+
+    def toSortedList(h: Heap): List[BigInt] = ???
   }
 
   def isPartiallyOrdered (value: BigInt, h1: Heap, h2: Heap) = {

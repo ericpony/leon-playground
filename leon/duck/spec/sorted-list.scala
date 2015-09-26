@@ -5,7 +5,7 @@ import duck.proof.MinOps._
 import duck.proof.DeleteOps._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationSpec._
-import duck.collection.List._
+import duck.collection._
 
 import leon.annotation._
 import leon.lang._
@@ -16,6 +16,7 @@ import SortedListLemmas._
 
 import scala.language.postfixOps
 
+@library
 object SortedListSpec {
   /* Insert operations are commutative. */
   @induct
@@ -62,6 +63,7 @@ object SortedListSpec {
   } holds
 }
 
+@library
 object SortedListOps {
   /**
    * Insert an element into a sorted list.
@@ -132,6 +134,7 @@ object SortedListOps {
   }
 }
 
+@library
 object SortedListLemmas {
   @induct
   def min_head_lemma (list: List[BigInt]) = {
@@ -236,7 +239,7 @@ object SortedListLemmas {
   }
 
   @induct
-  def sort_sorted (l : List[BigInt]) : Boolean = {
+  def sort_sorted (l: List[BigInt]): Boolean = {
     require(isSorted(l))
     sort(l) == l
   } holds
