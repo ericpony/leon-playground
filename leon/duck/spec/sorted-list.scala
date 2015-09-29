@@ -197,25 +197,26 @@ object SortedListLemmas {
   @induct
   def permutation_sort (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     require(permutation(l1, l2))
-    if (l1 == Nil[BigInt]()) {
-      sort(l1) == sort(l2)
-    } else {
-      val h1 = l1.head
-      sort(l1) == sort(l2) because
-        permutation_sort(l1.tail, delete(l2, h1)) &&
-          insert_sort_delete(l2, h1)
+    sort(l1) == sort(l2) because {
+      if (l1 == Nil[BigInt]()) trivial
+      else {
+        val h1 = l1.head
+        sort(l1) == sort(l2) because
+          permutation_sort(l1.tail, delete(l2, h1)) &&
+            insert_sort_delete(l2, h1)
+      }
     }
   } holds
 
   @induct
   def sort_permutation (list: List[BigInt]): Boolean = {
-    if (list == Nil[BigInt]) {
-      permutation(list, sort(list))
-    } else {
-      val h = list.head
-      permutation(list, sort(list)) because
+    permutation(list, sort(list)) because {
+      if (list == Nil[BigInt]) trivial
+      else {
+        //permutation(list, sort(list)) because
         sort_permutation(list.tail) &&
           sort_cons_delete(list.tail, list.head)
+      }
     }
   } holds
 

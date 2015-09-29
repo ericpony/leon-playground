@@ -292,24 +292,23 @@ object PermutationLemmas {
   @induct
   def permutation_concat_lemma[V] (l1: List[V], l2: List[V], ll: List[V]): Boolean = {
     require(permutation(l1, l2))
-    if (l1 == Nil[V]()) {
-      permutation(l1 ++ ll, l2 ++ ll) because
+    permutation(l1 ++ ll, l2 ++ ll) because {
+      if (l1 == Nil[V]()) {
         check { permutation_refl(ll) }
-    } else {
-      val h1 = l1.head
-      permutation(l1 ++ ll, l2 ++ ll) because
-        check {
-          permutation_concat_lemma(l1.tail, delete(l2, h1), ll) &&
-            l1.tail ++ ll == (l1 ++ ll).tail &&
-            delete(l2, h1) ++ ll == delete(l2 ++ ll, h1) &&
-            delete_concat(l2, ll, h1)
-        }
+      } else {
+        val h1 = l1.head
+        // permutation(l1 ++ ll, l2 ++ ll) because
+        permutation_concat_lemma(l1.tail, delete(l2, h1), ll) &&
+          l1.tail ++ ll == (l1 ++ ll).tail &&
+          delete(l2, h1) ++ ll == delete(l2 ++ ll, h1) &&
+          delete_concat(l2, ll, h1)
+      }
     }
   } holds
 
   def concat_permutation_lemma[V] (ll: List[V], l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
-    permutation(ll ++ l1, ll ++ l2) because
+    permutation(ll ++ l1, ll ++ l2) because {
       // permutation (l1 ++ ll, l2 ++ ll)
       permutation_concat_lemma(l1, l2, ll) &&
         // permutation (ll ++ l1, l1 ++ ll)
@@ -318,18 +317,20 @@ object PermutationLemmas {
         permutation_concat_comm_lemma(l2, ll) &&
         permutation_tran_lemma(ll ++ l1, l1 ++ ll, l2 ++ ll) &&
         permutation_tran_lemma(ll ++ l1, l2 ++ ll, ll ++ l2)
+    }
   } holds
 
   @induct
   def delete_permutation[V] (list: List[V], e: V): Boolean = {
     require(list contains e)
-    val h = list.head
-    if (h == e) {
-      permutation(list, Cons(e, delete(list, e))) because
+    permutation(list, Cons(e, delete(list, e))) because {
+      val h = list.head
+      if (h == e) {
         permutation_refl(list)
-    } else {
-      permutation(list, Cons(e, delete(list, e))) because
+      } else {
+        // permutation(list, Cons(e, delete(list, e))) because
         delete(list, e) == Cons(h, delete(list.tail, e))
+      }
     }
   } holds
 
