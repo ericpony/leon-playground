@@ -11,22 +11,22 @@ import scala.language.postfixOps
  * REMARK: We may need a stronger definition of heap equivalence.
  */
 object LeftistHeapSpec0 {
-  def insert_commu_lemma (h: Heap, p1: BigInt, p2: BigInt): Boolean = {
+  def insert_commu_prop (h: Heap, p1: BigInt, p2: BigInt): Boolean = {
     require(isLeftistHeap(h))
     heapContent(insert(p2, insert(p1, h))) == heapContent(insert(p1, insert(p2, h)))
   } holds /* verified by Leon */
 
-  def merge_commu_lemma (h1: Heap, h2: Heap): Boolean = {
+  def merge_commu_prop (h1: Heap, h2: Heap): Boolean = {
     require(isLeftistHeap(h1) && isLeftistHeap(h2))
     heapContent(merge(h1, h2)) == heapContent(merge(h2, h1))
   } holds /* verified by Leon */
 
-  def merge_assoc_lemma (h1: Heap, h2: Heap, h3: Heap): Boolean = {
+  def merge_assoc_prop (h1: Heap, h2: Heap, h3: Heap): Boolean = {
     require(isLeftistHeap(h1) && isLeftistHeap(h2) && isLeftistHeap(h3))
     heapContent(merge(h1, merge(h2, h3))) == heapContent(merge(merge(h1, h2), h3))
   } holds /* verified by Leon */
 
-  def composition_lemma (l1: List[BigInt], l2: List[BigInt]): Boolean = {
+  def composition_prop (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     val L = foldl_insert(Empty, l1 ++ l2)
     val L1 = foldl_insert(Empty, l1)
     val L2 = foldl_insert(Empty, l2)

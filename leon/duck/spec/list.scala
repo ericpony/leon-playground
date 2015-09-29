@@ -1,10 +1,15 @@
 package duck.spec
 
 import duck.collection._
-import leon.lang._
 import leon.annotation._
+import leon.lang._
 import leon.proof._
 import ListOps._
+
+@library
+object ListSpec {
+  /* see SortedListSpec and DistinctSortedListSpec */
+}
 
 @library
 object ListLemmas {

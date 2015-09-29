@@ -31,7 +31,19 @@ function find_dep {
   lib_map[$id]=$1
 
   #local objs=`( grep '^package duck\.' $1; grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.' ) | sed 's/^.*[\. ] *\([^\.]*\)\.[^\.]*$/\1/'`
-  local objs=`grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.' | sed 's/^.*[ \.]\([^\._]\+\)[\.]\?[^\.]*$/\1/'`
+  local objs=
+  IFS=$'\n'
+  for dep in $(grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.')
+  do
+    case "^$dep$" in
+      *._$)   obj=$(echo $dep | sed 's/^.*[ \.]\([^\._]\+\)\._.*/\1/') ;;
+      *.{*}$) obj=$(echo $dep | sed 's/^.*[ \.]\([^\._]\+\)\.{.*/\1/') ;;
+      *)      obj=$(echo $dep | sed 's/^.*[ \.]\([^\._]\+\).*/\1/') ;;
+    esac
+    #echo -e "obj: $obj \t\tdep: $dep" 1>&2
+    objs="$objs $obj"
+  done
+  unset IFS
 
   [[ -n $DEBUG_MODE ]] && [[ -n $objs ]] && echo "Resolving symbols [$(echo $objs | tr ' ' ',')] for file $1..." 1>&2
 

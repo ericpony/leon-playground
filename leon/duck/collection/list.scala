@@ -548,9 +548,9 @@ object ListOps {
   }
 }
 
-@ignore
 object List {
-  def apply[T] (elems: T*): List[T] = {
+  @ignore
+  def apply[T](elems: T*): List[T] = {
     var l: List[T] = Nil[T]()
     for (e <- elems) {
       l = Cons(e, l)
@@ -558,19 +558,17 @@ object List {
     l.reverse
   }
 
-  def fill[T] (n: BigInt)(x: T): List[T] = {
+  @library
+  def fill[T](n: BigInt)(x: T) : List[T] = {
     if (n <= 0) Nil[T]
     else Cons[T](x, fill[T](n-1)(x))
-  } ensuring { res =>
-    (res.content == (if (n <= BigInt(0)) Set.empty[T] else Set(x))) &&
-      (res.size == (if (n <= BigInt(0)) BigInt(0) else n))
-  }
+  } ensuring(res => (res.content == (if (n <= BigInt(0)) Set.empty[T] else Set(x))) &&
+                    res.size == (if (n <= BigInt(0)) BigInt(0) else n))
 }
 
 // 'Cons' Extractor
-@ignore
+@library
 object :: {
-  @library
   def unapply[A] (l: List[A]): Option[(A, List[A])] = l match {
     case Nil()       => None()
     case Cons(x, xs) => Some((x, xs))

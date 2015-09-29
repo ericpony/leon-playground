@@ -1,35 +1,65 @@
-package duck.proof
+package duck.spec
 
-import duck.proof.PermutationSpec._
+import duck.collection._
 import duck.proof.PermutationOps._
-import duck.proof.PermutationLemmas._
 import duck.proof.MinSpec._
 import duck.proof.MinOps._
 import duck.proof.MinLemmas._
-import duck.spec.SortedListOps._
-import duck.spec.SortedListSpec._
-import duck.spec.SortedListLemmas._
-import duck.spec.ListSpecs._
-import duck.collection._
+import duck.proof.DeleteSpec._
+import duck.proof.DeleteOps._
+import duck.proof.DeleteLemmas._
+import duck.spec.ListLemmas._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
-import DeleteSpec._
-import DeleteOps._
-import DeleteLemmas._
+
+import SortedListOps.{isSorted, sort}
+import SortedListSpec._
+import SortedListLemmas._
 import SortedListTakeOps._
 import SortedListTakeLemmas._
 
 import scala.language.postfixOps
 
 object SortedListTakeSpec {
-  def combOp_comm (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
-    combOp(l1, l2, n) == combOp(l2, l1, n) because
-      combOp_comm_lemma(l1, l2, n)
+
+  def insert_commutative_prop (list: List[BigInt], e1: BigInt, e2: BigInt, n: BigInt) = {
+    require(isSorted(list))
+    insert(insert(list, e1, n), e2, n) == insert(insert(list, e2, n), e1, n) because
+      insert_comm_lemma(list, e1, e2, n)
+  } holds /* verified by Leon */
+
+  def merge_commutative_prop (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
+    merge(l1, l2, n) == merge(l2, l1, n) because
+      merge_comm_lemma(l1, l2, n)
+  } holds /* verified by Leon */
+
+  def merge_associative_prop (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt], n: BigInt) = {
+    merge(merge(l1, l2, n), l3, n) == merge(l1, merge(l2, l3, n), n) because
+      merge_assoc_lemma(l1, l2, l3, n)
+  } holds /* verified by Leon */
+
+  /* in progress */
+  @ignore
+  def composition_prop (l1: List[BigInt], l2: List[BigInt], n: BigInt): Boolean = {
+    require(l1.size == 0)
+    val L = foldl_insert(Nil[BigInt](), l1 ++ l2, n)
+    val L1 = foldl_insert(Nil[BigInt](), l1, n)
+    val L2 = foldl_insert(Nil[BigInt](), l2, n)
+    L == merge(L1, L2, n)
   } holds
+
+  def foldl_insert (list0: List[BigInt], list: List[BigInt], n: BigInt): List[BigInt] = {
+    require(isSorted(list0))
+    if (list == Nil[BigInt]()) list0
+    else foldl_insert(insert(list0, list.head, n), list.tail, n)
+  } ensuring { res =>
+    isSorted(res)
+  }
 }
 
 object SortedListTakeOps {
+  @library
   def sorted_take (list: List[BigInt], i: BigInt): List[BigInt] = {
     require(isSorted(list))
     (list, i) match {
@@ -45,6 +75,7 @@ object SortedListTakeOps {
     res => res == list.take(i) && isSorted(res)
   }
 
+  @library
   def sort_take (list: List[BigInt], n: BigInt): List[BigInt] = {
     sorted_take(sort(list), n)
   } ensuring {
@@ -55,15 +86,19 @@ object SortedListTakeOps {
       )
   }
 
-  def seqOp (list: List[BigInt], e: BigInt, n: BigInt) = {
+  def insert (list: List[BigInt], e: BigInt, n: BigInt) = {
     sort_take(e :: list, n)
   }
 
-  def combOp (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
+  def merge (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
     sort_take(l1 ++ l2, n)
   }
+
+  def L (e: BigInt) = Cons(e, Nil[BigInt]())
+
 }
 
+@library
 object SortedListTakeLemmas {
 
   def take_all (l: List[BigInt], n: BigInt): Boolean = {
@@ -256,23 +291,23 @@ object SortedListTakeLemmas {
       // sort_take(sort_take(l1, n) ++ sort_take(l2, m), r)
       sort_take_concat(l1, sort_take(l2, m), n, r) &&
         // == sort_take(l1 ++ sort_take(l2, m), r)
-        combOp_comm_lemma(l1, sort_take(l2, m), r) &&
+        merge_comm_lemma(l1, sort_take(l2, m), r) &&
         // == sort_take(sort_take(l2, m) ++ l1, r)
         sort_take_concat(l2, l1, m, r) &&
         // == sort_take(l2 ++ l1, r)
-        combOp_comm_lemma(l2, l1, r)
+        merge_comm_lemma(l2, l1, r)
       // == sort_take(l1 ++ l2, r)
     }
   } holds
 
-  def combOp_comm_lemma (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
-    combOp(l1, l2, n) == combOp(l2, l1, n) because {
+  def merge_comm_lemma (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
+    merge(l1, l2, n) == merge(l2, l1, n) because {
       sort_commutative_prop(l1, l2)
     }
   } holds
 
-  def combOp_assoc_lemma (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt], n: BigInt) = {
-    combOp(combOp(l1, l2, n), l3, n) == combOp(l1, combOp(l2, l3, n), n) because {
+  def merge_assoc_lemma (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt], n: BigInt) = {
+    merge(merge(l1, l2, n), l3, n) == merge(l1, merge(l2, l3, n), n) because {
       // sort_take(sort_take(l1 ++ l2, n) ++ l3, n)
       sort_take_concat_sort_take(sort_take(l1 ++ l2, n), l3, n, n, n) &&
         // == sort_take(sort_take(sort_take(l1 ++ l2, n), n) ++ sort_take(l3, n), n)
@@ -292,4 +327,36 @@ object SortedListTakeLemmas {
     }
   } holds
 
+  def insert_merge (list: List[BigInt], e: BigInt, n: BigInt) = {
+    insert(list, e, n) == merge(list, L(e), n) because
+      insert_merge_perm(list, e, n) &&
+        sort_take_perm_eq(e :: list, list ++ L(e), n)
+  } holds
+
+  @induct
+  def insert_merge_perm (list: List[BigInt], e: BigInt, n: BigInt) = {
+    permutation(e :: list, list ++ L(e))
+  } holds
+
+  def insert_comm_lemma (list: List[BigInt], e1: BigInt, e2: BigInt, n: BigInt) = {
+    require(isSorted(list))
+    insert(insert(list, e1, n), e2, n) == insert(insert(list, e2, n), e1, n) because {
+      // insert(list, e1, n) == merge(list, L(e1), n)
+      insert_merge(list, e1, n) &&
+        // insert(list, e2, n) == merge(list, L(e2), n)
+        insert_merge(list, e2, n) &&
+        // insert(insert(list, e1, n), e2, n) == merge(insert(list, e1, n), L(e2), n)
+        insert_merge(insert(list, e1, n), e2, n) &&
+        // insert(insert(list, e2, n), e1, n) == merge(insert(list, e2, n), L(e1), n)
+        insert_merge(insert(list, e2, n), e1, n) &&
+        merge(merge(list, L(e1), n), L(e2), n) == merge(merge(list, L(e2), n), L(e1), n) because {
+        // merge(merge(list, L(e1), n), L(e2), n) == merge(list, merge(L(e1), L(e2), n), n)
+        merge_assoc_lemma(list, L(e1), L(e2), n) &&
+          // merge(merge(list, L(e2), n), L(e1), n) == merge(list, merge(L(e2), L(e1), n), n)
+          merge_assoc_lemma(list, L(e2), L(e1), n) &&
+          // merge(L(e2), L(e1), n) == merge(L(e1), L(e2), n) because
+          merge_comm_lemma(L(e1), L(e2), n)
+      }
+    }
+  }
 }
