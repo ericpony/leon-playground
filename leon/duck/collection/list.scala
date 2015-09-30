@@ -550,7 +550,7 @@ object ListOps {
 
 object List {
   @ignore
-  def apply[T](elems: T*): List[T] = {
+  def apply[T] (elems: T*): List[T] = {
     var l: List[T] = Nil[T]()
     for (e <- elems) {
       l = Cons(e, l)
@@ -559,11 +559,11 @@ object List {
   }
 
   @library
-  def fill[T](n: BigInt)(x: T) : List[T] = {
+  def fill[T] (n: BigInt)(x: T): List[T] = {
     if (n <= 0) Nil[T]
     else Cons[T](x, fill[T](n-1)(x))
-  } ensuring(res => (res.content == (if (n <= BigInt(0)) Set.empty[T] else Set(x))) &&
-                    res.size == (if (n <= BigInt(0)) BigInt(0) else n))
+  } ensuring (res => (res.content == (if (n <= BigInt(0)) Set.empty[T] else Set(x))) &&
+    res.size == (if (n <= BigInt(0)) BigInt(0) else n))
 }
 
 // 'Cons' Extractor

@@ -112,9 +112,10 @@ object SortedListOps {
       case Cons(x, xs) => insert(sort(xs), x)
     }
   } ensuring { res =>
-    res.content == list.content and
-      isSorted(res) and
-      res.size == list.size
+    res.content == list.content &&
+      isSorted(res) &&
+      res.size == list.size &&
+      (isSorted(list) implies res == list)
   }
 
   /**
@@ -129,8 +130,7 @@ object SortedListOps {
       case Cons(x1, Cons(x2, xs)) => x1 <= x2 && isSorted(list.tail)
     }
   } ensuring { res =>
-    (list.size > 0 and res) implies
-      list.head == min(list)
+    list.size > 0 && res implies list.head == min(list)
   }
 }
 
