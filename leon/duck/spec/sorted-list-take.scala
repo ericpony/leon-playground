@@ -62,25 +62,7 @@ object SortedListTakeSpec {
 }
 
 object SortedListTakeOps {
-  //  def take (list: List[BigInt], n: BigInt): List[BigInt] = {
-  //    (list, n) match {
-  //      case (Nil(), _)      => Nil[BigInt]()
-  //      case (Cons(h, t), n) =>
-  //        if (n <= BigInt(0)) {
-  //          Nil[BigInt]()
-  //        } else {
-  //          Cons(h, t.take(n - 1))
-  //        }
-  //    }
-  //  } ensuring { res =>
-  //    res.content.subsetOf(list.content) && (res.size == (
-  //      if (n <= 0) BigInt(0)
-  //      else if (n >= list.size) list.size
-  //      else n
-  //      ))
-  //  }
 
-  @library
   def sorted_take (list: List[BigInt], n: BigInt): List[BigInt] = {
     require(isSorted(list))
     //list.take(n)
@@ -97,7 +79,6 @@ object SortedListTakeOps {
     res => res == list.take(n) && isSorted(res)
   }
 
-  @library
   def sort_take (list: List[BigInt], n: BigInt): List[BigInt] = {
     sorted_take(sort(list), n)
   } ensuring { res =>
@@ -390,35 +371,29 @@ object SortedListTakeLemmas {
 
   def foldl_insert_lemma (list0: List[BigInt], list: List[BigInt], n: BigInt): Boolean = {
     require(isSorted(list0))
-    foldl_insert(list0, list, n) == merge(list0 ++ list, Nil[BigInt](), n) because {
+    foldl_insert(list0, list, n) == sort_take(list0 ++ list, n) because {
       if (list == Nil[BigInt]()) trivial
       else {
         val e = list.head
-        foldl_insert(sort(list0 ++ L(e)), list.tail, n) == merge(list0 ++ list, Nil[BigInt](), n) because {
-          // foldl_insert(sort(list0 ++ L(e)), list.tail, n) == merge(sort(list0 ++ L(e)) ++ list.tail, Nil[BigInt](), n)
+        foldl_insert(sort(list0 ++ L(e)), list.tail, n) == sort_take(list0 ++ list, n) because {
+          // foldl_insert(sort(list0 ++ L(e)), list.tail, n) == sort_take(sort(list0 ++ L(e)) ++ list.tail, n)
           foldl_insert_lemma(sort(list0 ++ L(e)), list.tail, n) &&
-            // merge(sort(list0 ++ L(e)) ++ list.tail, Nil[BigInt](), n) == merge(list0 ++ list, Nil[BigInt](), n)
-            foldl_insert_lemma_2(list0, list) &&
+            // sort_take(sort(list0 ++ L(e)) ++ list.tail, n) == sort_take(list0 ++ list, n)
+            foldl_insert_2(list0, list) &&
             sort_take_perm_eq(sort(list0 ++ L(e)) ++ list.tail, list0 ++ list, n)
         } &&
           // foldl_insert(sort(list0 ++ L(e)), list.tail, n) == foldl_insert(list0, list, n) because
-          foldl_insert_lemma_3(list0, list, n)
+          foldl_insert_3(list0, list, n)
       }
     }
   } holds /* verified by Leon */
 
-  @induct
-  def concat_prepend_lemma (list0: List[BigInt], list: List[BigInt]): Boolean = {
-    require(list != Nil[BigInt]())
-    list0 ++ list == (list0 ++ L(list.head)) ++ list.tail
-  } holds /* verified by Leon */
-
-  def foldl_insert_lemma_2 (list0: List[BigInt], list: List[BigInt]): Boolean = {
+  def foldl_insert_2 (list0: List[BigInt], list: List[BigInt]): Boolean = {
     require(list != Nil[BigInt]())
     permutation(sort(list0 ++ L(list.head)) ++ list.tail, list0 ++ list) because {
       val l1 = list0 ++ L(list.head)
       val l2 = list.tail
-      concat_prepend_lemma(list0, list) &&
+      list_decomp(list0, list) &&
         //permutation(sort(l1) ++ l2, l1 ++ l2) because
         permutation(sort(l1), l1) because {
         sort_permutation(l1)
@@ -429,14 +404,14 @@ object SortedListTakeLemmas {
   /**
    * WARNING: Leon takes 10+ seconds to verify this lemma on my desktop.
    */
-  def foldl_insert_lemma_3 (list0: List[BigInt], list: List[BigInt], n: BigInt): Boolean = {
+  def foldl_insert_3 (list0: List[BigInt], list: List[BigInt], n: BigInt): Boolean = {
     require(isSorted(list0))
     if (list == Nil[BigInt] ()) true /* never happens in the context of application */
     else {
       foldl_insert(sort(list0 ++ L(list.head)), list.tail, n) == foldl_insert(list0, list, n) because {
         // foldl_insert(sort(list0 ++ L(list.head)), list.tail, n) == foldl_insert(sort(list.head :: list0), list.tail, n) because
         //sort(list0 ++ L(list.head)) == sort(list.head :: list0) because
-        first_last_swap_perm(list0, list.head) &&
+        permutation_first_last_swap(list0, list.head) &&
           permutation_sort(list0 ++ L(list.head), list.head :: list0)
       } && {
         // foldl_insert(sort(list.head :: list0), list.tail, n) == foldl_insert(sort_take(list.head :: list0, n), list.tail, n) because
@@ -449,15 +424,39 @@ object SortedListTakeLemmas {
           val Cons(h, t) = list.tail
           // foldl_insert(sort(list.head :: list0), list.tail, n) == foldl_insert(sort_take(h :: sort(list.head :: list0), n), t, n)
           // foldl_insert(sort_take(list.head :: list0, n), list.tail, n) == foldl_insert(sort_take(h :: sort_take(list.head :: list0, n), n), t, n)
-          sort_take_cons_sort(list.head :: list0, h, n) &&
-            foldl_insert_lemma_3(sort_take(h :: sort(list.head :: list0), n), t, n)
+          sort_take_cons_sort_take(list.head :: list0, h, n) &&
+            foldl_insert_3(sort_take(h :: sort(list.head :: list0), n), t, n)
+        }
+      }
+    }
+  } holds /* verified by Leon */
+
+  def sort_take_cons_sort_take (list: List[BigInt], e: BigInt, n: BigInt) = {
+    sort_take(e :: sort(list), n) == sort_take(e :: sort_take(list, n), n) because {
+      if (n <= 0) trivial
+      else {
+        sort_take(e :: sort(list), n) == sort_take(sort(e :: list), n) because {
+          // sort(e :: sort(list)).take(n) == sort(e :: list).take(n) because
+          sort_cons_sort(list, e) &&
+            // sort_take(e :: sort(list), n) == sort_take(sort(e :: sort(list)), n) because
+            sort_idempotent_prop(e :: sort(list)) &&
+            // sort_take(sort(e :: sort(list)), n) == sort(e :: sort(list)).take(n) because
+            sort_idempotent_prop(e :: sort(list))
+        } &&
+          sort_take(e :: sort_take(list, n), n) == sort_take(sort(e :: list), n) because {
+          // sort_take(sort(e :: list), n) == sort_take(e :: list, n) because
+          sort_idempotent_prop(e :: list) &&
+            // e :: sort_take(list, n) == L(e) ++ sort_take(list, n) &&
+            L(e) == sort_take(L(e), n) &&
+            // sort_take(sort_take(L(e), n) ++ sort_take(list, n), n) == sort_take(e :: list, n) because
+            sort_take_concat_sort_take(L(e), list, n, n, n)
         }
       }
     }
   } holds /* verified by Leon */
 
   @induct
-  def first_last_swap_perm (list: List[BigInt], e: BigInt) = {
+  def permutation_first_last_swap (list: List[BigInt], e: BigInt) = {
     permutation(list ++ L(e), e :: list)
   } holds /* verified by Leon */
 
@@ -469,22 +468,10 @@ object SortedListTakeLemmas {
     }
   } holds /* verified by Leon */
 
-  @library
-  def sort_take_cons_sort (list: List[BigInt], e: BigInt, n: BigInt) = {
-    sort_take(e :: sort(list), n) == sort_take(e :: sort_take(list, n), n) because {
-      sort_take(e :: sort_take(list, n), n) == sort_take(sort(e :: list), n) because {
-        /*
-        TODO: Finish this part of proof
-        */
-        true
-      } && sort_take(e :: sort(list), n) == sort_take(sort(e :: list), n) because {
-        //sort(e :: sort(list)).take(n) == sort(e :: list).take(n) because
-        sort_cons_sort(list, e) &&
-          // sort_take(e :: sort(list), n) == sort_take(sort(e :: sort(list)), n) because
-          sort_idempotent_prop(e :: sort(list)) &&
-          // sort_take(sort(e :: sort(list)), n) == sort(e :: sort(list)).take(n) because
-          sort_idempotent_prop(e :: sort(list))
-      }
-    }
-  } holds
+  @induct
+  def list_decomp (list0: List[BigInt], list: List[BigInt]): Boolean = {
+    require(list != Nil[BigInt]())
+    list0 ++ list == (list0 ++ L(list.head)) ++ list.tail
+  } holds /* verified by Leon */
+
 }
