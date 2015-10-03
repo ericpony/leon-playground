@@ -16,10 +16,6 @@ import leon.proof._
 
 import scala.language.postfixOps
 
-/**
- * TODO:
- * prove union_permutation_3 and union_permutation_4.
- */
 object DistinctListSetLemmas {
   @induct
   def insert_distinct[V] (set: List[V], e: V): Boolean = {
@@ -56,17 +52,17 @@ object DistinctListSetLemmas {
 
   def insert_permutation[V] (s: List[V], t: List[V], e: V): Boolean = {
     require(permutation(s, t))
-    if (s contains e) {
-      t.contains(e) &&
-        insert_contains(s, e) &&
-        insert_contains(t, e) &&
-        permutation(insert(s, e), insert(t, e))
-    } else {
-      !t.contains(e) &&
-        insert_not_contains(s, e) &&
-        insert_not_contains(t, e) &&
-        permutation_concat(s, t, Cons(e, Nil[V])) &&
-        permutation(insert(s, e), insert(t, e))
+    permutation(insert(s, e), insert(t, e)) because {
+      if (s contains e) {
+        t.contains(e) &&
+          insert_contains(s, e) &&
+          insert_contains(t, e)
+      } else {
+        !t.contains(e) &&
+          insert_not_contains(s, e) &&
+          insert_not_contains(t, e) &&
+          permutation_concat(s, t, Cons(e, Nil[V]))
+      }
     }
   } holds /* verified */
 
@@ -90,21 +86,21 @@ object DistinctListSetLemmas {
 
   def remove_permutation[V] (s: List[V], t: List[V], e: V): Boolean = {
     require(permutation(s, t))
-    if (s contains e) {
-      t.contains(e) &&
-        remove_contains(s, e) &&
-        remove_contains(t, e) &&
-        permutation_delete(s, t, e) &&
-        permutation(remove(s, e), remove(t, e))
-    } else {
-      !t.contains(e) &&
-        remove_not_contains(s, e) &&
-        remove_not_contains(t, e) &&
-        permutation(remove(s, e), remove(t, e))
+    permutation(remove(s, e), remove(t, e)) because {
+      if (s contains e) {
+        t.contains(e) &&
+          remove_contains(s, e) &&
+          remove_contains(t, e) &&
+          permutation_delete(s, t, e)
+      } else {
+        !t.contains(e) &&
+          remove_not_contains(s, e) &&
+          remove_not_contains(t, e)
+      }
     }
   } holds /* verified */
 
-  //  /* This property now follows from the post-condition of union */
+  /* This property now follows from the post-condition of union */
   //  @induct
   //  def union_content[V] (s: List[V], t: List[V]): Boolean = {
   //    if (s.isEmpty) {
@@ -128,7 +124,10 @@ object DistinctListSetLemmas {
 
   def union_insert_delete_permutation[V] (s: List[V], t: List[V], e: V): Boolean = {
     require(s contains e)
-    permutation(insert(union(delete(s, e), t), e), union(s, t)) because {
+    permutation(
+      insert(union(delete(s, e), t), e),
+      union(s, t)
+    ) because {
       if (s.head == e) {
         union_insert_delete_permutation_2(s, t)
       } else {
@@ -150,10 +149,12 @@ object DistinctListSetLemmas {
     }
   } holds /* verified */
 
-  @induct
   def union_insert_delete_permutation_2[V] (s: List[V], t: List[V]): Boolean = {
     require(s != Nil[V]())
-    permutation(insert(union(s.tail, t), s.head), union(s, t)) because {
+    permutation(
+      insert(union(s.tail, t), s.head),
+      union(s, t)
+    ) because {
       insert(union(s.tail, t), s.head) == union(s, t) &&
         permutation_eq(insert(union(s.tail, t), s.head), union(s, t))
     }
@@ -177,7 +178,6 @@ object DistinctListSetLemmas {
             s.head) &&
           union_permutation_2(s, t, u, v) &&
           union_permutation_3(s, t, u, v) &&
-          union_permutation_4(s, t, u, v) &&
           permutation_tran(
             insert(union(s.tail, t), s.head),
             insert(union(delete(u, s.head), v), s.head),
@@ -186,26 +186,24 @@ object DistinctListSetLemmas {
     }
   } holds /* verified */
 
-  @induct
   def union_permutation_2[V] (s: List[V], t: List[V], u: List[V], v: List[V]): Boolean = {
-    require(permutation(s, u) && permutation(t, v) && s != Nil[V]())
-    insert(union(s.tail, t), s.head) == union(s, t) because
-      union_insert_delete_permutation(s, t, s.head)
-  } holds /* verified */
-
-  @induct
-  def union_permutation_3[V] (s: List[V], t: List[V], u: List[V], v: List[V]): Boolean = {
     require(permutation(s, u) && permutation(t, v) && s != Nil[V]())
     permutation(
       insert(union(s.tail, t), s.head),
       insert(union(delete(u, s.head), v), s.head)
-    )
-  } holds /* timeout */
+    ) because {
+      union_permutation(s.tail, t, delete(u, s.head), v) &&
+        permutation(union(s.tail, t), union(delete(u, s.head), v)) &&
+        insert_permutation(union(s.tail, t), union(delete(u, s.head), v), s.head)
+    }
+  } holds /* verified */
 
-  @induct
-  def union_permutation_4[V] (s: List[V], t: List[V], u: List[V], v: List[V]): Boolean = {
+  def union_permutation_3[V] (s: List[V], t: List[V], u: List[V], v: List[V]): Boolean = {
     require(permutation(s, u) && permutation(t, v) && s != Nil[V]())
-    permutation(insert(union(delete(u, s.head), v), s.head), union(u, v)) because
-      union_insert_delete_permutation(s, t, s.head)
-  } holds /* timeout */
+    permutation(
+      insert(union(delete(u, s.head), v), s.head),
+      union(u, v)
+    ) because
+      union_insert_delete_permutation(u, v, s.head)
+  } holds /* verified */
 }
