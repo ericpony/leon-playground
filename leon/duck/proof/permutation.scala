@@ -37,6 +37,17 @@ object PermutationSpec {
     l1.content == l2.content because permutation_content_lemma(l1, l2)
   } holds
 
+  def permutation_eq[V] (s: List[V], t: List[V]): Boolean = {
+    require(s == t)
+    permutation(s, t) because {
+      if (s == Nil[V]()) trivial
+      else {
+        permutation_eq(s.tail, t.tail) &&
+          permutation_cons(s.tail, t.tail, s.head)
+      }
+    }
+  } holds
+
   /* Proven in the post-condition of `permutation` */
   //  def permutation_size[V] (l1 : List[V], l2 : List[V]) : Boolean = {
   //    require (permutation (l1, l2))
