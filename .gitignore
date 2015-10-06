@@ -1,2 +1,6 @@
-**/last.log
+last.log
 leon/doc/api
+.idea/*
+target/*
+lib/*
+project/*

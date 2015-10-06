@@ -141,10 +141,7 @@ object DistinctListSetLemmas {
           permutation_tran(
             insert(insert(union(delete(s.tail, e), t), s.head), e),
             insert(insert(union(delete(s.tail, e), t), e), s.head),
-            insert(union(s.tail, t), s.head)) &&
-          union(delete(s, e), t) == insert(union(delete(s.tail, e), t), s.head) &&
-          delete(s, e).head == s.head &&
-          delete(s, e).tail == delete(s.tail, e)
+            insert(union(s.tail, t), s.head))
       }
     }
   } holds /* verified */
@@ -162,7 +159,10 @@ object DistinctListSetLemmas {
 
   def union_insert_delete_permutation_3[V] (s: List[V], t: List[V], e: V): Boolean = {
     require(s != Nil[V]() && s.tail.contains(e))
-    permutation(insert(union(delete(s.tail, e), t), e), union(s.tail, t)) because
+    permutation(
+      insert(union(delete(s.tail, e), t), e),
+      union(s.tail, t)
+    ) because
       union_insert_delete_permutation(s.tail, t, e)
   } holds /* verified */
 
