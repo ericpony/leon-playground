@@ -1,12 +1,16 @@
-#! /usr/bin/bash
+#! /bin/bash
 
-[[ -z $LEON_LIB_DIR ]] && LEON_LIB_DIR=$(dirname $0)/library
+if [[ -z $DUCK_LIB_DIR ]]
+then
+  # use the relative path of the library in this project
+  DUCK_LIB_DIR=$(dirname $0)/duck
+fi
 
-if [[ ! -d $LEON_LIB_DIR ]]
+if [[ ! -d $DUCK_LIB_DIR ]]
 then
   echo "
-Please specify the location of the duck library using
-export LEON_LIB_DIR=(absolute path of the library)" 1>&2
+Please specify the location of the Duck library using
+export DUCK_LIB_DIR=(location of the library)" 1>&2
   exit 1
 fi
 
@@ -23,7 +27,7 @@ fi
 declare -A lib_map
 declare -A obj_map
 
-libs=$(find "$LEON_LIB_DIR" -name '*.scala')
+libs=$(find "$DUCK_LIB_DIR" -name '*.scala')
 
 function find_dep {
   id=$(realpath $1)
