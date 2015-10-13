@@ -16,6 +16,7 @@ import leon.proof._
 
 import scala.language.postfixOps
 
+@library
 object DistinctListSetLemmas {
   @induct
   def insert_distinct[V] (set: List[V], e: V): Boolean = {
@@ -99,16 +100,6 @@ object DistinctListSetLemmas {
       }
     }
   } holds /* verified */
-
-  /* This property now follows from the post-condition of union */
-  //  @induct
-  //  def union_content[V] (s: List[V], t: List[V]): Boolean = {
-  //    if (s.isEmpty) {
-  //      union(s, t).content == s.content ++ t.content
-  //    } else {
-  //      union(s, t).content == s.content ++ t.content
-  //    }
-  //  } holds
 
   @induct
   def union_distinct[V] (s: List[V], t: List[V]): Boolean = {

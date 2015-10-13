@@ -541,6 +541,7 @@ sealed abstract class List[T] {
   }
 }
 
+@library
 object ListOps {
   def flatten[T] (ls: List[List[T]]): List[T] = ls match {
     case Cons(h, t) => h ++ flatten(t)

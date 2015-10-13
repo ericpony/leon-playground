@@ -1,12 +1,10 @@
 package duck.collection
 
-import duck.proof.sugar._
-import duck.proof.DistinctListSetLemmas._
-import leon.proof._
 import leon.lang._
 import leon.annotation._
 
 package object DistinctListSetOps {
+  @library
   def insert[V] (set: List[V], e: V): List[V] = {
     if (set.isEmpty) Cons(e, Nil[V])
     else if (set.head == e) set
@@ -16,6 +14,7 @@ package object DistinctListSetOps {
       res.size <= set.size + 1
   }
 
+  @library
   def remove[V] (set: List[V], e: V): List[V] = {
     if (set.isEmpty) set
     else if (set.head == e) set.tail
@@ -25,6 +24,7 @@ package object DistinctListSetOps {
       res.size <= set.size
   }
 
+  @library
   def union[V] (s: List[V], t: List[V]): List[V] = {
     //    t match {
     //      case Nil()      => s

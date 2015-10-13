@@ -249,7 +249,7 @@ object PermutationLemmas {
   @induct
   def permutation_cons[V] (l1: List[V], l2: List[V], e: V): Boolean = {
     require(permutation(l1, l2))
-    permutation(Cons(e, l1), Cons(e, l2))
+    permutation(e :: l1, e :: l2)
   } holds
 
   /* Proven in the post-condition of `permutation` */
