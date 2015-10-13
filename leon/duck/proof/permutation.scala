@@ -48,19 +48,13 @@ object PermutationSpec {
     }
   } holds
 
-  /* Proven in the post-condition of `permutation` */
-  //  def permutation_size[V] (l1 : List[V], l2 : List[V]) : Boolean = {
-  //    require (permutation (l1, l2))
-  //    l1.size == l2.size because permutation_size_lemma (l1, l2)
-  //  } holds
-
-  def permutation_concat[V] (l1: List[V], l2: List[V], ll: List[V]) = {
+  def permutation_append[V] (l1: List[V], l2: List[V], ll: List[V]) = {
     require(permutation(l1, l2))
     permutation(l1 ++ ll, l2 ++ ll) because
       permutation_concat_lemma(l1, l2, ll)
   } holds
 
-  def concat_permutation[V] (ll: List[V], l1: List[V], l2: List[V]) = {
+  def permutation_concat[V] (ll: List[V], l1: List[V], l2: List[V]) = {
     require(permutation(l1, l2))
     permutation(ll ++ l1, ll ++ l2) because
       concat_permutation_lemma(ll, l1, l2)
@@ -74,6 +68,11 @@ object PermutationSpec {
   def permutation_concat_assoc[V] (l1: List[V], l2: List[V], l3: List[V]) = {
     permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because
       permutation_concat_assoc_lemma(l1, l2, l3)
+  } holds
+
+  def permutation_concat_assoc2[V] (l1: List[V], l2: List[V], l3: List[V]) = {
+    permutation((l1 ++ l2) ++ l3, l1 ++ l2 ++ l3) because
+      permutation_concat_assoc_lemma2(l1, l2, l3)
   } holds
 }
 
@@ -252,20 +251,6 @@ object PermutationLemmas {
     permutation(e :: l1, e :: l2)
   } holds
 
-  /* Proven in the post-condition of `permutation` */
-  //  @induct
-  //  def permutation_size_lemma[V] (l1 : List[V], l2 : List[V]) : Boolean = {
-  //    require (permutation (l1, l2))
-  //    if (l1 == Nil[V]()) {
-  //      l1.size == l2.size
-  //    } else {
-  //      l1.size == l2.size because
-  //      check {
-  //        permutation_size_lemma (l1.tail, delete (l2, l1.head))
-  //      }
-  //    }
-  //  } holds
-
   @induct
   def permutation_content_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
@@ -347,13 +332,25 @@ object PermutationLemmas {
 
   @induct
   def permutation_concat_assoc_lemma[V] (l1: List[V], l2: List[V], l3: List[V]): Boolean = {
-    if (l1 == Nil[V]()) {
-      permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because
+    permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because {
+      if (l1 == Nil[V]()) {
         permutation_refl(l2 ++ l3)
-    } else {
-      permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because
+      } else {
         permutation_concat_assoc_lemma(l1.tail, l2, l3) &&
           permutation_cons(l1.tail ++ l2 ++ l3, l1.tail ++ (l2 ++ l3), l1.head)
+      }
+    }
+  } holds
+
+  @induct
+  def permutation_concat_assoc_lemma2[V] (l1: List[V], l2: List[V], l3: List[V]): Boolean = {
+    permutation(l1 ++ l2 ++ l3, (l1 ++ l2) ++ l3) because {
+      if (l1 == Nil[V]()) {
+        permutation_refl(l2 ++ l3)
+      } else {
+        permutation_concat_assoc_lemma(l1.tail, l2, l3) &&
+          permutation_cons(l1.tail ++ l2 ++ l3, (l1.tail ++ l2) ++ l3, l1.head)
+      }
     }
   } holds
 }

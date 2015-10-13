@@ -62,7 +62,7 @@ object DistinctListSetLemmas {
         !t.contains(e) &&
           insert_not_contains(s, e) &&
           insert_not_contains(t, e) &&
-          permutation_concat(s, t, Cons(e, Nil[V]))
+          permutation_append(s, t, Cons(e, Nil[V]))
       }
     }
   } holds /* verified */

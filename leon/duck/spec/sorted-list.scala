@@ -227,11 +227,11 @@ object SortedListLemmas {
         // permutation (sort (l1 ++ l2), l1 ++ l2)
         permutation_comm(l1 ++ l2, sort(l1 ++ l2)) &&
         // permutation (sort (l1 ++ l2) ++ l3, l1 ++ l2 ++ l3)
-        permutation_concat(sort(l1 ++ l2), l1 ++ l2, l3) &&
+        permutation_append(sort(l1 ++ l2), l1 ++ l2, l3) &&
         // permutation (l2 ++ l3, sort (l2 ++ l3))
         sort_permutation(l2 ++ l3) &&
         // permutation (l1 ++ (l2 ++ l3), l1 ++ sort (l2 ++ l3)
-        concat_permutation(l1, l2 ++ l3, sort(l2 ++ l3)) &&
+        permutation_concat(l1, l2 ++ l3, sort(l2 ++ l3)) &&
         // permutation (l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3))
         permutation_concat_assoc(l1, l2, l3) &&
         permutation_tran(sort(l1 ++ l2) ++ l3, l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) &&

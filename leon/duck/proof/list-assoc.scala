@@ -31,7 +31,7 @@ object KListLemmas {
     l1.content == l2.content because permutation_content_lemma(l1, l2)
   } holds
 
-  def permutation_concat[K, V] (l1: KList[K, V], l2: KList[K, V], ll: KList[K, V]) = {
+  def permutation_append[K, V] (l1: KList[K, V], l2: KList[K, V], ll: KList[K, V]) = {
     require(permutation(l1, l2))
     permutation(l1 ++ ll, l2 ++ ll) because
       permutation_concat_lemma(l1, l2, ll)
@@ -418,7 +418,7 @@ object KListLemmas {
           permutation(pos ++ neg, (h :: pos.delete(h)) ++ neg) because {
           permutation(pos, h :: pos.delete(h)) because {
             cons_delete_perm(pos, h) && permutation_comm(h :: pos.delete(h), pos)
-          } && permutation_concat(pos, h :: pos.delete(h), neg)
+          } && permutation_append(pos, h :: pos.delete(h), neg)
         } &&
           /* for permutation(h::(pos.delete(h)), h::t) */
           permutation_cons(pos.delete(h) ++ neg, t, h)
@@ -442,7 +442,7 @@ object KListLemmas {
                 /* for permutation(neg ++ pos, pos ++ (h::neg.delete(h))) */
                 permutation_by_tran(neg ++ pos, (h :: neg.delete(h)) ++ pos, pos ++ (h :: neg.delete(h))) because {
                 cons_delete_perm(neg, h) && permutation_comm(h :: neg.delete(h), neg) &&
-                  permutation_concat(neg, h :: neg.delete(h), pos) &&
+                  permutation_append(neg, h :: neg.delete(h), pos) &&
                   permutation_concat_comm(h :: neg.delete(h), pos)
               }
             } &&
