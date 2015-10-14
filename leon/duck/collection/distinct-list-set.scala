@@ -1,6 +1,7 @@
 package duck.collection
 
 import leon.lang._
+import leon.annotation._
 
 package object DistinctListSetOps {
   @library

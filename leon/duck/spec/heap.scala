@@ -6,13 +6,13 @@ import duck.spec.SortedListOps._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
-import duck.proof.DeleteOps._
 import leon.lang._
 import leon.annotation._
 import leon.proof._
 import scala.language.postfixOps
 import scala.language.implicitConversions
 import LeftistHeapOps._
+import LeftistHeapLemmas._
 
 object LeftistHeapSpec1 {
 
@@ -43,11 +43,22 @@ object LeftistHeapSpec1 {
 
   def merge_invariant (h1: Heap, h2: Heap, h3: Heap): Boolean = {
     require(h1.isLeftistHeap && h2.isLeftistHeap && h3.isLeftistHeap && h1 ~ h2)
-    h1.merge(h2) ~ h1.merge(h2)
-  } holds /* timeout */
+    h1.merge(h3) ~ h2.merge(h3) because {
+      val l1 = h1.merge(h3).toList
+      val l2 = h2.merge(h3).toList
+      // permutation(l1, h1.toList ++ h3.toList) because
+      merge_concat_lemma(h1, h3) &&
+        // permutation(l2, h2.toList ++ h3.toList) because
+        merge_concat_lemma(h2, h3) &&
+        // permutation(h1.toList ++ h3.toList, h2.toList ++ h3.toList) because
+        permutation_append(h1.toList, h2.toList, h3.toList) &&
+        permutation_tran(l1, h1.toList ++ h3.toList, h2.toList ++ h3.toList) &&
+        permutation_tran(l1, h2.toList ++ h3.toList, l2)
+    }
+  } holds /* verified by Leon */
 }
 
-@ignore
+@library
 object LeftistHeapSpec0 {
   def insert_commu_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
     require(h.isLeftistHeap)
@@ -255,49 +266,51 @@ case class Empty () extends Heap
 case class Node (rk: BigInt, value: BigInt, left: Heap, right: Heap) extends Heap
 
 object LeftistHeapLemmas {
-  def merge_lemma (h1: Heap, h2: Heap): Boolean = {
+  /**
+   * Warning: Need at most 20+ seconds to be verified on my desktop
+   */
+  def merge_concat_lemma (h1: Heap, h2: Heap): Boolean = {
     require(h1.isLeftistHeap && h2.isLeftistHeap)
-    val h = h1.merge(h2)
-    permutation(h.toList, h1.toList ++ h2.toList) because {
+    permutation(h1.merge(h2).toList, h1.toList ++ h2.toList) because {
       h1 match {
-        case Empty()             => permutation_refl(h2.toList)
+        case Empty()             => check { permutation_refl(h2.toList) }
         case Node(_, v1, l1, r1) => h2 match {
-          case Empty()             => trivial
+          case Empty()             => check { permutation_refl(h1.toList) } //trivial
           case Node(_, v2, l2, r2) =>
+            val h = h1.merge(h2)
             if (v1 <= v2) {
-              permutation(h.toList, h1.toList ++ h2.toList) because {
-                val l = l1
-                val r = r1.merge(h2)
-                // permutation((l1.toList ++ r1.toList) ++ h2.toList, l1.toList ++ r1.toList ++ h2.toList) because
-                permutation_concat_assoc2(l1.toList, r1.toList, h2.toList) &&
-                  // permutation(v1 :: ((l1.toList ++ r1.toList) ++ h2.toList), v1 :: (l1.toList ++ r1.toList ++ h2.toList)) because
-                  permutation_cons((l1.toList ++ r1.toList) ++ h2.toList, l1.toList ++ r1.toList ++ h2.toList, v1) &&
-                  h1.toList ++ h2.toList == v1 :: ((l1.toList ++ r1.toList) ++ h2.toList) &&
-                  permutation(l.toList ++ r.toList, l1.toList ++ r1.toList ++ h2.toList) because {
-                  // permutation(r.toList, r1.toList ++ h2.toList) because
-                  merge_lemma(r1, h2) &&
-                    permutation_concat(l.toList, r.toList, r1.toList ++ h2.toList) &&
-                    // permutation(l1.toList ++ r1.toList ++ h2.toList, l1.toList ++ (r1.toList ++ h2.toList)) because
-                    permutation_concat_assoc(l1.toList, r1.toList, h2.toList) &&
-                    permutation_tran(l.toList ++ r.toList, l1.toList ++ (r1.toList ++ h2.toList), l1.toList ++ r1.toList ++ h2.toList)
-                } &&
-                  // permutation(v1 :: (l.toList ++ r.toList), v1 :: (l1.toList ++ r1.toList ++ h2.toList)) because
-                  permutation_cons(l.toList ++ r.toList, l1.toList ++ r1.toList ++ h2.toList, v1) &&
-                  permutation(h1.toList ++ h2.toList, v1 :: (l.toList ++ r.toList)) &&
-                  permutation(h.toList, v1 :: (l.toList ++ r.toList)) &&
-                  permutation_tran(h.toList, v1 :: (l.toList ++ r.toList), h1.toList ++ h2.toList)
-              }
+              val l = l1
+              val r = r1.merge(h2)
+              /* h == makeT(v1, l, r) */
+              // permutation((l1.toList ++ r1.toList) ++ h2.toList, l1.toList ++ r1.toList ++ h2.toList) because
+              permutation_concat_assoc2(l1.toList, r1.toList, h2.toList) &&
+                // permutation(v1 :: ((l1.toList ++ r1.toList) ++ h2.toList), v1 :: (l1.toList ++ r1.toList ++ h2.toList)) because
+                permutation_cons((l1.toList ++ r1.toList) ++ h2.toList, l1.toList ++ r1.toList ++ h2.toList, v1) &&
+                h1.toList ++ h2.toList == v1 :: ((l1.toList ++ r1.toList) ++ h2.toList) &&
+                permutation(l.toList ++ r.toList, l1.toList ++ r1.toList ++ h2.toList) because {
+                // permutation(r.toList, r1.toList ++ h2.toList) because
+                merge_concat_lemma(r1, h2) &&
+                  permutation_concat(l.toList, r.toList, r1.toList ++ h2.toList) &&
+                  // permutation(l1.toList ++ r1.toList ++ h2.toList, l1.toList ++ (r1.toList ++ h2.toList)) because
+                  permutation_concat_assoc(l1.toList, r1.toList, h2.toList) &&
+                  permutation_tran(l.toList ++ r.toList, l1.toList ++ (r1.toList ++ h2.toList), l1.toList ++ r1.toList ++ h2.toList)
+              } &&
+                // permutation(v1 :: (l.toList ++ r.toList), v1 :: (l1.toList ++ r1.toList ++ h2.toList)) because
+                permutation_cons(l.toList ++ r.toList, l1.toList ++ r1.toList ++ h2.toList, v1) &&
+                permutation(h1.toList ++ h2.toList, v1 :: (l.toList ++ r.toList)) &&
+                permutation(h.toList, v1 :: (l.toList ++ r.toList)) &&
+                permutation_tran(h.toList, v1 :: (l.toList ++ r.toList), h1.toList ++ h2.toList)
             } else {
               val l = l2
               val r = h1.merge(r2)
-              // h == makeT(v2, l2, r)
-              permutation(h.toList, v2 :: (l.toList ++ r.toList)) &&
-                merge_lemma(h1, r2) &&
+              /* h == makeT(v2, l, r) */
+              // permutation(h.toList, v2 :: (l.toList ++ r.toList)) &&
+              // permutation(h.toList, v2 :: (l.toList ++ r.toList)) because
+              merge_concat_lemma(h1, r2) &&
                 permutation(r.toList, h1.toList ++ r2.toList) &&
-                permutation(l.toList ++ (r2.toList ++ h1.toList), l.toList ++ (h1.toList ++ r2.toList)) because {
+                // permutation(l.toList ++ (r2.toList ++ h1.toList), l.toList ++ (h1.toList ++ r2.toList)) because {
                 permutation_concat_comm(h1.toList, r2.toList) &&
-                  permutation_concat(l.toList, r2.toList ++ h1.toList, h1.toList ++ r2.toList)
-              } &&
+                permutation_concat(l.toList, r2.toList ++ h1.toList, h1.toList ++ r2.toList) && // }
                 // permutation(l.toList ++ (r2.toList ++ h1.toList), (l.toList ++ r2.toList) ++ h1.toList) because
                 permutation_concat_assoc(l.toList, r2.toList, h1.toList) &&
                 // permutation(l.toList ++ (h1.toList ++ r2.toList), (l.toList ++ r2.toList) ++ h1.toList) because
@@ -306,186 +319,25 @@ object LeftistHeapLemmas {
                   l.toList ++ (r2.toList ++ h1.toList),
                   (l.toList ++ r2.toList) ++ h1.toList
                 ) &&
+                // permutation(r.toList, h1.toList ++ r2.toList) because
+                merge_concat_lemma(h1, r2) &&
+                permutation_concat(l.toList, r.toList, h1.toList ++ r2.toList) &&
+                permutation_tran(
+                  l.toList ++ r.toList,
+                  l.toList ++ (h1.toList ++ r2.toList),
+                  (l.toList ++ r2.toList) ++ h1.toList
+                ) &&
                 // permutation(v2 :: (l.toList ++ (h1.toList ++ r2.toList)), v2 :: (l.toList ++ r2.toList) ++ h1.toList) because
-                permutation_cons(l.toList ++ (h1.toList ++ r2.toList), (l.toList ++ r2.toList) ++ h1.toList, v2) &&
-                permutation(h.toList, h2.toList ++ h1.toList) &&
+                permutation_cons(l.toList ++ r.toList, (l.toList ++ r2.toList) ++ h1.toList, v2) &&
+                permutation_eq(h2.toList ++ h1.toList, v2 :: (l.toList ++ r2.toList) ++ h1.toList) &&
+                permutation_tran(h.toList, v2 :: (l.toList ++ r.toList), v2 :: (l.toList ++ r2.toList) ++ h1.toList) &&
+                permutation_tran(h.toList, v2 :: (l.toList ++ r2.toList) ++ h1.toList, h2.toList ++ h1.toList) &&
                 permutation(h2.toList ++ h1.toList, h1.toList ++ h2.toList) &&
+                permutation_concat_comm(h1.toList, h2.toList) &&
                 permutation_tran(h.toList, h2.toList ++ h1.toList, h1.toList ++ h2.toList)
             }
         }
       }
     }
-  } holds
-
-  //  @induct
-  //  def merge_comm (h1: Heap, h2: Heap): Boolean = {
-  //    require(h1.isLeftistHeap && h2.isLeftistHeap)
-  //    permutation(h1.merge(h2).toList, h2.merge(h1).toList) because {
-  //      h1 match {
-  //        case Empty()             => permutation_refl(h2.toList)
-  //        case Node(_, v1, l1, r1) => h2 match {
-  //          case Empty()             => trivial
-  //          case Node(_, v2, l2, r2) =>
-  //            if (v1 <= v2)
-  //              makeT(v1, l1, r1.merge(h))
-  //            else
-  //              makeT(v2, l2, this.merge(r2))
-  //        }
-  //      }
-  //    }
-  //  } holds
+  } holds /* verified by Leon */
 }
-
-/*
-object LeftistHeapOps {
-  ////////// Interface functions ////////////
-
-  def findMin (h: Heap): Option[BigInt] = {
-    require(isLeftistHeap(h))
-    h match {
-      case Empty()            => None[BigInt]()
-      case Node(_, v, _, _) => Some(v)
-    }
-  } ensuring { res => h != Empty() implies
-    res.isDefined && {
-      val Node(_, _, left, right) = h
-      val m = res.get
-      m <= min(findMin(left).getOrElse(m), findMin(right).getOrElse(m)) && {
-        h != Empty() implies
-          heapContent(h) == heapContent(deleteMin(h)) ++ Set(m)
-      }
-    }
-  } /* verified by Leon */
-
-  def deleteMin (h: Heap): Heap = {
-    require(isLeftistHeap(h))
-    h match {
-      case Node(_, _, l, r) => merge(l, r)
-      case l@Empty()          => l
-    }
-  } ensuring { res =>
-    size(res) >= size(h) - 1 &&
-      heapContent(res).subsetOf(heapContent(h)) && {
-      h != Empty() && res != Empty() implies
-        findMin(h).get <= findMin(res).get &&
-          heapContent(h) == heapContent(res) ++ Set(findMin(h).get)
-    }
-  } /* verified by Leon */
-
-  def merge (h1: Heap, h2: Heap): Heap = {
-    require(isLeftistHeap(h1) && isLeftistHeap(h2))
-    h1 match {
-      case Empty()               => h2
-      case Node(_, v1, l1, r1) => h2 match {
-        case Empty()               => h1
-        case Node(_, v2, l2, r2) =>
-          if (v1 <= v2)
-            makeT(v1, l1, merge(r1, h2))
-          else
-            makeT(v2, l2, merge(h1, r2))
-      }
-    }
-  } ensuring { res =>
-    isLeftistHeap(res) &&
-      size(res) == size(h1) + size(h2) &&
-      heapContent(res) == heapContent(h1) ++ heapContent(h2) && {
-      res != Empty() implies {
-        val v = findMin(res).get
-        v == min(findMin(h1).getOrElse(v), findMin(h2).getOrElse(v))
-      }
-    }
-  } /* verified by Leon */
-
-  def insert (element: BigInt, heap: Heap): Heap = {
-    require(isLeftistHeap(heap))
-    merge(Node(1, element, Empty(), Empty()), heap)
-  } ensuring { res => isLeftistHeap(res) &&
-    size(res) == size(heap) + 1 &&
-    heapContent(res) == heapContent(heap) ++ Set(element)
-  } /* verified by Leon */
-
-  def isLeftistHeap (h: Heap): Boolean = {
-    h match {
-      case Empty()                   => true
-      case Node(_, v, left, right) =>
-        isLeftistHeap(left) && isLeftistHeap(right) &&
-          rightHeight(left) >= rightHeight(right) &&
-          isPartiallyOrdered(v, left, right)
-    }
-  }
-
-  def toList (h: Heap): List[BigInt] = {
-    h match {
-      case Empty()            => Nil[BigInt]()
-      case Node(_, v, l, r) => v :: (toList(l) ++ toList(r))
-    }
-  } ensuring { res =>
-    res.size == size(h) && res.content == heapContent(h)
-  }
-
-  @induct
-  def toSortedList (h: Heap): List[BigInt] = {
-    require(isLeftistHeap(h))
-    h match {
-      case Empty() => Nil[BigInt]()
-      case _     => findMin(h).get :: toSortedList(deleteMin(h))
-    }
-  } ensuring { res =>
-    isSorted(res) && res.size == size(h)
-  }
-
-  def isPartiallyOrdered (value: BigInt, h1: Heap, h2: Heap) = {
-    require(isLeftistHeap(h1) && isLeftistHeap(h2))
-    h1 match {
-      case Empty()             => h2 match {
-        case Empty()             => true
-        case Node(_, v2, _, _) => value <= v2
-      }
-      case Node(_, v1, _, _) => value <= v1 && {
-        h2 match {
-          case Empty()             => true
-          case Node(_, v2, _, _) => value <= v2
-        }
-      }
-    }
-  }
-
-  def size (t: Heap): BigInt = {
-    t match {
-      case Empty()            => BigInt(0)
-      case Node(_, v, l, r) => size(l) + 1 + size(r)
-    }
-  }
-
-  ////////// Abstraction functions ////////////
-
-  def heapContent (h: Heap): Set[BigInt] = h match {
-    case Empty()                   => Set.empty[BigInt]
-    case Node(_, v, left, right) => Set(v) ++ heapContent(left) ++ heapContent(right)
-  }
-
-  ///////////// Helper functions //////////////
-
-  private def min (a: BigInt, b: BigInt) = {
-    if (a <= b) a else b
-  } ensuring { res => res == a || res == b }
-
-  private def rightHeight (h: Heap): BigInt = {
-    h match {
-      case Empty()            => BigInt(0)
-      case Node(_, _, _, r) => rightHeight(r) + 1
-    }
-  } ensuring (_ >= 0)
-
-  private def makeT (value: BigInt, left: Heap, right: Heap): Heap = {
-    require(isLeftistHeap(left) && isLeftistHeap(right) &&
-      isPartiallyOrdered(value, left, right))
-    if (rightHeight(left) >= rightHeight(right))
-      Node(rightHeight(right) + 1, value, left, right)
-    else // swap left and right subtree
-      Node(rightHeight(left) + 1, value, right, left)
-  } ensuring {
-    isLeftistHeap(_)
-  } /* verified by Leon */
-}
-*/
