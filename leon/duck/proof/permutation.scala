@@ -54,7 +54,7 @@ object PermutationSpec {
       permutation_concat_lemma(l1, l2, ll)
   } holds
 
-  def permutation_concat[V] (ll: List[V], l1: List[V], l2: List[V]) = {
+  def permutation_prepend[V] (ll: List[V], l1: List[V], l2: List[V]) = {
     require(permutation(l1, l2))
     permutation(ll ++ l1, ll ++ l2) because
       concat_permutation_lemma(ll, l1, l2)
@@ -277,12 +277,6 @@ object PermutationLemmas {
         check { permutation_contains_lemma(l1.tail, delete(l2, h), e) }
       }
     }
-  } holds
-
-  @induct
-  def permutation_prefix[V] (l1: List[V], l2: List[V], e: V): Boolean = {
-    require(permutation(l1, l2))
-    permutation(Cons(e, l1), Cons(e, l2))
   } holds
 
   @induct

@@ -231,7 +231,7 @@ object SortedListLemmas {
         // permutation (l2 ++ l3, sort (l2 ++ l3))
         sort_permutation(l2 ++ l3) &&
         // permutation (l1 ++ (l2 ++ l3), l1 ++ sort (l2 ++ l3)
-        permutation_concat(l1, l2 ++ l3, sort(l2 ++ l3)) &&
+        permutation_prepend(l1, l2 ++ l3, sort(l2 ++ l3)) &&
         // permutation (l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3))
         permutation_concat_assoc(l1, l2, l3) &&
         permutation_tran(sort(l1 ++ l2) ++ l3, l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) &&
