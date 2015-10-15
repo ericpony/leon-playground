@@ -23,9 +23,6 @@ import SortedListTakeLemmas._
 
 import scala.language.postfixOps
 
-/**
- * TODO: Finish the proof of sort_take_cons_sort.
- */
 object SortedListTakeSpec {
 
   def insert_commutative_prop (list: List[BigInt], e1: BigInt, e2: BigInt, n: BigInt) = {
