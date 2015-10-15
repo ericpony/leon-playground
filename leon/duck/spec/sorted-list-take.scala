@@ -212,7 +212,7 @@ object SortedListTakeLemmas {
         (if (l2.isEmpty)
           rightUnitAppend(sort(l1).take(n)) && sort_take_min(l1, n)
         else
-          min_concat_lemma2(sort(l1).take(n), l2) && sort_take_min(l1, n)) &&
+          min_concat_lemma(sort(l1).take(n), l2) && sort_take_min(l1, n)) &&
         // == min(l1)::sort(delete(sort(l1).take(n) ++ l2, min(l1))).take(m - 1)
         min_lemma2(sort(l1).take(n)) && delete_concat(sort(l1).take(n), l2, min(sort(l1).take(n))) &&
         // == min(l1)::sort(delete(sort(l1).take(n), min(l1)) ++ l2).take(m - 1)
@@ -228,7 +228,7 @@ object SortedListTakeLemmas {
       // sort_take(sort(l1).take(n) ++ l2, m)
       sort_take_decomp(sort(l1).take(n) ++ l2, m) &&
         // == min12::sort(delete(sort(l1).take(n) ++ l2, min12)).take(m - 1)
-        (if (l1.isEmpty || n <= 0) leftUnitAppend(l2) else min_concat_lemma2(sort(l1).take(n), l2) && sort_take_min(l1, n)) &&
+        (if (l1.isEmpty || n <= 0) leftUnitAppend(l2) else min_concat_lemma(sort(l1).take(n), l2) && sort_take_min(l1, n)) &&
         // == min(l2)::sort(delete(sort(l1).take(n) ++ l2, min(l2))).take(m - 1)
         (
           if (l1.isEmpty || n <= 0)
@@ -275,7 +275,7 @@ object SortedListTakeLemmas {
           // == min(l1)::sort(delete(l1, min(l1)) ++ l2).take(m - 1)
           delete_concat(l1, l2, min(l1)) && min_lemma2(l1) &&
           // == min(l1)::sort(delete(l1 ++ l2, min(l1))).take(m - 1)
-          min_concat_lemma2(l1, l2) && sort_take_decomp(l1 ++ l2, m)
+          min_concat_lemma(l1, l2) && sort_take_decomp(l1 ++ l2, m)
         // == sort_take(l1 ++ l2, n)
       } else {
         // sort_take(sort_take(l1, n) ++ l2, m)
@@ -285,7 +285,7 @@ object SortedListTakeLemmas {
           // == min(l2)::sort(l1 ++ delete(l2, min(l2))).take(m - 1)
           min_not_contains(l1, min(l2)) && !l1.contains(min(l2)) && delete_concat_lemma1(l1, l2, min(l2)) &&
           // == min(l2)::sort(delete(l1 ++ l2, min(l2))).take(m - 1)
-          min_concat_lemma2(l1, l2) && min(l1 ++ l2) == min(l2) && sort_take_decomp(l1 ++ l2, m)
+          min_concat_lemma(l1, l2) && min(l1 ++ l2) == min(l2) && sort_take_decomp(l1 ++ l2, m)
         // == sort_take(l1 ++ l2, m)
       }
     }
