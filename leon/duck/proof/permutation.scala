@@ -24,7 +24,8 @@ object PermutationSpec {
 
   def permutation_comm[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
-    permutation(l2, l1) because permutation_comm_lemma(l1, l2)
+    permutation(l2, l1) because
+      permutation_comm_lemma(l1, l2)
   } holds
 
   def permutation_tran[V] (l1: List[V], l2: List[V], l3: List[V]): Boolean = {
@@ -34,13 +35,15 @@ object PermutationSpec {
 
   def permutation_content[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
-    l1.content == l2.content because permutation_content_lemma(l1, l2)
+    l1.content == l2.content because
+      permutation_content_lemma(l1, l2)
   } holds
 
   def permutation_eq[V] (s: List[V], t: List[V]): Boolean = {
     require(s == t)
     permutation(s, t) because {
-      if (s == Nil[V]()) trivial
+      if (s == Nil[V]())
+        trivial
       else {
         permutation_eq(s.tail, t.tail) &&
           permutation_cons(s.tail, t.tail, s.head)
@@ -171,20 +174,19 @@ object PermutationLemmas {
   @induct
   def permutation_delete[V] (l1: List[V], l2: List[V], e: V): Boolean = {
     require(permutation(l1, l2))
-    if (l1 == Nil[V]()) {
-      permutation(delete(l1, e), delete(l2, e))
-    } else {
-      val h1 = l1.head
-      if (e == h1) {
-        permutation(delete(l1, h1), delete(l2, h1)) because
+    permutation(delete(l1, e), delete(l2, e)) because {
+      if (l1 == Nil[V]())
+        trivial
+      else {
+        val h1 = l1.head
+        if (e == h1) {
+          // permutation(delete(l1, h1), delete(l2, h1)) because
           permutation_delete_head(l1.tail, l2, h1)
-      } else {
-        permutation(delete(l1, e), delete(l2, e)) because
-          check {
-            delete_contains(l2, h1, e) &&
-              permutation_delete(l1.tail, delete(l2, h1), e) &&
-              delete_comm(l2, e, h1)
-          }
+        } else {
+          delete_contains(l2, h1, e) &&
+            permutation_delete(l1.tail, delete(l2, h1), e) &&
+            delete_comm(l2, e, h1)
+        }
       }
     }
   } holds
@@ -192,19 +194,18 @@ object PermutationLemmas {
   @induct
   def permutation_cons_delete[V] (l1: List[V], h2: V, t2: List[V]): Boolean = {
     require(permutation(delete(l1, h2), t2) && l1.contains(h2))
-    if (l1 == Nil[V]()) {
-      permutation(l1, Cons(h2, t2))
-    } else {
-      val h1 = l1.head
-      if (h1 == h2) {
-        permutation(l1, Cons(h2, t2))
-      } else {
-        permutation(l1, Cons(h2, t2)) because
-          check {
-            (Cons(h2, t2) contains h1) &&
-              delete_comm(l1, h1, h2) &&
-              permutation_cons_delete(l1.tail, h2, delete(t2, h1))
-          }
+    permutation(l1, Cons(h2, t2)) because {
+      if (l1 == Nil[V]())
+        trivial
+      else {
+        val h1 = l1.head
+        if (h1 == h2)
+          trivial
+        else {
+          (Cons(h2, t2) contains h1) &&
+            delete_comm(l1, h1, h2) &&
+            permutation_cons_delete(l1.tail, h2, delete(t2, h1))
+        }
       }
     }
   } holds
@@ -212,36 +213,32 @@ object PermutationLemmas {
   @induct
   def permutation_comm_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
-    if (l1 == Nil[V]()) {
-      permutation(l2, l1)
-    } else {
-      permutation(l2, l1) because
-        check {
-          permutation_content(l1, l2) &&
-            l1.contains(l2.head) &&
-            permutation_comm(l1.tail, delete(l2, l1.head)) &&
-            permutation_cons_delete(l2, l1.head, l1.tail) &&
-            permutation_delete(l2, l1, l2.head)
-        }
+    permutation(l2, l1) because {
+      if (l1 == Nil[V]())
+        trivial
+      else {
+        permutation_content(l1, l2) &&
+          l1.contains(l2.head) &&
+          permutation_comm(l1.tail, delete(l2, l1.head)) &&
+          permutation_cons_delete(l2, l1.head, l1.tail) &&
+          permutation_delete(l2, l1, l2.head)
+      }
     }
   } holds
 
   @induct
   def permutation_tran_lemma[V] (l1: List[V], l2: List[V], l3: List[V]): Boolean = {
     require(permutation(l1, l2) && permutation(l2, l3))
-    if (l1 == Nil[V]()) {
-      permutation(l1, l3)
-    } else {
-      val h1 = l1.head
-      permutation(l1, l3) because
-        check {
-          // l3 contains h1
-          permutation_contains_lemma(l2, l3, h1) &&
-            // permutation (delete (l2, h1), delete (l3, h1))
-            permutation_delete(l2, l3, h1) &&
-            // permutation (l1.tail, delete (l3, h1))
-            permutation_tran_lemma(l1.tail, delete(l2, h1), delete(l3, h1))
-        }
+    permutation(l1, l3) because {
+      if (l1 == Nil[V]())
+        trivial
+      else {
+        val h1 = l1.head
+        // permutation (delete (l2, h1), delete (l3, h1))
+        permutation_delete(l2, l3, h1) &&
+          // permutation (l1.tail, delete (l3, h1))
+          permutation_tran_lemma(l1.tail, delete(l2, h1), delete(l3, h1))
+      }
     }
   } holds
 
@@ -254,27 +251,15 @@ object PermutationLemmas {
   @induct
   def permutation_content_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
-    if (l1 == Nil[V]()) {
-      l1.content == l2.content
-    } else {
-      val h1 = l1.head
-      l1.content == l2.content because
+    l1.content == l2.content because {
+      if (l1 == Nil[V]())
+        trivial
+      else {
+        val h1 = l1.head
         l1.content == l1.tail.content ++ Set(h1) &&
           l2.content == delete(l2, h1).content ++ Set(h1) &&
           check { delete_content(l2, h1) } &&
           check { permutation_content_lemma(l1.tail, delete(l2, h1)) }
-    }
-  } holds
-
-  def permutation_contains_lemma[V] (l1: List[V], l2: List[V], e: V): Boolean = {
-    require(permutation(l1, l2) && l1.contains(e))
-    val h = l1.head
-    if (h == e) {
-      l2.contains(e)
-    } else {
-      /* induction */
-      l2.contains(e) because {
-        check { permutation_contains_lemma(l1.tail, delete(l2, h), e) }
       }
     }
   } holds

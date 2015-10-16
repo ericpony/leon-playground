@@ -8,6 +8,7 @@ import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
 import duck.proof.MinOps._
 import duck.proof.MinLemmas._
+import duck.proof.DeleteOps._
 
 import leon.lang._
 import leon.annotation._
@@ -18,15 +19,14 @@ import scala.language.implicitConversions
 import LeftistHeapOps._
 import LeftistHeapLemmas1._
 
-/*
- *  TODO: prove min_permutation
- */
-
 /**
  * LeftistHeap as List
  */
 object LeftistHeapSpec1 {
 
+  /**
+   * h1 ~ h2 implies h1.insert(e) ~ h2.insert(e)
+   */
   def insert_invariant (h1: Heap, h2: Heap, e: BigInt): Boolean = {
     require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
     h1.insert(e) ~ h2.insert(e) because {
@@ -40,10 +40,30 @@ object LeftistHeapSpec1 {
     }
   } holds /* verified by Leon */
 
+  /**
+   * h1 ~ h2 implies h1.merge(h) ~ h2.merge(h)
+   */
+  def merge_invariant (h1: Heap, h2: Heap, h: Heap): Boolean = {
+    require(h1.isLeftistHeap && h2.isLeftistHeap && h.isLeftistHeap && h1 ~ h2)
+    h1.merge(h) ~ h2.merge(h) because {
+      val l1 = h1.merge(h)
+      val l2 = h2.merge(h)
+      heap_merge_lemma(h1, h) &&
+        heap_merge_lemma(h2, h) &&
+        permutation_append(h1, h2, h) &&
+        permutation_tran(l1, h1 ++ h, h2 ++ h) &&
+        permutation_tran(l1, h2 ++ h, l2)
+    }
+  } holds /* verified by Leon */
+
+  /**
+   * h1 ~ h2 implies h1.findMin == h2.findMin
+   */
   def findMin_invariant (h1: Heap, h2: Heap): Boolean = {
     require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
     h1.findMin == h2.findMin because {
-      if (h1 == Empty() || h2 == Empty()) trivial
+      if (h1 == Empty() || h2 == Empty())
+        trivial
       else {
         findMin_lemma(h1) &&
           findMin_lemma(h2) &&
@@ -52,19 +72,32 @@ object LeftistHeapSpec1 {
     }
   } holds /* verified by Leon */
 
-  def merge_invariant (h1: Heap, h2: Heap, h3: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h3.isLeftistHeap && h1 ~ h2)
-    h1.merge(h3) ~ h2.merge(h3) because {
-      val l1 = h1.merge(h3)
-      val l2 = h2.merge(h3)
-      heap_merge_lemma(h1, h3) &&
-        heap_merge_lemma(h2, h3) &&
-        permutation_append(h1, h2, h3) &&
-        permutation_tran(l1, h1 ++ h3, h2 ++ h3) &&
-        permutation_tran(l1, h2 ++ h3, l2)
+  /**
+   * h1 ~ h2 implies h1.deleteMin ~ h2.deleteMin
+   */
+  def deleteMin_invariant (h1: Heap, h2: Heap): Boolean = {
+    require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
+    h1.deleteMin ~ h2.deleteMin because {
+      if (h1 == Empty() || h2 == Empty())
+        trivial
+      else {
+        findMin_invariant(h1, h2) &&
+          permutation_delete(h1, h2, h1.findMin.get)
+      }
     }
   } holds /* verified by Leon */
 
+  /**
+   * h1 ~ h2 implies h1.size == h2.size
+   */
+  def size_invariant (h1: Heap, h2: Heap): Boolean = {
+    require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
+    h1.size == h2.size
+  } holds /* verified by Leon */
+
+  /**
+   * h.insert(e1).insert(e2) ~ h.insert(e2).insert(e1)
+   */
   def insert_commu_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
     require(h.isLeftistHeap)
     h.insert(e1).insert(e2) ~ h.insert(e2).insert(e1) because {
@@ -82,6 +115,9 @@ object LeftistHeapSpec1 {
     }
   } holds /* verified by Leon */
 
+  /**
+   * h1.merge(h2) ~ h2.merge(h1)
+   */
   def merge_commu_prop (h1: Heap, h2: Heap): Boolean = {
     require(h1.isLeftistHeap && h2.isLeftistHeap)
     h1.merge(h2) ~ h2.merge(h1) because {
@@ -94,7 +130,7 @@ object LeftistHeapSpec1 {
   } holds /* verified by Leon */
 
   /**
-   * WARNING: need 10+ seconds to be verified
+   * (h1.merge(h2)).merge(h3) ~ h1.merge(h2.merge(h3))
    */
   def merge_assoc_prop (h1: Heap, h2: Heap, h3: Heap): Boolean = {
     require(h1.isLeftistHeap && h2.isLeftistHeap && h3.isLeftistHeap)
@@ -113,6 +149,10 @@ object LeftistHeapSpec1 {
     }
   } holds /* verified by Leon */
 
+  /**
+   * foldl(Empty(), insert, l1 ++ l2) ==
+   * foldl(Empty(), insert, l1).merge(foldl(Empty(), insert, l2))
+   */
   def composition_prop (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     val L = foldl_insert(Empty(), l1 ++ l2)
     val L1 = foldl_insert(Empty(), l1)
@@ -134,7 +174,6 @@ object LeftistHeapSpec1 {
 /**
  * LeftistHeap as Set
  */
-
 object LeftistHeapSpec0 {
 
   def insert_commu_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
@@ -190,16 +229,18 @@ sealed abstract class Heap {
   def deleteMin: Heap = {
     require(this.isLeftistHeap)
     this match {
+      case Empty()          => this
       case Node(_, _, l, r) => l.merge(r)
-      case l@Empty()        => l
     }
   } ensuring {
     res =>
       res.size >= this.size - 1 &&
+        res.toList == this.toList.tail &&
         res.content.subsetOf(this.content) && {
         this != Empty() && res != Empty() implies
           this.findMin.get <= res.findMin.get &&
-            this.content == res.content ++ Set(this.findMin.get)
+            this.content == res.content ++ Set(this.findMin.get) &&
+            permutation(res, delete(this, this.findMin.get))
       }
   } /* verified by Leon */
 
@@ -247,6 +288,18 @@ sealed abstract class Heap {
         isPartiallyOrdered(v, left, right)
   }
 
+  def size: BigInt = {
+    this match {
+      case Empty()          => BigInt(0)
+      case Node(_, v, l, r) => l.size + 1 + r.size
+    }
+  }
+
+  def content: Set[BigInt] = this match {
+    case Empty()                 => Set.empty[BigInt]
+    case Node(_, v, left, right) => Set(v) ++ left.content ++ right.content
+  }
+
   def toList: List[BigInt] = {
     this match {
       case Empty()          => Nil[BigInt] ()
@@ -273,19 +326,6 @@ sealed abstract class Heap {
     res =>
       isSorted(res) && res.size == this.size
   }
-
-  def size: BigInt = {
-    this match {
-      case Empty()          => BigInt(0)
-      case Node(_, v, l, r) => l.size + 1 + r.size
-    }
-  }
-
-  def content: Set[BigInt] =
-    this match {
-      case Empty()                 => Set.empty[BigInt]
-      case Node(_, v, left, right) => Set(v) ++ left.content ++ right.content
-    }
 }
 
 object Heap {
@@ -440,7 +480,7 @@ object LeftistHeapLemmas1 {
             if (v1 <= v2) {
               val l = l1
               val r = r1.merge(h2)
-              /* h == makeT(v1, l, r) */
+              //// h == makeT(v1, l, r) ////
               // permutation((L1 ++ R1) ++ H2, L1 ++ R1 ++ H2) because
               permutation_concat_assoc2(l1, r1, h2) &&
                 // permutation(v1 :: ((l1 ++ r1) ++ h2), v1 :: (l1 ++ r1 ++ h2)) because
@@ -453,18 +493,18 @@ object LeftistHeapLemmas1 {
                 // permutation(l1 ++ r1 ++ h2, l1 ++ (r1 ++ h2)) because
                 permutation_concat_assoc(l1, r1, h2) &&
                 permutation_tran(l ++ r, l1 ++ (r1 ++ h2), l1 ++ r1 ++ h2) && // }
+                // permutation(h1 ++ h2, v1 :: (l ++ r)) because
                 // permutation(v1 :: (l ++ r), v1 :: (l1 ++ r1 ++ h2)) because
                 permutation_cons(l ++ r, l1 ++ r1 ++ h2, v1) &&
-                permutation(h1 ++ h2, v1 :: (l ++ r)) &&
-                permutation(h, v1 :: (l ++ r)) &&
+                // permutation(h, v1 :: (l ++ r)) by post-cond of toList
                 permutation_tran(h, v1 :: (l ++ r), h1 ++ h2)
             } else {
               val l = l2
               val r = h1.merge(r2)
-              /* h == makeT(v2, l, r) */
-              // permutation(h, v2 :: (l ++ r)) because
+              //// h == makeT(v2, l, r) ////
+              // permutation(h, v2 :: (l ++ r))
+              // permutation(r, h1 ++ r2) because
               heap_merge_lemma(h1, r2) &&
-                permutation(r, h1 ++ r2) &&
                 // permutation(l ++ (r2 ++ h1), l ++ (h1 ++ r2)) because {
                 permutation_concat_comm(h1, r2) &&
                 permutation_prepend(l, r2 ++ h1, h1 ++ r2) && // }
@@ -481,7 +521,7 @@ object LeftistHeapLemmas1 {
                 permutation_eq(h2 ++ h1, v2 :: (l ++ r2) ++ h1) &&
                 permutation_tran(h, v2 :: (l ++ r), v2 :: (l ++ r2) ++ h1) &&
                 permutation_tran(h, v2 :: (l ++ r2) ++ h1, h2 ++ h1) &&
-                permutation(h2 ++ h1, h1 ++ h2) &&
+                // permutation(h2 ++ h1, h1 ++ h2) because
                 permutation_concat_comm(h1, h2) &&
                 permutation_tran(h, h2 ++ h1, h1 ++ h2)
             }
@@ -532,8 +572,30 @@ object LeftistHeapLemmas1 {
     }
   } holds /* verified by Leon */
 
-  def min_permutation (l1: List[BigInt], l2: List[BigInt]) = {
+  def min_permutation (l1: List[BigInt], l2: List[BigInt]): Boolean = {
     require(permutation(l1, l2) && l2 != Nil[BigInt]())
-    min(l1) == min(l2)
-  } holds /* timeout */
+    min(l1) == min(l2) because {
+      if (l1.size == 1)
+        trivial
+      else {
+        val l11 = delete(l1, min(l1))
+        val l21 = delete(l2, min(l1))
+        //min(l11) == min(l21) because {
+        permutation_delete(l1, l2, min(l1)) &&
+          min_permutation(l11, l21) && // }
+          // min(l1) <= min(l21) because
+          // min(l1) <= min(l11) because
+          min_contains(l1, min(l11)) &&
+          // l2.contains(min(l1)) &&
+          min_delete(l2, min(l1))
+      }
+    }
+  } holds /* verified by Leon */
+
+  @induct
+  def min_delete (l: List[BigInt], m: BigInt): Boolean = {
+    require(l.contains(m) &&
+      (l.size == 1 || m <= min(delete(l, m))))
+    m == min(l)
+  } holds /* verified by Leon */
 }

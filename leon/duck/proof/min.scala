@@ -68,7 +68,8 @@ object MinLemmas {
   def min_lemma2 (list: List[BigInt]): Boolean = {
     require(list != Nil[BigInt]())
     val m = min(list)
-    list.contains(m) && list.forall(m <= _) because min_lemma(list, m)
+    list.contains(m) && list.forall(m <= _) because
+      min_lemma(list, m)
   } holds
 
   /**
