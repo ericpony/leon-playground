@@ -49,6 +49,8 @@ object MinOps {
   }
 
   def min (x: BigInt, y: BigInt) = if (x < y) x else y
+
+  def max (x: BigInt, y: BigInt) = if (x > y) x else y
 }
 
 @library

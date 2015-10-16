@@ -1,8 +1,8 @@
 package duck.spec
 
-import duck.proof.sugar._
 import duck.collection._
 import duck.spec.SortedListOps._
+import duck.proof.sugar._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
@@ -28,7 +28,7 @@ object LeftistHeapSpec1 {
    * h1 ~ h2 implies h1.insert(e) ~ h2.insert(e)
    */
   def insert_invariant (h1: Heap, h2: Heap, e: BigInt): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
+    require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.insert(e) ~ h2.insert(e) because {
       val l1 = h1.insert(e)
       val l2 = h2.insert(e)
@@ -44,7 +44,7 @@ object LeftistHeapSpec1 {
    * h1 ~ h2 implies h1.merge(h) ~ h2.merge(h)
    */
   def merge_invariant (h1: Heap, h2: Heap, h: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h.isLeftistHeap && h1 ~ h2)
+    require(h1.isHeap && h2.isHeap && h.isHeap && h1 ~ h2)
     h1.merge(h) ~ h2.merge(h) because {
       val l1 = h1.merge(h)
       val l2 = h2.merge(h)
@@ -60,7 +60,7 @@ object LeftistHeapSpec1 {
    * h1 ~ h2 implies h1.findMin == h2.findMin
    */
   def findMin_invariant (h1: Heap, h2: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
+    require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.findMin == h2.findMin because {
       if (h1 == Empty() || h2 == Empty())
         trivial
@@ -76,7 +76,7 @@ object LeftistHeapSpec1 {
    * h1 ~ h2 implies h1.deleteMin ~ h2.deleteMin
    */
   def deleteMin_invariant (h1: Heap, h2: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
+    require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.deleteMin ~ h2.deleteMin because {
       if (h1 == Empty() || h2 == Empty())
         trivial
@@ -91,15 +91,15 @@ object LeftistHeapSpec1 {
    * h1 ~ h2 implies h1.size == h2.size
    */
   def size_invariant (h1: Heap, h2: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h1 ~ h2)
+    require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.size == h2.size
   } holds /* verified by Leon */
 
   /**
    * h.insert(e1).insert(e2) ~ h.insert(e2).insert(e1)
    */
-  def insert_commu_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
-    require(h.isLeftistHeap)
+  def insert_comm_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
+    require(h.isHeap)
     h.insert(e1).insert(e2) ~ h.insert(e2).insert(e1) because {
       heap_insert_lemma(h, e1) &&
         heap_insert_lemma(h, e2) &&
@@ -118,8 +118,8 @@ object LeftistHeapSpec1 {
   /**
    * h1.merge(h2) ~ h2.merge(h1)
    */
-  def merge_commu_prop (h1: Heap, h2: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap)
+  def merge_comm_prop (h1: Heap, h2: Heap): Boolean = {
+    require(h1.isHeap && h2.isHeap)
     h1.merge(h2) ~ h2.merge(h1) because {
       heap_merge_lemma(h1, h2) &&
         heap_merge_lemma(h2, h1) &&
@@ -133,7 +133,7 @@ object LeftistHeapSpec1 {
    * (h1.merge(h2)).merge(h3) ~ h1.merge(h2.merge(h3))
    */
   def merge_assoc_prop (h1: Heap, h2: Heap, h3: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h3.isLeftistHeap)
+    require(h1.isHeap && h2.isHeap && h3.isHeap)
     h1.merge(h2).merge(h3) ~ h1.merge(h2.merge(h3)) because {
       heap_merge_lemma(h1, h2) &&
         heap_merge_lemma(h1.merge(h2), h3) &&
@@ -176,18 +176,18 @@ object LeftistHeapSpec1 {
  */
 object LeftistHeapSpec0 {
 
-  def insert_commu_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
-    require(h.isLeftistHeap)
+  def insert_comm_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
+    require(h.isHeap)
     h.insert(e1).insert(e2) ~~ h.insert(e2).insert(e1)
   } holds /* verified by Leon */
 
-  def merge_commu_prop (h1: Heap, h2: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap)
+  def merge_comm_prop (h1: Heap, h2: Heap): Boolean = {
+    require(h1.isHeap && h2.isHeap)
     h1.merge(h2) ~~ h2.merge(h1)
   } holds /* verified by Leon */
 
   def merge_assoc_prop (h1: Heap, h2: Heap, h3: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap && h3.isLeftistHeap)
+    require(h1.isHeap && h2.isHeap && h3.isHeap)
     h1.merge(h2).merge(h3) ~~ h1.merge(h2.merge(h3))
   } holds /* verified by Leon */
 
@@ -211,79 +211,78 @@ object LeftistHeapSpec0 {
 sealed abstract class Heap {
 
   def findMin: Option[BigInt] = {
-    require(this.isLeftistHeap)
+    require(isHeap)
     this match {
       case Empty()          => None[BigInt]()
       case Node(_, v, _, _) => Some(v)
     }
-  } ensuring { res => this != Empty() implies
-    res.isDefined && {
-      val m = res.get
-      val Node(_, _, left, right) = this
-      val p1 = m <= min(left.findMin.getOrElse(m), right.findMin.getOrElse(m))
-      val p2 = this.content == this.deleteMin.content ++ Set(m)
-      p1 && p2
-    }
+  } ensuring { res =>
+    this != Empty() implies
+      res.isDefined && {
+        val m = res.get
+        val Node(_, _, left, right) = this
+        val p1 = m <= min(left.findMin.getOrElse(m), right.findMin.getOrElse(m))
+        val p2 = content == deleteMin.content ++ Set(m)
+        p1 && p2
+      }
   } /* verified by Leon */
 
   def deleteMin: Heap = {
-    require(this.isLeftistHeap)
+    require(isHeap)
     this match {
       case Empty()          => this
       case Node(_, _, l, r) => l.merge(r)
     }
-  } ensuring {
-    res =>
-      res.size >= this.size - 1 &&
-        res.toList == this.toList.tail &&
-        res.content.subsetOf(this.content) && {
-        this != Empty() && res != Empty() implies
-          this.findMin.get <= res.findMin.get &&
-            this.content == res.content ++ Set(this.findMin.get) &&
-            permutation(res, delete(this, this.findMin.get))
-      }
+  } ensuring { res =>
+    res.isHeap &&
+      res.size >= max(size, size - 1) &&
+      res.toList == toList.tail &&
+      res.content.subsetOf(content) && {
+      this != Empty() && res != Empty() implies
+        findMin.get <= res.findMin.get &&
+          content == res.content ++ Set(findMin.get) &&
+          permutation(res, delete(this, findMin.get))
+    }
   } /* verified by Leon */
 
   def merge (h: Heap): Heap = {
-    require(this.isLeftistHeap && h.isLeftistHeap)
+    require(isHeap && h.isHeap)
     this match {
       case Empty()             => h
       case Node(_, v1, l1, r1) => h match {
         case Empty()             => this
         case Node(_, v2, l2, r2) =>
           if (v1 <= v2)
-            makeT(v1, l1, r1.merge(h))
+            build(v1, l1, r1.merge(h))
           else
-            makeT(v2, l2, this.merge(r2))
+            build(v2, l2, merge(r2))
       }
     }
-  } ensuring {
-    res =>
-      res.isLeftistHeap &&
-        res.size == this.size + h.size &&
-        res.content == this.content ++ h.content && {
-        res != Empty() implies {
-          val v = res.findMin.get
-          v == min(this.findMin.getOrElse(v), h.findMin.getOrElse(v))
-        }
+  } ensuring { res =>
+    res.isHeap &&
+      res.size == size + h.size &&
+      res.content == content ++ h.content && {
+      res != Empty() implies {
+        val v = res.findMin.get
+        v == min(findMin.getOrElse(v), h.findMin.getOrElse(v))
       }
+    }
   } /* verified by Leon */
 
   def insert (element: BigInt): Heap = {
-    require(this.isLeftistHeap)
-    this.merge(Node(1, element, Empty(), Empty()))
+    require(isHeap)
+    merge(Node(1, element, Empty(), Empty()))
     // Node(1, element, Empty(), Empty()).merge(this)
-  } ensuring {
-    res =>
-      res.isLeftistHeap &&
-        res.size == this.size + 1 &&
-        res.content == this.content ++ Set(element)
+  } ensuring { res =>
+    res.isHeap &&
+      res.size == size + 1 &&
+      res.content == content ++ Set(element)
   } /* verified by Leon */
 
-  def isLeftistHeap: Boolean = this match {
+  def isHeap: Boolean = this match {
     case Empty()                 => true
     case Node(_, v, left, right) =>
-      left.isLeftistHeap && right.isLeftistHeap &&
+      left.isHeap && right.isHeap &&
         rightHeight(left) >= rightHeight(right) &&
         isPartiallyOrdered(v, left, right)
   }
@@ -305,35 +304,33 @@ sealed abstract class Heap {
       case Empty()          => Nil[BigInt] ()
       case Node(_, v, l, r) => v :: (l.toList ++ r.toList)
     }
-  } ensuring {
-    res =>
-      res.size == this.size &&
-        res.content == this.content &&
-        (this != Empty() implies {
-          val Node(_, v, l, r) = this
-          permutation(this, v :: (l ++ r))
-        })
+  } ensuring { res =>
+    res.size == size &&
+      res.content == content &&
+      (this != Empty() implies {
+        val Node(_, v, l, r) = this
+        permutation(this, v :: (l ++ r))
+      })
   }
 
   @induct
   def toSortedList: List[BigInt] = {
-    require(this.isLeftistHeap)
+    require(isHeap)
     this match {
       case Empty() => Nil[BigInt] ()
-      case _       => this.findMin.get :: this.deleteMin.toSortedList
+      case _       => findMin.get :: deleteMin.toSortedList
     }
-  } ensuring {
-    res =>
-      isSorted(res) && res.size == this.size
+  } ensuring { res =>
+    isSorted(res) && res.size == size
   }
 }
 
 object Heap {
 
-  case class Bisimulation (h1: Heap) {
-    def ~ (h2: Heap): Boolean = permutation(h1, h2)
+  case class Bisimulation (h: Heap) {
+    def ~ (l: List[BigInt]): Boolean = permutation(h, l)
 
-    def ~~ (h2: Heap): Boolean = h1.content == h2.content
+    def ~~ (l: List[BigInt]): Boolean = h.content == l.content
   }
 
   implicit def bisimulate (h: Heap): Bisimulation = Bisimulation(h)
@@ -349,15 +346,15 @@ object LeftistHeapOps {
     }
   } ensuring (_ >= 0)
 
-  def makeT (v: BigInt, l: Heap, r: Heap): Heap = {
-    require(l.isLeftistHeap && r.isLeftistHeap &&
+  def build (v: BigInt, l: Heap, r: Heap): Heap = {
+    require(l.isHeap && r.isHeap &&
       isPartiallyOrdered(v, l, r))
     if (rightHeight(l) >= rightHeight(r))
       Node(rightHeight(r) + 1, v, l, r)
     else // swap l and r subtree
       Node(rightHeight(l) + 1, v, r, l)
   } ensuring { res =>
-    res.isLeftistHeap &&
+    res.isHeap &&
       permutation(res, v :: (l ++ r)) because {
       if (rightHeight(l) >= rightHeight(r)) true
       else {
@@ -370,7 +367,7 @@ object LeftistHeapOps {
   } /* verified by Leon */
 
   def isPartiallyOrdered (value: BigInt, h1: Heap, h2: Heap) = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap)
+    require(h1.isHeap && h2.isHeap)
     h1 match {
       case Empty()           => h2 match {
         case Empty()           => true
@@ -386,11 +383,11 @@ object LeftistHeapOps {
   }
 
   def foldl_insert (heap: Heap, list: List[BigInt]): Heap = {
-    require(heap.isLeftistHeap)
+    require(heap.isHeap)
     if (list == Nil[BigInt] ()) heap
     else foldl_insert(heap.insert(list.head), list.tail)
-  } ensuring {
-    res => res.isLeftistHeap &&
+  } ensuring { res =>
+    res.isHeap &&
       res.content == (heap.content ++ list.content)
   } /* verified by Leon */
 }
@@ -422,14 +419,14 @@ object LeftistHeapLemmas1 {
    * WARNING: Need ~20 sec. to be verified on my desktop
    */
   def heap_insert_lemma (h: Heap, e: BigInt): Boolean = {
-    require(h.isLeftistHeap)
-    permutation(h.insert(e), e :: h) because {
+    require(h.isHeap)
+    h.insert(e) ~ (e :: h) because {
       if (h == Empty()) trivial
       else {
         val Node(_, v, l, r) = h
         val H = h.insert(e)
         if (v <= e) {
-          h.insert(e) == makeT(v, l, r.merge(Node(1, e, Empty(), Empty()))) &&
+          h.insert(e) == build(v, l, r.merge(Node(1, e, Empty(), Empty()))) &&
             // permutation(H, v :: (l ++ r.insert(e))) &&
             // permutation(h, v :: (l ++ r)) &&
             // permutation((l ++ List(e)) ++ r, (List(e) ++ l) ++ r) because {
@@ -458,7 +455,7 @@ object LeftistHeapLemmas1 {
             permutation_tran(H, e :: v :: (l ++ r), e :: h) &&
             permutation(H, e :: h)
         } else {
-          h.insert(e) == makeT(e, Empty(), h.merge(Empty())) &&
+          h.insert(e) == build(e, Empty(), h.merge(Empty())) &&
             permutation(H, e :: h)
         }
       }
@@ -469,8 +466,8 @@ object LeftistHeapLemmas1 {
    * Warning: Need ~20 sec. to be verified on my desktop
    */
   def heap_merge_lemma (h1: Heap, h2: Heap): Boolean = {
-    require(h1.isLeftistHeap && h2.isLeftistHeap)
-    permutation(h1.merge(h2), h1 ++ h2) because {
+    require(h1.isHeap && h2.isHeap)
+    h1.merge(h2) ~ (h1 ++ h2) because {
       h1 match {
         case Empty()             => permutation_refl(h2)
         case Node(_, v1, l1, r1) => h2 match {
@@ -480,7 +477,7 @@ object LeftistHeapLemmas1 {
             if (v1 <= v2) {
               val l = l1
               val r = r1.merge(h2)
-              //// h == makeT(v1, l, r) ////
+              //// h == build(v1, l, r) ////
               // permutation((L1 ++ R1) ++ H2, L1 ++ R1 ++ H2) because
               permutation_concat_assoc2(l1, r1, h2) &&
                 // permutation(v1 :: ((l1 ++ r1) ++ h2), v1 :: (l1 ++ r1 ++ h2)) because
@@ -501,7 +498,7 @@ object LeftistHeapLemmas1 {
             } else {
               val l = l2
               val r = h1.merge(r2)
-              //// h == makeT(v2, l, r) ////
+              //// h == build(v2, l, r) ////
               // permutation(h, v2 :: (l ++ r))
               // permutation(r, h1 ++ r2) because
               heap_merge_lemma(h1, r2) &&
@@ -531,8 +528,8 @@ object LeftistHeapLemmas1 {
   } holds /* verified by Leon */
 
   def foldl_insert_lemma (heap: Heap, list: List[BigInt]): Boolean = {
-    require(heap.isLeftistHeap)
-    permutation(foldl_insert(heap, list), heap ++ list) because {
+    require(heap.isHeap)
+    foldl_insert(heap, list) ~ (heap ++ list) because {
       if (list == Nil[BigInt]()) trivial
       else {
         val H = foldl_insert(heap, list)
@@ -552,7 +549,7 @@ object LeftistHeapLemmas1 {
   } holds /* verified by Leon */
 
   def findMin_lemma (h: Heap): Boolean = {
-    require(h.isLeftistHeap)
+    require(h.isHeap)
     (h == Empty() || h.findMin.get == min(h.toList)) because {
       if (h == Empty())
         trivial

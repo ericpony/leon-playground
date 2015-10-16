@@ -35,9 +35,6 @@ sealed abstract class List[T] {
       (that != Nil[T]() || res == this)
   }
 
-  def ~ (that: List[T]) =
-    this.content == that.content
-
   def head: T = {
     require(this != Nil[T]())
     val Cons(h, _) = this
@@ -563,8 +560,18 @@ object List {
   def fill[T] (n: BigInt)(x: T): List[T] = {
     if (n <= 0) Nil[T]
     else Cons[T](x, fill[T](n-1)(x))
-  } ensuring (res => (res.content == (if (n <= BigInt(0)) Set.empty[T] else Set(x))) &&
-    res.size == (if (n <= BigInt(0)) BigInt(0) else n))
+  } ensuring { res =>
+    (res.content == (if (n <= BigInt(0)) Set.empty[T] else Set(x))) &&
+      res.size == (if (n <= BigInt(0)) BigInt(0) else n)
+  }
+
+  case class Bisimulation[T] (l1: List[T]) {
+    def ~ (l2: List[T]): Boolean = duck.proof.PermutationOps.permutation(l1, l2)
+
+    def ~~ (l2: List[T]): Boolean = l1.content == l2.content
+  }
+
+  implicit def bisimulate[T] (l: List[T]) = Bisimulation(l)
 }
 
 // 'Cons' Extractor
