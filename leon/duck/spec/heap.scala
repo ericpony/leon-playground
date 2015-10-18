@@ -17,12 +17,13 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 
 import LeftistHeapOps._
-import LeftistHeapLemmas1._
+import LeftistHeapLemmas._
 
 /**
  * LeftistHeap as List
  */
-object LeftistHeapSpec1 {
+@library
+object LeftistHeapSpec {
 
   /**
    * h1 ~ h2 implies h1.insert(e) ~ h2.insert(e)
@@ -174,6 +175,7 @@ object LeftistHeapSpec1 {
 /**
  * LeftistHeap as Set
  */
+@library
 object LeftistHeapSpec0 {
 
   def insert_comm_prop (h: Heap, e1: BigInt, e2: BigInt): Boolean = {
@@ -207,7 +209,7 @@ object LeftistHeapSpec0 {
  * 1. For each node, the height of its right subtree <= that of its left subtree.
  * 2. For each node, the rank of its right child <= the rank of its left child.
  */
-
+@library
 sealed abstract class Heap {
 
   def findMin: Option[BigInt] = {
@@ -302,7 +304,7 @@ sealed abstract class Heap {
   def toList: List[BigInt] = {
     this match {
       case Empty()          => Nil[BigInt] ()
-      case Node(_, v, l, r) => v :: (l.toList ++ r.toList)
+      case Node(_, v, l, r) => v :: (l ++ r)
     }
   } ensuring { res =>
     res.size == size &&
@@ -338,6 +340,7 @@ object Heap {
   implicit def toList (h: Heap): List[BigInt] = h.toList
 }
 
+@library
 object LeftistHeapOps {
   def rightHeight (h: Heap): BigInt = {
     h match {
@@ -396,7 +399,8 @@ case class Empty () extends Heap
 
 case class Node (rk: BigInt, value: BigInt, left: Heap, right: Heap) extends Heap
 
-object LeftistHeapLemmas1 {
+@library
+object LeftistHeapLemmas {
 
   def List (e: BigInt) = Cons(e, Nil[BigInt]())
 
@@ -479,7 +483,7 @@ object LeftistHeapLemmas1 {
               val r = r1.merge(h2)
               //// h == build(v1, l, r) ////
               // permutation((L1 ++ R1) ++ H2, L1 ++ R1 ++ H2) because
-              permutation_concat_assoc2(l1, r1, h2) &&
+              permutation_refl(l1 ++ r1 ++ h2) &&
                 // permutation(v1 :: ((l1 ++ r1) ++ h2), v1 :: (l1 ++ r1 ++ h2)) because
                 permutation_cons((l1 ++ r1) ++ h2, l1 ++ r1 ++ h2, v1) &&
                 h1 ++ h2 == v1 :: ((l1 ++ r1) ++ h2) &&
@@ -535,7 +539,7 @@ object LeftistHeapLemmas1 {
         val H = foldl_insert(heap, list)
         val Cons(h, t) = list
         H == foldl_insert(heap.insert(h), t) &&
-          // permutation(H.toList, heap.insert(h) ++ t) because
+          // permutation(H, heap.insert(h) ++ t) because
           foldl_insert_lemma(heap.insert(h), t) &&
           heap_insert_lemma(heap, h) &&
           permutation_append(heap.insert(h), h :: heap, t) &&
@@ -550,7 +554,7 @@ object LeftistHeapLemmas1 {
 
   def findMin_lemma (h: Heap): Boolean = {
     require(h.isHeap)
-    (h == Empty() || h.findMin.get == min(h.toList)) because {
+    (h == Empty() || h.findMin.get == min(h)) because {
       if (h == Empty())
         trivial
       else {

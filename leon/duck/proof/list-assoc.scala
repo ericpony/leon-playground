@@ -31,12 +31,6 @@ object KListLemmas {
     l1.content == l2.content because permutation_content_lemma(l1, l2)
   } holds
 
-  def permutation_append[K, V] (l1: KList[K, V], l2: KList[K, V], ll: KList[K, V]) = {
-    require(permutation(l1, l2))
-    permutation(l1 ++ ll, l2 ++ ll) because
-      permutation_concat_lemma(l1, l2, ll)
-  } holds
-
   def permutation_concat_comm[K, V] (l1: KList[K, V], l2: KList[K, V]): Boolean = {
     permutation(l1 ++ l2, l2 ++ l1) because
       permutation_concat_comm_lemma(l1, l2)
@@ -75,7 +69,7 @@ object KListLemmas {
   } holds
 
   @induct
-  def permutation_cons_delete[K, V] (l1: KList[K, V], l2: KList[K, V]): Boolean = {
+  def permutation_delete_cons[K, V] (l1: KList[K, V], l2: KList[K, V]): Boolean = {
     require(l2 != KNil[K, V]())
     val h2 = l2.head
     if (l1 == KNil[K, V]) {
@@ -88,7 +82,7 @@ object KListLemmas {
           permutation_cons_tail(l1.tail, l2.tail, h1)
       } else {
         permutation((l1 ++ l2).delete(h2), l1 ++ (l2.tail)) because
-          permutation_cons_delete(l1.tail, l2)
+          permutation_delete_cons(l1.tail, l2)
       }
     }
   } holds
@@ -107,7 +101,7 @@ object KListLemmas {
             permutation_concat_comm(l1.tail, l2) &&
             (l1 ++ l2).tail == l1.tail ++ l2 &&
             // permutation (delete (l2 ++ l1, h1), l2 ++ l1.tail)
-            permutation_cons_delete(l2, l1) &&
+            permutation_delete_cons(l2, l1) &&
             // permutation (l2 ++ l1.tail, delete (l2 ++ l1, h1))
             permutation_comm_lemma((l2 ++ l1).delete(h1), l2 ++ l1.tail) &&
             permutation_tran_lemma(l1.tail ++ l2, l2 ++ l1.tail, (l2 ++ l1).delete(h1))
@@ -143,7 +137,7 @@ object KListLemmas {
   } holds
 
   @induct
-  def permutation_cons_delete[K, V] (l1: KList[K, V], h2: Item[K, V], t2: KList[K, V]): Boolean = {
+  def permutation_delete_cons[K, V] (l1: KList[K, V], h2: Item[K, V], t2: KList[K, V]): Boolean = {
     require(permutation(l1.delete(h2), t2) && l1.contains(h2))
     if (l1 == KNil[K, V]()) {
       permutation(l1, KCons(h2, t2))
@@ -156,7 +150,7 @@ object KListLemmas {
           check {
             (KCons(h2, t2) contains h1) &&
               delete_comm(l1, h1, h2) &&
-              permutation_cons_delete(l1.tail, h2, t2 delete h1)
+              permutation_delete_cons(l1.tail, h2, t2 delete h1)
           }
       }
     }
@@ -173,7 +167,7 @@ object KListLemmas {
           permutation_content(l1, l2) &&
             l1.contains(l2.head) &&
             permutation_comm(l1.tail, l2 delete l1.head) &&
-            permutation_cons_delete(l2, l1.head, l1.tail) &&
+            permutation_delete_cons(l2, l1.head, l1.tail) &&
             permutation_delete(l2, l1, l2.head)
         }
     }
@@ -237,7 +231,7 @@ object KListLemmas {
   } holds
 
   @induct
-  private def permutation_concat_lemma[K, V] (l1: KList[K, V], l2: KList[K, V], ll: KList[K, V]): Boolean = {
+  def permutation_append[K, V] (l1: KList[K, V], l2: KList[K, V], ll: KList[K, V]): Boolean = {
     require(permutation(l1, l2))
     if (l1 == KNil[K, V]()) {
       permutation(l1 ++ ll, l2 ++ ll) because
@@ -246,7 +240,7 @@ object KListLemmas {
       val h1 = l1.head
       permutation(l1 ++ ll, l2 ++ ll) because
         check {
-          permutation_concat_lemma(l1.tail, l2.delete(h1), ll) &&
+          permutation_append(l1.tail, l2.delete(h1), ll) &&
             l1.tail ++ ll == (l1 ++ ll).tail &&
             l2.delete(h1) ++ ll == (l2 ++ ll).delete(h1) &&
             delete_concat(l2, ll, h1)
@@ -317,7 +311,7 @@ object KListLemmas {
           check { m1.getAll(key) == l1.tail because getAll_delete_lemma(map1, h1, key) } &&
           check { m2.getAll(key) == l2.delete(h1) because getAll_delete_lemma(map2, h1, key) } &&
           permutation(l2.delete(h1), l1.tail) &&
-          permutation_cons_delete(l2, h1, l1.tail)
+          permutation_delete_cons(l2, h1, l1.tail)
       }
     }
   } holds /* verified by Leon */
@@ -344,7 +338,7 @@ object KListLemmas {
     require(permutation(l1, l2))
     permutation(ll ++ l1, ll ++ l2) because
       // permutation (l1 ++ ll, l2 ++ ll)
-      permutation_concat_lemma(l1, l2, ll) &&
+      permutation_append(l1, l2, ll) &&
         // permutation (ll ++ l1, l1 ++ ll)
         permutation_concat_comm_lemma(ll, l1) &&
         // permutation (l2 ++ ll, ll ++ l2)
@@ -354,7 +348,7 @@ object KListLemmas {
   } holds
 
   @induct
-  def permutation_cons_delete[K, V] (list: KList[K, V], e: Item[K, V]): Boolean = {
+  def permutation_delete_cons[K, V] (list: KList[K, V], e: Item[K, V]): Boolean = {
     require(list contains e)
     val h = list.head
     if (h == e) {
@@ -404,7 +398,7 @@ object KListLemmas {
     require(list.contains(e))
     permutation(e :: list.delete(e), list) because {
       permutation_refl(list.delete(e)) &&
-        permutation_cons_delete(list, e, list.delete(e))
+        permutation_delete_cons(list, e, list.delete(e))
     }
   } holds /* proven by Leon */
 

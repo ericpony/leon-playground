@@ -1,4 +1,3 @@
-package duck.spec
 
 import duck.proof.sugar._
 import duck.proof.MinOps._

@@ -394,7 +394,7 @@ object SortedListTakeLemmas {
         //permutation(sort(l1) ++ l2, l1 ++ l2) because
         permutation(sort(l1), l1) because {
         sort_permutation(l1)
-      } && permutation_concat_lemma(sort(l1), l1, l2)
+      } && permutation_append(sort(l1), l1, l2)
     }
   } holds /* verified by Leon */
 
