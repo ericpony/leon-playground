@@ -90,8 +90,10 @@ define find_imports
 			elif [[ -f "$${dn}/$${bn}.scala" ]]; then \
 				if [[ "$(INCLUDE_SAME_PACKAGE)" == "yes" ]]; then \
 					ls $${dn}/*.scala >> $(DEPEND); \
+					resolved="yes"; \
 				else \
 					echo $${dn}/$${bn}.scala >> $(DEPEND); \
+					resolved="yes"; \
 				fi \
 			elif [[ -d "$${dn}" ]]; then \
 				lines=`grep -E -l "(class|object|def)[ ]*$${bn}[ ]*\b" $${dn}/*.scala 2> /dev/null`; \
@@ -100,24 +102,28 @@ define find_imports
 				else \
 					if [[ "$(INCLUDE_SAME_PACKAGE)" == "yes" ]]; then \
 						ls $${dn}/*.scala >> $(DEPEND); \
+						resolved="yes"; \
 					else \
 						for line in $${lines}; do \
 							echo $${line} >> $(DEPEND); \
-						done \
+						done; \
+						resolved="yes"; \
 					fi \
-				fi \
-			elif [[ "$(INCLUDE_SAME_PACKAGE)" != "yes" ]]; then \
-				basedir=`dirname $${file}`; \
-				lines=`grep -E -l "(class|object|def)[ ]*$${bn}[ ]*\b" $${basedir}/*.scala 2> /dev/null`; \
-				if [[ -z "$${lines}" ]]; then \
-					resolve_path "$${file}" "$${dn}"; \
-				else \
-					for line in $${lines}; do \
-						echo $${line} >> $(DEPEND); \
-					done \
 				fi \
 			else \
 				resolve_path "$${file}" "$${dn}"; \
+				if [[ "$${resolved}" != "yes" ]]; then \
+					basedir=`dirname $${file}`; \
+					lines=`grep -E -l "(class|object|def)[ ]*$${bn}[ ]*\b" $${basedir}/*.scala 2> /dev/null`; \
+					if [[ -z "$${lines}" ]]; then \
+						resolve_path "$${file}" "$${dn}"; \
+					else \
+						for line in $${lines}; do \
+							echo $${line} >> $(DEPEND); \
+						done; \
+						resolved="yes"; \
+					fi \
+				fi \
 			fi \
 		fi \
 	}; \
@@ -136,6 +142,7 @@ define find_imports
 			IFS=$$'\n'; \
 			depends=`grep "import" $${source} | cut -d " " -f 2- | grep -v "^leon[.]" | grep -v "^scala[.]" | sed "s/[.]/\//g"`; \
 			for depend in $${depends}; do \
+				resolved="no"; \
 				IFS=$$' ' resolve_path "$${source}" "$${depend}"; \
 			done; \
 			IFS=$$' '; \

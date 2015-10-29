@@ -4,6 +4,7 @@ import duck.proof.sugar._
 import duck.collection._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
+import duck.proof.PermutationSpec._
 import duck.proof.MinSpec._
 import duck.proof.MinOps._
 import duck.proof.MinLemmas._

@@ -3,6 +3,7 @@ package duck.collection
 import leon.lang._
 import leon.annotation._
 import scala.language.implicitConversions
+import duck.proof.PermutationOps.permutation
 
 case class Cons[T] (h: T, t: List[T]) extends List[T]
 
@@ -567,7 +568,7 @@ object List {
   }
 
   case class Bisimulation[T] (l1: List[T]) {
-    def ~ (l2: List[T]): Boolean = duck.proof.PermutationOps.permutation(l1, l2)
+    def ~ (l2: List[T]): Boolean = permutation(l1, l2)
 
     def ~~ (l2: List[T]): Boolean = l1.content == l2.content
   }
