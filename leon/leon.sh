@@ -1,4 +1,5 @@
 #! /bin/bash
+DEBUG_MODE=
 
 if [[ -z $DUCK_LIB_DIR ]]
 then
@@ -37,14 +38,9 @@ function find_dep {
   #local objs=`( grep '^package duck\.' $1; grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.' ) | sed 's/^.*[\. ] *\([^\.]*\)\.[^\.]*$/\1/'`
   local objs=
   IFS=$'\n'
-  for dep in $(grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.')
+  for obj in $(grep '^import ' $1 | grep -v ' scala\.' | grep -v ' leon\.')
   do
-    case "^$dep$" in
-      *._$)   obj=$(echo $dep | sed 's/^.*[ \.]\([^\._]\+\)\._.*/\1/') ;;
-      *.{*}$) obj=$(echo $dep | sed 's/^.*[ \.]\([^\._]\+\)\.{.*/\1/') ;;
-      *)      obj=$(echo $dep | sed 's/^.*[ \.]\([^\._]\+\).*/\1/') ;;
-    esac
-    #echo -e "obj: $obj \t\tdep: $dep" 1>&2
+    obj=$(echo $obj | sed 's/^[^ ]* //')
     objs="$objs $obj"
   done
   unset IFS
@@ -53,29 +49,48 @@ function find_dep {
 
   for obj in $objs
   do
-    [[ -n ${obj_map[$obj]} ]] && continue
-    local found=
-    [[ -n $DEBUG_MODE ]] && echo "Resolving symbol $obj..." 1>&2
-
-    for pattern in "object $obj" "class $obj" "package $obj" "package duck\\.$obj"
+    _sym=$obj
+    sym=$obj
+    while true
     do
-      local lib=$(grep -Hw "$pattern" $libs | grep -o '^[^:]*')
-      [[ -n $lib ]] && found="$lib $found"
-    done
-    if [[ -n $found ]]
-    then
-      obj_map[$obj]=1
-      for lib in $found
+      case "^$sym$" in
+        *._$)   obj=$(echo $sym | sed 's/^.*[ \.]\([^\._]\+\)\._.*/\1/') ;;
+        *.{*}$) obj=$(echo $sym | sed 's/^.*[ \.]\([^\._]\+\)\.{.*/\1/') ;;
+        *)      obj=$(echo $sym | sed 's/^.*[ \.]\([^\._]\+\).*/\1/') ;;
+      esac
+      obj=$(echo $obj | sed 's/\.[^\.]*$//')
+      #echo -e "object: $obj \t\tsymbol: $sym" 1>&2
+
+      [[ -n ${obj_map[$obj]} ]] && continue 2
+      local found=
+      [[ -n $DEBUG_MODE ]] && echo "Resolving symbol $obj..." 1>&2
+
+      for pattern in "object $obj" "class $obj" "package $obj" "package duck\\.$obj"
       do
-        lid=$(realpath $lib)
-        [[ -n ${lib_map[$lid]} ]] && continue
-        [[ -n $DEBUG_MODE ]] && echo "Found dependency $lib for symbol $obj" 1>&2
-        find_dep $lib
+        local lib=$(grep -Hw "$pattern" $libs | grep -o '^[^:]*')
+        [[ -n $lib ]] && found="$lib $found"
       done
-    else
-      echo "[Error] Cannot resolve dependency for '$obj'." 1>&2
-      exit 1
-    fi
+      if [[ -n $found ]]
+      then
+        obj_map[$obj]=1
+        for lib in $found
+        do
+          lid=$(realpath $lib)
+          [[ -n ${lib_map[$lid]} ]] && continue 2
+          [[ -n $DEBUG_MODE ]] && echo "Found dependency $lib for symbol $obj" 1>&2
+          find_dep $lib
+        done
+        break
+      else
+        sym=$(echo $sym | sed 's/\.[^\.]*$//')
+        [[ -n $DEBUG_MODE ]] && echo "[Warning] Cannot resolve dependency for '$obj'. Try $sym ..." 1>&2
+        if [[ -z $sym ]] || [[ $sym = $obj ]]
+        then
+          echo "[Error] Cannot resolve dependency for '$_sym'." 1>&2
+          exit 1
+        fi
+      fi
+    done
   done
 }
 
