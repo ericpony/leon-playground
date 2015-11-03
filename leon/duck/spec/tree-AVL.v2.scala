@@ -94,10 +94,10 @@ object TreeMap {
     case Node(_, _, l, r, _) => mmax(realHeight(l), realHeight(r)) + 1
   }) ensuring (_ >= 0)
 
-  def height (tm: TreeMap): BigInt = (tm match {
+  def height (tm: TreeMap): BigInt = tm match {
     case Empty()             => 0
     case Node(_, _, _, _, h) => h
-  })
+  }
 
   /*
   def invariant0(tm : TreeMap) : Boolean = {
@@ -137,17 +137,17 @@ object TreeMap {
   }
 
   def create (k: BigInt, d: BigInt, l: TreeMap, r: TreeMap): TreeMap = {
-    //    require(
-    //      nodeHeightsAreCorrect(l) && nodeHeightsAreCorrect(r) && isBalanced(l) && isBalanced(r) &&
-    //        height(l) - height(r) <= 2 && height(r) - height(l) <= 2 &&
-    //        isBST(l) && isBST(r) &&
-    //        (TriplePair(isBST0(l), isBST0(r)) match {
-    //          case TriplePair(Triple(_, _, Some(lmax)), Triple(Some(rmin), _, _)) => lmax < k && k < rmin
-    //          case TriplePair(Triple(_, _, _), Triple(Some(rmin), _, _))          => k < rmin
-    //          case TriplePair(Triple(_, _, Some(lmax)), Triple(_, _, _))          => lmax < k
-    //          case _                                                              => true
-    //        })
-    //    )
+    require(
+      nodeHeightsAreCorrect(l) && nodeHeightsAreCorrect(r) && isBalanced(l) && isBalanced(r) &&
+        height(l) - height(r) <= 2 && height(r) - height(l) <= 2 &&
+        isBST(l) && isBST(r) &&
+        (TriplePair(isBST0(l), isBST0(r)) match {
+          case TriplePair(Triple(_, _, Some(lmax)), Triple(Some(rmin), _, _)) => lmax < k && k < rmin
+          case TriplePair(Triple(_, _, _), Triple(Some(rmin), _, _))          => k < rmin
+          case TriplePair(Triple(_, _, Some(lmax)), Triple(_, _, _))          => lmax < k
+          case _                                                              => true
+        })
+    )
     val hl = height(l)
     val hr = height(r)
     Node(k, d, l, r, mmax(hl, hr) + 1)
@@ -157,25 +157,24 @@ object TreeMap {
     )
 
   def balance (x: BigInt, d: BigInt, l: TreeMap, r: TreeMap): TreeMap = {
-    //    require(
-    //      nodeHeightsAreCorrect(l) &&
-    //        nodeHeightsAreCorrect(r) &&
-    //        isBalanced(l) &&
-    //        isBalanced(r) &&
-    //        height(l) - height(r) <= 3 &&
-    //        height(r) - height(l) <= 3 &&
-    //        (r match {
-    //          case Empty()                   => false
-    //          case Node(_, _, Empty(), _, _) => false
-    //          case _                         => true
-    //        }) &&
-    //        (l match {
-    //          case Empty()                   => false
-    //          case Node(_, _, _, Empty(), _) => false
-    //          case _                         => true
-    //        })
-    //    )
-    require(r != Empty() && l != Empty())
+    require(
+      nodeHeightsAreCorrect(l) &&
+        nodeHeightsAreCorrect(r) &&
+        isBalanced(l) &&
+        isBalanced(r) &&
+        height(l) - height(r) <= 3 &&
+        height(r) - height(l) <= 3 &&
+        (r match {
+          case Empty()                   => false
+          case Node(_, _, Empty(), _, _) => false
+          case _                         => true
+        }) &&
+        (l match {
+          case Empty()                   => false
+          case Node(_, _, _, Empty(), _) => false
+          case _                         => true
+        })
+    )
     val hl = height(l)
     val hr = height(r)
     if (hr > hl + 2) {

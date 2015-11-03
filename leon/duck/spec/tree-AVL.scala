@@ -41,70 +41,65 @@ object AVLTree {
 
   sealed case class AVLTreeOps (tree: TreeNode) {
 
-    def contains (value: BigInt): Boolean =
-      tree match {
-        case Leaf                    => false
-        case Node(data, left, right) =>
-          if (value == data) true
-          else if (value < data) left.contains(value)
-          else right.contains(value)
-      }
+    def contains (value: BigInt): Boolean = tree match {
+      case Leaf                    => false
+      case Node(data, left, right) =>
+        if (value == data) true
+        else if (value < data) left.contains(value)
+        else right.contains(value)
+    }
 
     /**
      * Returns a new tree containing the given element.
      * Ignore the new element if the same element is already present.
      */
-    def insert (v: BigInt): TreeNode =
-      tree match {
-        case Leaf                     => tree
-        case Node(value, left, right) =>
-          if (v == value)
-            tree
-          else if (v < value)
-            Node(value, left.insert(v), right).rebalance
-          else
-            Node(value, left, right.insert(v)).rebalance
-      }
+    def insert (v: BigInt): TreeNode = tree match {
+      case Leaf                     => tree
+      case Node(value, left, right) =>
+        if (v == value)
+          tree
+        else if (v < value)
+          Node(value, left.insert(v), right).rebalance
+        else
+          Node(value, left, right.insert(v)).rebalance
+    }
 
     /**
      * Return a new tree which not contains given element.
      */
-    def delete (v: BigInt): TreeNode =
-      tree match {
-        case Leaf                     => tree
-        case Node(value, left, right) =>
-          if (v == value) {
-            if (left == Leaf) {
-              if (right == Leaf) {
-                Leaf
-              } else {
-                val (min, newRight) = right.deleteMin
-                Node(min, left, newRight).rebalance
-              }
+    def delete (v: BigInt): TreeNode = tree match {
+      case Leaf                     => tree
+      case Node(value, left, right) =>
+        if (v == value) {
+          if (left == Leaf) {
+            if (right == Leaf) {
+              Leaf
             } else {
-              val (max, newLeft) = left.deleteMax
-              Node(max, newLeft, right).rebalance
+              val (min, newRight) = right.deleteMin
+              Node(min, left, newRight).rebalance
             }
-          } else if (v < value) {
-            Node(value, left.delete(v), right).rebalance
           } else {
-            Node(value, left, right.delete(v)).rebalance
+            val (max, newLeft) = left.deleteMax
+            Node(max, newLeft, right).rebalance
           }
-      }
+        } else if (v < value) {
+          Node(value, left.delete(v), right).rebalance
+        } else {
+          Node(value, left, right.delete(v)).rebalance
+        }
+    }
 
-    def findMin: Option[BigInt] =
-      tree match {
-        case Leaf                 => None[BigInt]()
-        case Node(value, Leaf, _) => Some(value)
-        case Node(_, left, _)     => left.findMin
-      }
+    def findMin: Option[BigInt] = tree match {
+      case Leaf                 => None[BigInt]()
+      case Node(value, Leaf, _) => Some(value)
+      case Node(_, left, _)     => left.findMin
+    }
 
-    def findMax: Option[BigInt] =
-      tree match {
-        case Leaf                 => None[BigInt]()
-        case Node(value, _, Leaf) => Some(value)
-        case Node(_, _, right)    => right.findMin
-      }
+    def findMax: Option[BigInt] = tree match {
+      case Leaf                 => None[BigInt]()
+      case Node(value, _, Leaf) => Some(value)
+      case Node(_, _, right)    => right.findMin
+    }
 
     /**
      * Return a tuple containing the smallest element of the provided tree
@@ -136,79 +131,71 @@ object AVLTree {
       }
     }
 
-    def rebalance: TreeNode = {
-      tree match {
-        case Leaf                     => Leaf
-        case Node(value, left, right) =>
-          if (tree.balance == BigInt(-2)) {
-            if (left.balance == BigInt(1))
-              tree.doubleRightRotation
-            else
-              tree.rightRotation
-          } else if (tree.balance == BigInt(2)) {
-            if (right.balance == BigInt(-1))
-              tree.doubleLeftRotation
-            else
-              tree.leftRotation
-          } else tree
-      }
+    def rebalance: TreeNode = tree match {
+      case Leaf                     => Leaf
+      case Node(value, left, right) =>
+        if (tree.balance == BigInt(-2)) {
+          if (left.balance == BigInt(1))
+            tree.doubleRightRotation
+          else
+            tree.rightRotation
+        } else if (tree.balance == BigInt(2)) {
+          if (right.balance == BigInt(-1))
+            tree.doubleLeftRotation
+          else
+            tree.leftRotation
+        } else tree
     }
 
-    def leftRotation: TreeNode =
-      tree match {
-        case Leaf                     => Leaf
-        case Node(value, left, right) =>
-          right match {
-            case Leaf            => tree // should not happen
-            case r@Node(_, _, _) => Node(r.value, Node(value, left, r.left), r.right)
-          }
-      }
+    def leftRotation: TreeNode = tree match {
+      case Leaf                     => Leaf
+      case Node(value, left, right) =>
+        right match {
+          case Leaf            => tree // should not happen
+          case r@Node(_, _, _) => Node(r.value, Node(value, left, r.left), r.right)
+        }
+    }
 
-    def rightRotation: TreeNode =
-      tree match {
-        case Leaf                     => Leaf
-        case Node(value, left, right) =>
-          left match {
-            case Leaf            => tree // should not happen
-            case l@Node(_, _, _) => Node(l.value, l.left, Node(value, l.right, right))
-          }
-      }
+    def rightRotation: TreeNode = tree match {
+      case Leaf                     => Leaf
+      case Node(value, left, right) =>
+        left match {
+          case Leaf            => tree // should not happen
+          case l@Node(_, _, _) => Node(l.value, l.left, Node(value, l.right, right))
+        }
+    }
 
-    def doubleLeftRotation: TreeNode =
-      tree match {
-        case Leaf          => Leaf
-        case Node(v, l, r) =>
-          r match {
-            case Leaf            => tree // should not happen
-            case r@Node(_, _, _) =>
-              val Node(rv, rl, rr) = r.rightRotation
-              Node(rv, Node(v, l, rl), rr)
-          }
-      }
+    def doubleLeftRotation: TreeNode = tree match {
+      case Leaf          => Leaf
+      case Node(v, l, r) =>
+        r match {
+          case Leaf            => tree // should not happen
+          case r@Node(_, _, _) =>
+            val Node(rv, rl, rr) = r.rightRotation
+            Node(rv, Node(v, l, rl), rr)
+        }
+    }
 
-    def doubleRightRotation: TreeNode =
-      tree match {
-        case Leaf          => Leaf
-        case Node(v, l, r) =>
-          l match {
-            case Leaf            => tree // should not happen
-            case l@Node(_, _, _) =>
-              val Node(lv, ll, lr) = l.leftRotation
-              Node(lv, ll, Node(v, lr, r))
-          }
-      }
+    def doubleRightRotation: TreeNode = tree match {
+      case Leaf          => Leaf
+      case Node(v, l, r) =>
+        l match {
+          case Leaf            => tree // should not happen
+          case l@Node(_, _, _) =>
+            val Node(lv, ll, lr) = l.leftRotation
+            Node(lv, ll, Node(v, lr, r))
+        }
+    }
 
-    def toList: List[BigInt] =
-      tree match {
-        case Leaf          => Nil[BigInt]()
-        case Node(v, l, r) => v :: (l.toList ++ r.toList)
-      }
+    def toList: List[BigInt] = tree match {
+      case Leaf          => Nil[BigInt]()
+      case Node(v, l, r) => v :: (l.toList ++ r.toList)
+    }
 
-    def toSortedList: List[BigInt] =
-      tree match {
-        case Leaf          => Nil[BigInt]()
-        case Node(v, l, r) => l.toList ++ (v :: r.toList)
-      }
+    def toSortedList: List[BigInt] = tree match {
+      case Leaf          => Nil[BigInt]()
+      case Node(v, l, r) => l.toList ++ (v :: r.toList)
+    }
 
     def toSet: Set[BigInt] = toList.content
   }

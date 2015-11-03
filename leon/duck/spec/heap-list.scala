@@ -2,8 +2,8 @@ package duck.spec
 
 import duck.collection._
 import duck.spec.SortedListOps._
-import duck.spec.heap._
-import duck.spec.heap.LeftistHeapLemmas._
+import duck.spec.LeftistHeap._
+import duck.spec.LeftistHeapLemmas._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
@@ -27,7 +27,7 @@ object Heap_List_BisimulationSpec {
   /**
    * h ~ l implies h.insert(e) ~ l.insert(e)
    */
-  def bisim_insert (h: LeftistHeap, l: ListHeap, e: BigInt): Boolean = {
+  def bisim_insert (h: HeapNode, l: ListHeap, e: BigInt): Boolean = {
     require(h.isHeap && h ~ l)
     h.insert(e) ~ l.insert(e) because {
       val L1 = h.insert(e)
@@ -43,7 +43,7 @@ object Heap_List_BisimulationSpec {
   /**
    * h1 ~ l1 and h2 ~ l2 implies h1.merge(h2) ~ l1.merge(l2)
    */
-  def bisim_merge (h1: LeftistHeap, h2: LeftistHeap, l1: ListHeap, l2: ListHeap): Boolean = {
+  def bisim_merge (h1: HeapNode, h2: HeapNode, l1: ListHeap, l2: ListHeap): Boolean = {
     require(h1.isHeap && h2.isHeap && h1 ~ l1 && h2 ~ l2)
     h1.merge(h2) ~ l1.merge(l2) because {
       val L1 = h1.merge(h2)
@@ -59,7 +59,7 @@ object Heap_List_BisimulationSpec {
   /**
    * h ~ l implies h.findMin == l.findMin
    */
-  def bisim_findMin (h: LeftistHeap, l: ListHeap): Boolean = {
+  def bisim_findMin (h: HeapNode, l: ListHeap): Boolean = {
     require(h.isHeap && h ~ l)
     h.findMin == l.findMin because {
       if (h.isEmpty)
@@ -74,7 +74,7 @@ object Heap_List_BisimulationSpec {
   /**
    * h ~ l implies h.deleteMin ~ l.deleteMin
    */
-  def bisim_deleteMin (h: LeftistHeap, l: ListHeap): Boolean = {
+  def bisim_deleteMin (h: HeapNode, l: ListHeap): Boolean = {
     require(h.isHeap && h ~ l)
     h.deleteMin ~ l.deleteMin because {
       if (h.isEmpty)
@@ -89,7 +89,7 @@ object Heap_List_BisimulationSpec {
   /**
    * h1 ~ h2 implies h1.size == h2.size
    */
-  def bisim_size (h: LeftistHeap, l: ListHeap): Boolean = {
+  def bisim_size (h: HeapNode, l: ListHeap): Boolean = {
     require(h.isHeap && h ~ l)
     h.size == l.size
   } holds /* verified by Leon */
