@@ -2,7 +2,8 @@ package duck.spec
 
 import duck.collection._
 import duck.spec.SortedListOps._
-import duck.spec.LeftistHeapLemmas._
+import duck.spec.heap._
+import duck.spec.heap.LeftistHeapLemmas._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._

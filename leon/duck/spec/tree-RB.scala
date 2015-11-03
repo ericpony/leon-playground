@@ -1,14 +1,11 @@
 package duck.spec
 
-import duck.collection._
-import duck.proof.sugar._
 import leon.lang._
-import leon.annotation._
 
 /**
- * The red-black tree implementation used for TreeMaps and TreeSets in Scala,
- * based on Stefan Kahrs' Haskell version of Okasaki's red-black trees.
- * The implementation is simplified and rewritten in PureScala by ericpony.
+ * This is a simplified version of the Red-Black Tree implementation used for TreeMaps and TreeSets
+ * in the Scala standard library, based on Stefan Kahrs' Haskell version of Okasaki's Red-Black Trees
+ * and rewritten in PureScala by ericpony.
  *
  * References:
  * Scala Source: https://github.com/scala/scala/blob/2.12.x/src/library/scala/collection/immutable/RedBlackTree.scala
@@ -27,9 +24,9 @@ object RedBlackTree {
     val value: BigInt
   }
 
-  case object Empty extends Tree {
-    override val left = Empty
-    override val right = Empty
+  case object Leaf extends Tree {
+    override val left = Leaf
+    override val right = Leaf
     override val key = BigInt(0)
     override val value = BigInt(0)
     override val count = BigInt(0)
@@ -55,7 +52,7 @@ object RedBlackTree {
     override val isBlack = true
   }
 
-  def contains (tree: Tree, x: BigInt): Boolean = lookup(tree, x) != Empty
+  def contains (tree: Tree, x: BigInt): Boolean = lookup(tree, x) != Leaf
 
   def size (tree: Tree): BigInt = tree.count
 
@@ -65,23 +62,23 @@ object RedBlackTree {
 
   def find (tree: Tree, x: BigInt): Option[BigInt] = {
     val t = lookup(tree, x)
-    if (t == Empty)
+    if (t == Leaf)
       None[BigInt]()
     else
       Some(t.value)
   }
 
   def findMin (tree: Tree): BigInt = {
-    require(tree != Empty)
-    if (tree.left == Empty)
+    require(tree != Leaf)
+    if (tree.left == Leaf)
       tree.value
     else
       findMin(tree.left)
   }
 
   def findMax (tree: Tree): BigInt = {
-    require(tree != Empty)
-    if (tree.right == Empty)
+    require(tree != Leaf)
+    if (tree.right == Leaf)
       tree.value
     else
       findMax(tree.right)
@@ -93,14 +90,14 @@ object RedBlackTree {
       findNth(tree.left, n)
     else if (n > count)
       findNth(tree.right, n - count - 1)
-    else if (tree == Empty)
+    else if (tree == Leaf)
       None[BigInt]()
     else
       Some[BigInt](tree.value)
   }
 
   private def lookup (tree: Tree, x: BigInt): Tree = {
-    if (tree == Empty) tree
+    if (tree == Leaf) tree
     else {
       if (x < tree.key)
         lookup(tree.left, x)
@@ -117,7 +114,7 @@ object RedBlackTree {
     else if (tree.isBlack)
       RedTree(tree.key, tree.value, tree.left, tree.right)
     else
-      Empty
+      Leaf
   }
 
   private def black (tree: Tree): Tree = {
@@ -126,13 +123,13 @@ object RedBlackTree {
     else if (tree.isRed)
       BlackTree(tree.key, tree.value, tree.left, tree.right)
     else
-      Empty
+      Leaf
   }
 
   private def mkTree (isBlack: Boolean, k: BigInt, v: BigInt, l: Tree, r: Tree): Tree =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
-  private def balanceLeft (isBlack: Boolean, z: BigInt, zv: BigInt, l: Tree, d: Tree): Tree = if (l == Empty) Empty
+  private def balanceLeft (isBlack: Boolean, z: BigInt, zv: BigInt, l: Tree, d: Tree): Tree = if (l == Leaf) Leaf
   else {
     if (l.isRed && l.left.isRed) {
       RedTree(l.key, l.value, BlackTree(l.left.key, l.left.value, l.left.left, l.left.right), BlackTree(z, zv, l.right, d))
@@ -142,7 +139,7 @@ object RedBlackTree {
       mkTree(isBlack, z, zv, l, d)
   }
 
-  private def balanceRight (isBlack: Boolean, x: BigInt, xv: BigInt, a: Tree, r: Tree): Tree = if (r == Empty) Empty
+  private def balanceRight (isBlack: Boolean, x: BigInt, xv: BigInt, a: Tree, r: Tree): Tree = if (r == Leaf) Leaf
   else {
     if (r.isRed && r.left.isRed)
       RedTree(r.left.key, r.left.value, BlackTree(x, xv, a, r.left.left), BlackTree(r.key, r.value, r.left.right, r.right))
@@ -152,8 +149,8 @@ object RedBlackTree {
       mkTree(isBlack, x, xv, a, r)
   }
 
-  private def upd (tree: Tree, k: BigInt, v: BigInt, overwrite: Boolean): Tree = if (tree == Empty) {
-    RedTree(k, v, Empty, Empty)
+  private def upd (tree: Tree, k: BigInt, v: BigInt, overwrite: Boolean): Tree = if (tree == Leaf) {
+    RedTree(k, v, Leaf, Leaf)
   } else {
     if (k < tree.key)
       balanceLeft(tree.isBlack, tree.key, tree.value, upd(tree.left, k, v, overwrite), tree.right)
@@ -165,8 +162,8 @@ object RedBlackTree {
       tree
   }
 
-  private def updNth (tree: Tree, idx: BigInt, k: BigInt, v: BigInt, overwrite: Boolean): Tree = if (tree == Empty) {
-    RedTree(k, v, Empty, Empty)
+  private def updNth (tree: Tree, idx: BigInt, k: BigInt, v: BigInt, overwrite: Boolean): Tree = if (tree == Leaf) {
+    RedTree(k, v, Leaf, Leaf)
   } else {
     val rank = tree.left.count + 1
     if (idx < rank)
@@ -179,7 +176,7 @@ object RedBlackTree {
       tree
   }
 
-  private def del (tree: Tree, k: BigInt): Tree = if (tree == Empty) Empty
+  private def del (tree: Tree, k: BigInt): Tree = if (tree == Leaf) Leaf
   else {
     def balance (x: BigInt, xv: BigInt, tl: Tree, tr: Tree): Tree = if (tl.isRed) {
       if (tr.isRed)
@@ -217,7 +214,7 @@ object RedBlackTree {
         RedTree(tr.left.key, tr.left.value, BlackTree(x, xv, tl, tr.left.left), balance(tr.key, tr.value, tr.left.right, subl(tr.right)))
       } else {
         // sys.error("Defect: invariance violation")
-        Empty
+        Leaf
       }
     }
 
@@ -230,7 +227,7 @@ object RedBlackTree {
         RedTree(tl.right.key, tl.right.value, balance(tl.key, tl.value, subl(tl.left), tl.right.left), BlackTree(x, xv, tl.right.right, tr))
       } else {
         // sys.error("Defect: invariance violation")
-        Empty
+        Leaf
       }
     }
 
@@ -248,9 +245,9 @@ object RedBlackTree {
         RedTree(tree.key, tree.value, tree.left, del(tree.right, k))
     }
 
-    def append (tl: Tree, tr: Tree): Tree = if (tl == Empty) {
+    def append (tl: Tree, tr: Tree): Tree = if (tl == Leaf) {
       tr
-    } else if (tr == Empty) {
+    } else if (tr == Leaf) {
       tl
     } else if (tl.isRed && tr.isRed) {
       val bc = append(tl.right, tr.left)
@@ -272,7 +269,7 @@ object RedBlackTree {
       RedTree(tl.key, tl.value, tl.left, append(tl.right, tr))
     } else {
       // sys.error("unmatched tree on append: " + tl + ", " + tr)
-      Empty
+      Leaf
     }
     if (k < tree.key) delLeft
     else if (k > tree.key) delRight
