@@ -11,8 +11,8 @@ import duck.proof.MinLemmas._
 import duck.proof.DeleteOps._
 
 import leon.lang._
-import leon.annotation._
 import leon.proof._
+import leon.annotation._
 import scala.language.postfixOps
 import scala.language.implicitConversions
 

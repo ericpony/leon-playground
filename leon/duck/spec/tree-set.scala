@@ -2,6 +2,7 @@ package duck.spec
 
 import leon.lang._
 import AVLTree._
+import duck.collection.ListSet._
 
 abstract class IntSet {
   def contains (v: BigInt): Boolean
@@ -32,15 +33,15 @@ abstract class IntSet {
 }
 
 /**
- * An AVL-Tree based IntSet
+ * An AVLTree-based IntSet
  */
 sealed case class TreeSet (tree: TreeNode) extends IntSet {
 
-  def contains (v: BigInt): Boolean = AVLTreeOps(tree).contains(v)
+  def contains (e: BigInt): Boolean = AVLTreeOps(tree).contains(e)
 
-  def insert (v: BigInt): IntSet = TreeSet(AVLTreeOps(tree).insert(v))
+  def insert (e: BigInt): IntSet = TreeSet(AVLTreeOps(tree).insert(e))
 
-  def delete (v: BigInt): IntSet = TreeSet(AVLTreeOps(tree).delete(v))
+  def delete (e: BigInt): IntSet = TreeSet(AVLTreeOps(tree).delete(e))
 
   def findMax: Option[BigInt] = AVLTreeOps(tree).findMax
 
