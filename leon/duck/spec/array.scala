@@ -23,13 +23,25 @@ sealed abstract class FunctionalArray[T] {
   }
 }
 
+object FunctionalArrayLemmas {
+  def acc_upd_eq[T] (a : FunctionalArray[T], i : BigInt, e : T, j : BigInt) = {
+    require(i == j)
+    a.upd(i, e).acc(j) == Some(e)
+  } holds
+
+  def acc_upd_neq[T] (a : FunctionalArray[T], i : BigInt, e : T, j : BigInt) = {
+    require(i != j)
+    a.upd(i, e).acc(j) == a.acc(j)
+  } holds
+}
+
 sealed case class BoundedArray[T] (array : FunctionalArray[T], size : BigInt) {
   def acc (i : BigInt) : Option[T] = {
     require(i >= 0 && i < size)
     array.acc(i)
   }
 
-  def upd (i : BigInt) (e : T) : BoundedArray[T] = {
+  def upd (i : BigInt, e : T) : BoundedArray[T] = {
     require(i >= 0 && i < size)
     BoundedArray(array.upd(i, e), size)
   } ensuring {
@@ -49,6 +61,16 @@ object BoundedArray {
 }
 
 object BoundedArrayLemmas {
+  def acc_upd_eq[T] (a : BoundedArray[T], i : BigInt, e : T, j : BigInt) = {
+    require(i >= 0 && i < a.size && i == j)
+    a.upd(i, e).acc(j) == Some(e)
+  } holds
+
+  def acc_upd_neq[T] (a : BoundedArray[T], i : BigInt, e : T, j : BigInt) = {
+    require(i >= 0 && i < a.size && j >= 0 && j < a.size && i != j)
+    a.upd(i, e).acc(j) == a.acc(j)
+  } holds
+
   def resize_eq[T] (a : BoundedArray[T], i : BigInt, j : BigInt) : Boolean = {
     require(a.size >= 0 && i >= 0 && j >= 0 && j < i && j < a.size)
     a.resize(i).acc(j) == a.acc(j)

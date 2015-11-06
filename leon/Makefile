@@ -112,7 +112,7 @@ define find_imports
 				fi \
 			else \
 				resolve_path "$${file}" "$${dn}"; \
-				if [[ "$${resolved}" != "yes" ]]; then \
+				if [[ "$${resolved}" != "yes" && "$${bn}" != "" && "$${bn}" != "." && "$${bn}" != "_" ]]; then \
 					basedir=`dirname $${file}`; \
 					lines=`grep -E -l "(class|object|def)[ ]*$${bn}[ ]*\b" $${basedir}/*.scala 2> /dev/null`; \
 					if [[ -z "$${lines}" ]]; then \
