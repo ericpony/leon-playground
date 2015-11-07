@@ -54,8 +54,11 @@ object DeleteOps {
     else if (list.head == e) list.tail
     else Cons(list.head, delete(list.tail, e))
   } ensuring { res =>
-    res.size == (if (list contains e) list.size - 1 else list.size) &&
-      res.content.subsetOf(list.content)
+    res.content.subsetOf(list.content) &&
+      (if (list contains e)
+        res.size == list.size - 1
+      else
+        res == list)
   }
 }
 
