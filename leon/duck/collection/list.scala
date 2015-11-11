@@ -2,6 +2,7 @@ package duck.collection
 
 import leon.lang._
 import leon.annotation._
+import leon.proof._
 import scala.language.implicitConversions
 import duck.proof.PermutationOps.permutation
 
@@ -323,6 +324,8 @@ sealed abstract class List[T] {
       case Cons(x, tail)           =>
         Cons[T](x, tail.updated(i - 1, y))
     }
+  } ensuring {
+    res => res.size == size
   }
 
   private def insertAtImpl (pos: BigInt, l: List[T]): List[T] = {

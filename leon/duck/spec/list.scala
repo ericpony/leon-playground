@@ -270,5 +270,70 @@ object ListLemmas {
         else l1 ++ l2.insertAt((i - l1.size), y)))
   }.holds
 
+  def acc_updated_eq[A] (l : List[A], i : BigInt, x : A, j : BigInt) : Boolean = {
+    require(i >= 0 && i < l.size && i == j)
+    l.updated(i, x)(j) == x because {
+      l match {
+        case Cons(hd, tl) if i == 0 => trivial
+        case Cons(hd, tl) => acc_updated_eq(tl, i - 1, x, j - 1)
+      }
+    }
+  } holds
+
+  def acc_updated_neq[A] (l : List[A], i : BigInt, x : A, j : BigInt) : Boolean = {
+    require(i >= 0 && i < l.size && j >= 0 && j < l.size && i != j)
+    l.updated(i, x)(j) == l(j) because {
+      l match {
+        case Cons(hd, tl) if i == 0 => trivial
+        case Cons(hd, tl) if j == 0 => trivial
+        case Cons(hd, tl) => acc_updated_neq(tl, i - 1, x, j - 1)
+      }
+    }
+  } holds
+
+  @induct
+  def acc_drop[A] (l : List[A], n : BigInt, i : BigInt) : Boolean = {
+    require(n >= 0 && i >= 0 && i + n < l.size)
+    l.drop(n)(i) == l(i + n) because {
+      (l, n) match {
+        case (Nil(), _) => trivial
+        case (Cons(hd, tl), m) =>
+          if (m <= BigInt(0)) trivial
+          else acc_drop(tl, n - 1, i)
+      }
+    }
+  } holds
+
+  def acc_take[A] (l : List[A], n : BigInt, i : BigInt) : Boolean = {
+    require(i >= 0 && i < l.size && i < n)
+    l.take(n)(i) == l(i) because {
+      if (i == 0)
+        trivial
+      else {
+        l match {
+          case Nil() => trivial
+          case Cons(hd, tl) => acc_take(tl, n - 1, i - 1)
+        }
+      }
+    }
+  } holds
+
+  @induct
+  def slice_all[A] (l : List[A]) : Boolean = {
+    l.slice(0, l.size) == l
+  } holds
+
+  @induct
+  def append_forall[A] (l : List[A], e : A, p : A => Boolean) : Boolean = {
+    require(l.forall(p) && p(e))
+    (l :+ e).forall(p)
+  } holds
+
+  @induct
+  def append_forall[A] (l1 : List[A], l2 : List[A], p : A => Boolean) : Boolean = {
+    require(l1.forall(p) && l2.forall(p))
+    (l1 ++ l2).forall(p)
+  } holds
+
 }
 
