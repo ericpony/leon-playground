@@ -4,7 +4,7 @@ import leon.lang._
 import leon.annotation._
 import leon.proof._
 import duck.collection._
-import duck.spec.BoundedArray._
+import duck.spec.ListArray._
 import duck.spec.ListIterator._
 import duck.spec.ListLemmas._
 
@@ -33,7 +33,7 @@ case class LinkedList[T] (list : List[T]) extends ListADT[T] {
 
 }
 
-case class ArrayList[T] (array : ListArray[T]) /*extends ListADT[T]*/ {
+case class ArrayList[T] (array : ListArray[T]) extends ListADT[T] {
 
   def append (e : T) : ArrayList[T] = {
     require(inv)
@@ -121,7 +121,9 @@ object LinkedListArrayListBisimulation {
 
   def head_bisim[T] (a1 : LinkedList[T], a2 : ArrayList[T]) : Boolean = {
     require(bisim(a1, a2) && a1.size > 0 && a2.size > 0)
-    a1.head == a2.head
+    val h1 : T = a1.head
+    val h2 : T = a2.head
+    h1 == h2
   } holds
 
   def iterator_bisim[T] (a1 : LinkedList[T], a2 : ArrayList[T]) : Boolean = {
