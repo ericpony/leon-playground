@@ -3,6 +3,7 @@ package duck.spec
 import leon.lang._
 import leon.annotation._
 import leon.proof._
+import scala.language.postfixOps
 import duck.collection._
 import duck.spec.ListArray._
 import duck.spec.ListIterator._

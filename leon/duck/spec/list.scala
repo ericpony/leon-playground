@@ -4,7 +4,9 @@ import duck.collection._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
+import scala.language.postfixOps
 import ListOps._
+import duck.proof.DistinctOps._
 
 @library
 object ListSpec {
@@ -185,17 +187,24 @@ object ListLemmas {
   }.holds
 
   //// my hand calculation shows this should work, but it does not seem to be found
-  //def associative[T,U](l1: List[T], l2: List[T], f: List[T] => U, op: (U,U) => U) = {
-  //  f(l1 ++ l2) == op(f(l1), f(l2))
-  //}
-  //
-  //def existsAssoc[T](l1: List[T], l2: List[T], p: T => Boolean) = {
-  //  associative[T, Boolean](l1, l2, _.exists(p), _ || _ )
-  //}.holds
-  //
-  //def forallAssoc[T](l1: List[T], l2: List[T], p: T => Boolean) = {
-  //  associative[T, Boolean](l1, l2, _.exists(p), _ && _ )
-  //}.holds
+  def associative[T, U] (l1: List[T], l2: List[T], f: List[T] => U, op: (U, U) => U) = {
+    f(l1 ++ l2) == op(f(l1), f(l2))
+  }
+
+  @induct
+  def existsAssoc[T](l1: List[T], l2: List[T], p: T => Boolean) = {
+    associative[T, Boolean](l1, l2, _.exists(p), _ || _ )
+  }.holds
+
+  @induct
+  def forallAssoc[T](l1: List[T], l2: List[T], p: T => Boolean) = {
+    associative[T, Boolean](l1, l2, _.forall(p), _ && _ )
+  }.holds
+
+  @induct
+  def countAssoc[T] (l1 : List[T], l2 : List[T], p : T => Boolean) = {
+    associative[T, BigInt](l1, l2, _.count(p), _ + _ )
+  } holds
 
   @induct
   def scanVsFoldRight[A, B] (l: List[A], z: B, f: (A, B) => B): Boolean = {
@@ -318,6 +327,13 @@ object ListLemmas {
     }
   } holds
 
+  def acc_slice[A] (l : List[A], from : BigInt, until : BigInt, i : BigInt) : Boolean = {
+    require(0 <= from && from <= until && until <= l.size && i >= 0 && i + from < until)
+    l.slice(from, until)(i) == l(from + i) because {
+      acc_drop(l, from, i) && acc_take(l.drop(from), until - from, i)
+    }
+  } holds
+
   @induct
   def slice_all[A] (l : List[A]) : Boolean = {
     l.slice(0, l.size) == l
@@ -333,6 +349,80 @@ object ListLemmas {
   def append_forall[A] (l1 : List[A], l2 : List[A], p : A => Boolean) : Boolean = {
     require(l1.forall(p) && l2.forall(p))
     (l1 ++ l2).forall(p)
+  } holds
+
+  def drop_forall[A] (l : List[A], n : BigInt, p : A => Boolean) : Boolean = {
+    require(l.forall(p) && n <= l.size)
+    l.drop(n).forall(p) because {
+      l match {
+        case Nil() => trivial
+        case Cons(hd, tl) => drop_forall(tl, n - 1, p)
+      }
+    }
+  } holds
+
+  @induct
+  def apply_forall[A] (l : List[A], p : A => Boolean, e : A) : Boolean = {
+    require(l.forall(p) && l.contains(e))
+    p(e)
+  } holds
+
+  def prefix_tran[A] (l1 : List[A], l2 : List[A], l3 : List[A]) : Boolean = {
+    require(l1.isPrefixOf(l2) && l2.isPrefixOf(l3))
+    l1.isPrefixOf(l3) because {
+      (l1, l2, l3) match {
+        case (Nil(), _, _) => trivial
+        case (Cons(hd1, tl1), Cons(hd2, tl2), Cons(hd3, tl3)) => prefix_tran(tl1, tl2, tl3)
+        case (_, _, _) => trivial
+      }
+    }
+  } holds
+
+  def suffix_tran[A] (l1 : List[A], l2 : List[A], l3 : List[A]) : Boolean = {
+    require(l1.isSuffixOf(l2) && l2.isSuffixOf(l3))
+    l1.isSuffixOf(l3) because { prefix_tran(l1.reverse, l2.reverse, l3.reverse) }
+  } holds
+
+  def reverse_prefix[A] (l1 : List[A], l2 : List[A]) : Boolean = {
+    require(l1.isPrefixOf(l2))
+    l1.reverse.isSuffixOf(l2.reverse) because { reverseReverse(l1) && reverseReverse(l2) }
+  } holds // Failed to prove because an unexpected error from smt-z3 solver
+
+  @induct
+  def count_contains[A] (l : List[A], e : A) : Boolean = {
+    if (l.count(e) == 0)
+      !l.contains(e)
+    else
+      l.contains(e)
+  } holds
+
+  @induct
+  def contains_count[A] (l : List[A], e : A) : Boolean = {
+    if (l.contains(e))
+      l.count(e) > 0
+    else
+      l.count(e) == 0
+  } holds
+
+  def distinct_count[A] (l : List[A]) : Boolean = {
+    require(distinct(l))
+
+    // The proof will fail if we prove l1.forall(x => Cons(e, l3).count(x) == 1) or use l3.head and l3.tail instead of e and l2.
+    @induct
+    def forall_count_one_cons[A] (l1 : List[A], e : A, l2 : List[A], l3 : List[A]) : Boolean = {
+      require(l3 == Cons(e, l2) && l1.forall(x => l2.count(x) == 1) && !l1.contains(e))
+      l1.forall(x => l3.count(x) == 1)
+    } holds
+
+    val p = (x : A) => l.count(x) == 1
+    l.forall(p) because {
+      l match {
+        case Nil() => trivial
+        case Cons(hd, tl) => l.count(hd) == 1 && tl.forall(p) because {
+          distinct_count(tl) && forall_count_one_cons(tl, hd, tl, l)
+        }
+      }
+    }
   } holds
 
 }

@@ -33,7 +33,7 @@ SHELL = /bin/bash
 # Source files.
 SRC := $(shell find . -name *.scala)
 
-LEON_FLAGS = --timeout=$(TIMEOUT)
+LEON_FLAGS = --timeout=$(TIMEOUT) -feature
 
 # Some temporary files used in resolving dependencies.
 SOURCE = .source

@@ -3,6 +3,7 @@ package duck.spec
 import leon.lang._
 import leon.annotation._
 import leon.proof._
+import scala.language.postfixOps
 import duck.collection._
 import duck.spec.ListLemmas._
 
@@ -288,6 +289,17 @@ sealed case class ListArray[T] (array : List[Option[T]]) {
 }
 
 object ListArray {
+
+  @ignore
+  def apply[T] (elems : T*) : ListArray[T] = {
+    var l : ListArray[T] = ListArray.alloc[T](elems.size)
+    var i = 0
+    for (e <- elems) {
+      l = l.upd(i, e)
+      i = i + 1
+    }
+    l
+  }
 
   def empty[T] : ListArray[T] = {
     ListArray[T](Nil[Option[T]]())
