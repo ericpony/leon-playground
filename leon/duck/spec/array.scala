@@ -141,6 +141,7 @@ object BoundedArray {
   }
 
 }
+
 object BoundedArrayLemmas {
 
   def acc_upd_eq[T] (a : BoundedArray[T], i : BigInt, e : T, j : BigInt) : Boolean = {
@@ -439,6 +440,413 @@ object ListArrayLemmas {
   def append_forall[T] (a1 : ListArray[T], a2 : ListArray[T], p : Option[T] => Boolean) : Boolean = {
     require(a1.array.forall(p) && a2.array.forall(p))
     (a1 ++ a2).forall(p) because ListLemmas.append_forall(a1.array, a2.array, p)
+  } holds
+
+}
+
+object IMap {
+
+  def empty[T] = Map.empty[BigInt, T]
+
+  def isDefinedBetween[T] (m : Map[BigInt, T], from : BigInt, until : BigInt) : Boolean = {
+    if (from >= until)
+      true
+    else
+      m.isDefinedAt(from) && isDefinedBetween(m, from + 1, until)
+  }
+
+  def isDefinedUntil[T] (m : Map[BigInt, T], n : BigInt) : Boolean = {
+    isDefinedBetween(m, 0, n)
+  }
+
+  def defined_between_shrink[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, left : BigInt, right : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && left >= from && right <= until)
+    isDefinedBetween(m, left, right) because {
+      if (left >= right) trivial
+      else if (left == from) defined_between_shrink(m, from + 1, until, left + 1, right)
+      else defined_between_shrink(m, from + 1, until, left, right)
+    }
+  } holds
+
+  def defined_between_tran[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && isDefinedBetween(m, j, k))
+    isDefinedBetween(m, i, k) because {
+      if (i >= j) defined_between_shrink(m, j, k, i, k)
+      else defined_between_tran(m, i + 1, j, k)
+    }
+  } holds
+
+  def defined_between_at[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, i : BigInt) : Boolean = {
+      require(i >= from && i < until && isDefinedBetween(m, from, until))
+      m.isDefinedAt(i) because {
+        if (from >= until) trivial
+        else if (i == from) trivial
+        else defined_between_at(m, from + 1, until, i)
+      }
+    } holds
+
+  def defined_until_at[T] (m : Map[BigInt, T], n : BigInt, i : BigInt) : Boolean = {
+    require(i >= 0 && i < n && isDefinedUntil(m, n))
+    m.isDefinedAt(i) because defined_between_at(m, 0, n, i)
+  } holds
+
+  def updated_defined_at[T] (m : Map[BigInt, T], i : BigInt, e : T, j : BigInt) : Boolean = {
+    require(m.isDefinedAt(j))
+    m.updated(i, e).isDefinedAt(j)
+  } holds
+
+  def updated_defined_between[T] (m : Map[BigInt, T], i : BigInt, e : T, from : BigInt, until : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until))
+    isDefinedBetween(m.updated(i, e), from, until) because {
+      if (from >= until) trivial
+      else updated_defined_between(m, i, e, from + 1, until)
+    }
+  } holds
+
+  def updated_defined_until[T] (m : Map[BigInt, T], i : BigInt, e : T, until : BigInt) : Boolean = {
+    require(isDefinedUntil(m, until))
+    isDefinedUntil(m.updated(i, e), until) because updated_defined_between(m, i, e, 0, until)
+  } holds
+
+  def updated_defined_between_extend[T] (m : Map[BigInt, T], i : BigInt, e : T, from : BigInt, until : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until))
+    if (i == from - 1) {
+      isDefinedBetween(m.updated(i, e), i, until) because { updated_defined_between(m, i, e, from, until) }
+    } else if (i == until) {
+      isDefinedBetween(m.updated(i, e), from, i + 1) because {
+        updated_defined_between(m, i, e, from, until) && defined_between_tran(m.updated(i, e), from, until, i + 1)
+      }
+    } else
+      trivial
+  } holds
+
+  /* Assign */
+
+  def assign_op[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, e : T) : Map[BigInt, T] = {
+    if (from >= until) m
+    else assign_op(m.updated(from, e), from + 1, until, e)
+  }
+
+  def assign_defined_between[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, e : T, i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j))
+    isDefinedBetween(assign_op(m, from, until, e), i, j) because {
+      if (from >= until) trivial
+      else {
+        updated_defined_between(m, from, e, i, j) &&
+        assign_defined_between(m.updated(from, e), from + 1, until, e, i, j)
+      }
+    }
+  } holds
+
+  def assign_defined_at[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, e : T, i : BigInt) : Boolean = {
+    ((i >= from && i < until || m.isDefinedAt(i)) ==> assign_op(m, from, until, e).isDefinedAt(i)) because {
+      if (i >= from && i < until) assign_defined_at(m.updated(from, e), from + 1, until, e, i)
+      else if (m.isDefinedAt(i)) assign_defined_between(m, from, until, e, i, i + 1)
+      else trivial
+    }
+  } holds
+
+  private def assign_defined_between[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, e : T) : Boolean = {
+    isDefinedBetween(assign_op(m, from, until, e), from, until) because {
+      if (from >= until) trivial
+      else {
+        assign_defined_at(m.updated(from, e), from + 1, until, e, from) &&
+        assign_defined_between(m.updated(from, e), from + 1, until, e)
+      }
+    }
+  } holds
+
+  def assign[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, e : T) : Map[BigInt, T] = {
+    assign_op(m, from, until, e)
+  } ensuring { res =>
+    isDefinedBetween(res, from, until) because assign_defined_between(m, from, until, e)
+  }
+
+  def acc_assign[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, e : T, i : BigInt) : Boolean = {
+    require(assign_defined_at(m, from, until, e, i))
+    if (i >= from && i < until) assign(m, from, until, e)(i) == e because {
+      acc_assign(m.updated(from, e), from + 1, until, e, i)
+    } else if (m.isDefinedAt(i)) assign(m, from, until, e)(i) == m(i) because {
+      if (from >= until) assign(m, from, until, e)(i) == m(i)
+      else updated_defined_at(m, from, e, i) && acc_assign(m.updated(from, e), from + 1, until, e, i)
+    } else trivial
+  } holds
+
+  /* Copy */
+
+  private def can_copy_forward[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && from < until && n >= 0)
+    defined_between_at(m, from, until, until - 1) && // m.isDefinedAt(until - 1)
+    defined_between_shrink(m, from, until, from, until - 1) && // isDefinedBetween(m, from, until - 1)
+    updated_defined_between(m, until - 1 + n, m(until - 1), from, until - 1) // isDefinedBetween(m.updated(until - 1 + n, m(until - 1)), from, until - 1)
+  } holds
+
+  private def can_copy_backward[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && from < until && n < 0)
+    defined_between_shrink(m, from, until, from + 1, until) &&
+    updated_defined_between(m, from + n, m(from), from + 1, until)
+  } holds
+
+  def can_copy[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until))
+    if (from >= until) trivial
+    else if (n >= 0) can_copy_forward(m, from, until, n)
+    else can_copy_backward(m, from, until, n)
+  } holds
+
+  private def copy_op[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Map[BigInt, T] = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    if (from >= until) m2
+    else if (n >= 0) copy_op(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n)
+    else copy_op(m1, m2.updated(from + n, m1(from)), from + 1, until, n)
+  }
+
+  def copy_defined_between[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n) && isDefinedBetween(m2, i, j))
+    isDefinedBetween(copy_op(m1, m2, from, until, n), i, j) because {
+      if (from >= until) trivial
+      else if (n >= 0) {
+        updated_defined_between(m2, until - 1 + n, m1(until - 1), i, j) &&
+        copy_defined_between(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i, j)
+      } else {
+        updated_defined_between(m2, from + n, m1(from), i, j) &&
+        copy_defined_between(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i, j)
+      }
+    }
+  } holds
+
+  def copy_defined_at[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    if (i >= from + n && i < until + n) copy_op(m1, m2, from, until, n).isDefinedAt(i) because {
+      if (n >= 0) copy_defined_at(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
+      else copy_defined_at(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
+    } else if (m2.isDefinedAt(i)) copy_op(m1, m2, from, until, n).isDefinedAt(i) because {
+      copy_defined_between(m1, m2, from, until, n, i, i + 1)
+    } else trivial
+  } holds
+
+  private def copy_defined_between[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    isDefinedBetween(copy_op(m1, m2, from, until, n), from + n, until + n) because {
+      if (from >= until) trivial
+      else if (n >= 0) {
+        copy_defined_between(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n) &&
+        copy_defined_at(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, until - 1 + n) &&
+        defined_between_tran(copy_op(m1, m2, from, until, n), from + n, until - 1 + n, until + n)
+      } else {
+        copy_defined_between(m1, m2.updated(from + n, m1(from)), from + 1, until, n) &&
+        copy_defined_at(m1, m2.updated(from + n, m1(from)), from + 1, until, n, from + n)
+      }
+    }
+  } holds
+
+  def copy[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Map[BigInt, T] = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    copy_op(m1, m2, from, until, n)
+  } ensuring { res =>
+    isDefinedBetween(res, from + n, until + n) because {
+      copy_defined_between(m1, m2, from, until, n)
+    }
+  }
+
+  private def acc_copy_out[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && m2.isDefinedAt(i) && (i < from + n || i >= until + n) &&
+      can_copy(m1, from, until, n) && copy_defined_at(m1, m2, from, until, n, i))
+    copy(m1, m2, from, until, n)(i) == m2(i) because {
+      if (from >= until) trivial
+      else if (n >= 0) acc_copy_out(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
+      else acc_copy_out(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
+    }
+  } holds
+
+  private def acc_copy_in[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && i >= from + n && i < until + n &&
+      can_copy(m1, from, until, n) && copy_defined_at(m1, m2, from, until, n, i) && defined_between_at(m1, from, until, i - n))
+    copy(m1, m2, from, until, n)(i) == m1(i - n) because {
+      if (n >= 0) {
+        if (i == until - 1 + n) acc_copy_out(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
+        else acc_copy_in(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
+      } else {
+        if (i == from + n) acc_copy_out(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
+        else acc_copy_in(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
+      }
+    }
+  } holds
+
+  def acc_copy[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    if (i >= from + n && i < until + n) acc_copy_in(m1, m2, from, until, n, i)
+    else if (m2.isDefinedAt(i)) acc_copy_out(m1, m2, from, until, n, i)
+    else trivial
+  } holds
+
+  /* To List */
+
+  def toList[T] (m : Map[BigInt, T], from : BigInt, until : BigInt) : List[T] = {
+    require(isDefinedBetween(m, from, until))
+    if (from >= until) Nil[T]()
+    else Cons(m(from), toList(m, from + 1, until))
+  } ensuring { res =>
+    res.size == (
+      if (from <= until) until - from
+      else BigInt(0)
+    )
+  }
+
+  def acc_toList[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, i : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && i >= 0 && i < until - from && defined_between_at(m, from, until, i + from))
+    toList(m, from, until)(i) == m(i + from) because {
+      if (i == 0) trivial
+      else acc_toList(m, from + 1, until, i - 1)
+    }
+  } holds
+
+}
+
+sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
+
+  def :+ (e : T) : MapArray[T] = {
+    append(e)
+  }
+
+  def :: (m : MapArray[T]) : MapArray[T] = {
+    append(m)
+  }
+
+  def append (e : T) : MapArray[T] = {
+    require(inv)
+    MapArray(map.updated(size, e), size + 1)
+  } ensuring { res =>
+    res.size == size + 1 && res.inv because IMap.updated_defined_between_extend(map, size, e, 0, size)
+  }
+
+  def append (m : MapArray[T]) : MapArray[T] = {
+    require(inv && m.inv)
+    MapArray(IMap.copy(m.map, map, 0, m.size, size), size + m.size)
+  } ensuring { res =>
+    res.size == size + m.size && res.inv because {
+      IMap.copy_defined_between(m.map, map, 0, m.size, size, 0, size) && IMap.defined_between_tran(res.map, 0, size, res.size)
+    }
+  }
+
+  def apply (i : BigInt) : T = {
+    require(inv && i >= 0 && i < size && IMap.defined_between_at(map, 0, size, i))
+    map.apply(i)
+  }
+
+  def drop (n : BigInt) : MapArray[T] = {
+    require(inv && ((n > 0 && n < size) ==> (IMap.defined_between_shrink(map, 0, size, n, size))))
+    if (n <= 0) this
+    else if (n >= size) MapArray.empty[T]
+    else MapArray(IMap.copy(map, IMap.empty[T], n, size, -n), size - n)
+  } ensuring { res =>
+    res.size == (
+      if (n <= 0) size
+      else if (n >= size) BigInt(0)
+      else size - n
+    ) && res.inv
+  }
+
+  def isDefinedAt (i : BigInt) : Boolean = {
+    map.isDefinedAt(i)
+  }
+
+  def isDefinedUntil (n : BigInt) : Boolean = {
+    IMap.isDefinedUntil(map, n)
+  }
+
+  def updated (i : BigInt, e : T) : MapArray[T] = {
+    require(inv && i >= 0 && i < size)
+    MapArray(map.updated(i, e), size)
+  } ensuring { res =>
+    res.size == size && res.inv because {
+      IMap.updated_defined_until(map, i, e, size)
+    }
+  }
+
+  def toList : List[T] = {
+    require(inv)
+    IMap.toList(map, 0, size)
+  } ensuring { res =>
+    res.size == size
+  }
+
+  def inv : Boolean = {
+    size >= 0 && isDefinedUntil(size)
+  }
+
+}
+
+object MapArray {
+
+  def empty[T] : MapArray[T] = {
+    MapArray(IMap.empty[T], 0)
+  } ensuring { res =>
+    res.size == 0 && res.inv
+  }
+
+  def create[T] (n : BigInt, e : T) : MapArray[T] = {
+    require(n >= 0)
+    MapArray(IMap.assign(IMap.empty[T], 0, n, e), n)
+  } ensuring { res =>
+    res.size == n && res.inv
+  }
+
+}
+
+object MapArrayLemmas {
+
+  def defined_until_at[T] (m : MapArray[T], n : BigInt, i : BigInt) : Boolean = {
+      require(i >= 0 && i < n && m.isDefinedUntil(n))
+      m.isDefinedAt(i) because IMap.defined_until_at(m.map, n, i)
+    } holds
+
+  def index_defined[T] (m : MapArray[T], i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size)
+    m.isDefinedAt(i) because defined_until_at(m, m.size, i)
+  } holds
+
+  def acc_updated_eq[T] (m : MapArray[T], i : BigInt, e : T, j : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size && i == j)
+    m.updated(i, e)(j) == e
+  } holds
+
+  def acc_updated_neq[T] (m : MapArray[T], i : BigInt, e : T, j : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size && j >= 0 && j < m.size && i != j && index_defined(m, j))
+    m.updated(i, e)(j) == m(j)
+  } holds
+
+  def acc_append[T] (m : MapArray[T], e : T, i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i <= m.size)
+    m.append(e)(i) == (
+      if (i >= 0 && i < m.size) m(i)
+      else e
+    )
+  } holds
+
+  def acc_append[T] (m1 : MapArray[T], m2 : MapArray[T], i : BigInt) : Boolean = {
+    require(m1.inv && m2.inv && i >= 0 && i < m1.size + m2.size)
+    m1.append(m2)(i) == (
+      if (i >= 0 && i < m1.size) m1(i)
+      else m2(i - m1.size)
+    ) because {
+      IMap.acc_copy(m2.map, m1.map, 0, m2.size, m1.size, i)
+    }
+  } holds
+
+  def acc_drop[T] (m : MapArray[T], n : BigInt, i : BigInt) : Boolean = {
+    require(m.inv)
+    if (n <= 0 && i >= 0 && i < m.size) m.drop(n)(i) == m(i) because { index_defined(m, i) }
+    else if (n > 0 && i >= 0 && i < m.size - n) m.drop(n)(i) == m(i + n) because {
+      index_defined(m.drop(n), i) && IMap.acc_copy(m.map, IMap.empty[T], n, m.size, -n, i) && index_defined(m, i + n)
+    } else trivial
+  } holds
+
+  def acc_toList[T] (m : MapArray[T], i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size)
+    m.toList(i) == m(i) because {
+      IMap.acc_toList(m.map, 0, m.size, i)
+    }
   } holds
 
 }
