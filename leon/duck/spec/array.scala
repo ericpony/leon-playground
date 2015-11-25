@@ -469,10 +469,19 @@ object IMap {
   } holds
 
   def defined_between_tran[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
-    require(isDefinedBetween(m, i, j) && isDefinedBetween(m, j, k))
-    isDefinedBetween(m, i, k) because {
-      if (i >= j) defined_between_shrink(m, j, k, i, k)
-      else defined_between_tran(m, i + 1, j, k)
+    (
+      (isDefinedBetween(m, i, j) && isDefinedBetween(m, j, k)) ==> isDefinedBetween(m, i, k)
+    ) because {
+      if (isDefinedBetween(m, i, j) && isDefinedBetween(m, j, k)) {
+        if (i >= j) defined_between_shrink(m, j, k, i, k)
+        else defined_between_tran(m, i + 1, j, k)
+      } else trivial
+    } &&
+    (
+      (isDefinedBetween(m, i, k) && j >= i && j <= k) ==> (isDefinedBetween(m, i, j) && isDefinedBetween(m, j, k))
+    ) because {
+      if ((isDefinedBetween(m, i, k) && j >= i && j <= k)) defined_between_shrink(m, i, k, i, j) && defined_between_shrink(m, i, k, j, k)
+      else trivial
     }
   } holds
 
@@ -701,6 +710,54 @@ object IMap {
     }
   } holds
 
+  def toList_cons[T] (m : Map[BigInt, T], i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && i < j)
+    Cons(m(i), toList(m, i + 1, j)) == toList(m, i, j)
+  } holds
+
+  def toList_snoc[T] (m : Map[BigInt, T], i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && i < j && defined_between_shrink(m, i, j, i, j - 1) && defined_between_at(m, i, j, j - 1))
+    toList(m, i, j - 1) :+ m(j - 1) == toList(m, i, j) because {
+      if (i == j - 1) trivial
+      else toList_snoc(m, i + 1, j)
+    }
+  } holds
+
+  def toList_append[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, k) && i <= j && j <= k && defined_between_tran(m, i, j, k))
+    toList(m, i, j) ++ toList(m, j, k) == toList(m, i, k) because {
+      if (i == j) check{toList(m, i, j) ++ toList(m, j, k) == toList(m, i, k)}
+      else toList_append(m, i + 1, j, k)
+    }
+  } holds
+
+  def toList_copy[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    toList(copy(m1, m2, from, until, n), from + n, until + n) == toList(m1, from, until) because {
+      if (from >= until) trivial
+      else if (n >= 0) {
+          toList_copy(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n) &&
+          acc_copy(m1, m2, from, until, n, until - 1 + n) &&
+          toList_snoc(copy(m1, m2, from, until, n), from + n, until + n) &&
+          toList_snoc(m1, from, until)
+      } else {
+          toList_copy(m1, m2.updated(from + n, m1(from)), from + 1, until, n) &&
+          acc_copy(m1, m2, from, until, n, from + n)
+      }
+    }
+  } holds
+
+  def toList_drop[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && n >= 0 && defined_between_shrink(m, from, until, from + n, until))
+    toList(m, from, until).drop(n) == toList(m, from + n, until) because {
+      if (from >= until || from + n >= until || n == 0) trivial
+      else {
+        defined_between_shrink(m, from, until, from + 1, until) &&
+        toList_drop(m, from + 1, until, n - 1)
+      }
+    }
+  } holds
+
 }
 
 sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
@@ -709,7 +766,7 @@ sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
     append(e)
   }
 
-  def :: (m : MapArray[T]) : MapArray[T] = {
+  def ++ (m : MapArray[T]) : MapArray[T] = {
     append(m)
   }
 
@@ -753,6 +810,13 @@ sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
 
   def isDefinedUntil (n : BigInt) : Boolean = {
     IMap.isDefinedUntil(map, n)
+  }
+
+  def prepend (e : T) : MapArray[T] = {
+    require(inv)
+    MapArray.create(1, e) ++ this
+  } ensuring { res =>
+    res.size == size + 1 && res.inv
   }
 
   def updated (i : BigInt, e : T) : MapArray[T] = {
@@ -842,10 +906,42 @@ object MapArrayLemmas {
     } else trivial
   } holds
 
+  def acc_prepend[T] (m : MapArray[T], e : T, i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i <= m.size)
+    (if (i == 0) m.prepend(e)(i) == e
+    else m.prepend(e)(i) == m(i - 1)) because {
+      acc_append(MapArray.create(1, e), m, i)
+    }
+  } holds
+
   def acc_toList[T] (m : MapArray[T], i : BigInt) : Boolean = {
     require(m.inv && i >= 0 && i < m.size)
     m.toList(i) == m(i) because {
       IMap.acc_toList(m.map, 0, m.size, i)
+    }
+  } holds
+
+  def append_toList[T] (m : MapArray[T], e : T) : Boolean = {
+    require(m.inv)
+    (m :+ e).toList == m.toList :+ e
+  } holds
+
+  def drop_toList[T] (m : MapArray[T], n : BigInt) : Boolean = {
+    require(m.inv)
+    m.drop(n).toList == m.toList.drop(n) because {
+      if (n <= 0) trivial
+      else {
+        IMap.defined_between_shrink(m.map, 0, m.size, n, m.size) &&
+        IMap.toList_copy(m.map, IMap.empty[T], n, m.size, -n) &&
+        IMap.toList_drop(m.map, 0, m.size, n)
+      }
+    }
+  } holds
+
+  def prepend_toList[T] (m : MapArray[T], e : T) : Boolean = {
+    require(m.inv)
+    m.prepend(e).toList == Cons(e, m.toList) because {
+      acc_prepend(m, e, 0) && IMap.toList_cons(m.prepend(e).map, 0, m.size + 1)
     }
   } holds
 

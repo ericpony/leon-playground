@@ -34,7 +34,7 @@ case class LinkedList[T] (list : List[T]) extends ListADT[T] {
 
 }
 
-case class ArrayList[T] (array : ListArray[T]) extends ListADT[T] {
+case class ArrayList[T] (array : ListArray[T]) /*extends ListADT[T]*/ {
 
   def append (e : T) : ArrayList[T] = {
     require(inv)
@@ -149,6 +149,101 @@ object LinkedListArrayListBisimulation {
     val a3 = a1.tail
     val a4 = a2.tail
     bisim(a3, a4)
+  } holds
+
+}
+
+
+
+case class MapArrayList[T] (array : MapArray[T]) /*extends ListADT[T]*/ {
+
+  def append (e : T) : MapArrayList[T] = {
+    require(inv)
+    MapArrayList(array :+ e)
+  } ensuring { res =>
+    res.size == size + 1 && res.inv
+  }
+
+  def head : T = {
+    require(inv && size > 0)
+    array(0)
+  }
+
+  def iterator : Iterator[T] = {
+    require(inv)
+    ListIterator(array.toList)
+  }
+
+  def prepend (e : T) : MapArrayList[T] = {
+    require(inv)
+    MapArrayList(array.prepend(e))
+  } ensuring {
+    res =>
+    res.inv &&
+    res.head == e because { MapArrayLemmas.acc_prepend(array, e, 0) } &&
+    res.array.toList == Cons(e, array.toList) because {MapArrayLemmas.prepend_toList(array, e) } &&
+    res.size == size + 1
+  }
+
+  def size : BigInt = array.size
+
+  def tail : MapArrayList[T] = {
+    require(inv)
+    MapArrayList(array.drop(1))
+  } ensuring {
+    res => res.inv
+  }
+
+  def inv : Boolean = {
+    array.inv
+  }
+
+}
+
+object LinkedListMapArrayListBisimulation {
+
+  def bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T]) : Boolean = {
+    a1.list == a2.array.toList && a2.inv
+  }
+
+  def append_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T], e : T) : Boolean = {
+    require(bisim(a1, a2))
+    val a3 : LinkedList[T] = a1.append(e)
+    val a4 : MapArrayList[T] = a2.append(e)
+    bisim(a3, a4) because {
+      MapArrayLemmas.append_toList(a2.array, e)
+    }
+  } holds
+
+  def head_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T]) : Boolean = {
+    require(bisim(a1, a2) && a1.size > 0 && a2.size > 0)
+    val h1 : T = a1.head
+    val h2 : T = a2.head
+    h1 == h2
+  } holds
+
+  def iterator_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T]) : Boolean = {
+    require(bisim(a1, a2))
+    a1.iterator.toList == a2.iterator.toList
+  } holds
+
+  def prepend_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T], e : T) : Boolean = {
+    require(bisim(a1, a2))
+    val a3 = a1.prepend(e) : LinkedList[T]
+    val a4 = a2.prepend(e) : MapArrayList[T]
+    bisim(a3, a4) because { MapArrayLemmas.prepend_toList(a2.array, e) }
+  } holds
+
+  def size_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T]) : Boolean = {
+    require(bisim(a1, a2))
+    a1.size == a2.size
+  } holds
+
+  def tail_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T]) : Boolean = {
+    require(bisim(a1, a2) && a1.size > 0 && a2.size > 0)
+    val a3 = a1.tail
+    val a4 = a2.tail
+    bisim(a3, a4) because { MapArrayLemmas.drop_toList(a2.array, 1) }
   } holds
 
 }
