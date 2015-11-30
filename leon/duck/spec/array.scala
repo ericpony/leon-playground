@@ -583,30 +583,18 @@ object IMap {
 
   /* Copy */
 
-  private def can_copy_forward[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
-    require(isDefinedBetween(m, from, until) && from < until && n >= 0)
-    defined_between_at(m, from, until, until - 1) && // m.isDefinedAt(until - 1)
-    defined_between_shrink(m, from, until, from, until - 1) && // isDefinedBetween(m, from, until - 1)
-    updated_defined_between(m, until - 1 + n, m(until - 1), from, until - 1) // isDefinedBetween(m.updated(until - 1 + n, m(until - 1)), from, until - 1)
-  } holds
-
-  private def can_copy_backward[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
-    require(isDefinedBetween(m, from, until) && from < until && n < 0)
-    defined_between_shrink(m, from, until, from + 1, until) &&
-    updated_defined_between(m, from + n, m(from), from + 1, until)
-  } holds
-
   def can_copy[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
     require(isDefinedBetween(m, from, until))
     if (from >= until) trivial
-    else if (n >= 0) can_copy_forward(m, from, until, n)
-    else can_copy_backward(m, from, until, n)
+    else {
+      defined_between_shrink(m, from, until, from + 1, until) &&
+      updated_defined_between(m, from + n, m(from), from + 1, until)
+    }
   } holds
 
   private def copy_op[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Map[BigInt, T] = {
     require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
     if (from >= until) m2
-    else if (n >= 0) copy_op(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n)
     else copy_op(m1, m2.updated(from + n, m1(from)), from + 1, until, n)
   }
 
@@ -614,10 +602,7 @@ object IMap {
     require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n) && isDefinedBetween(m2, i, j))
     isDefinedBetween(copy_op(m1, m2, from, until, n), i, j) because {
       if (from >= until) trivial
-      else if (n >= 0) {
-        updated_defined_between(m2, until - 1 + n, m1(until - 1), i, j) &&
-        copy_defined_between(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i, j)
-      } else {
+      else {
         updated_defined_between(m2, from + n, m1(from), i, j) &&
         copy_defined_between(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i, j)
       }
@@ -627,8 +612,7 @@ object IMap {
   def copy_defined_at[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt) : Boolean = {
     require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
     if (i >= from + n && i < until + n) copy_op(m1, m2, from, until, n).isDefinedAt(i) because {
-      if (n >= 0) copy_defined_at(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
-      else copy_defined_at(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
+      copy_defined_at(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
     } else if (m2.isDefinedAt(i)) copy_op(m1, m2, from, until, n).isDefinedAt(i) because {
       copy_defined_between(m1, m2, from, until, n, i, i + 1)
     } else trivial
@@ -638,11 +622,7 @@ object IMap {
     require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
     isDefinedBetween(copy_op(m1, m2, from, until, n), from + n, until + n) because {
       if (from >= until) trivial
-      else if (n >= 0) {
-        copy_defined_between(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n) &&
-        copy_defined_at(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, until - 1 + n) &&
-        defined_between_tran(copy_op(m1, m2, from, until, n), from + n, until - 1 + n, until + n)
-      } else {
+      else {
         copy_defined_between(m1, m2.updated(from + n, m1(from)), from + 1, until, n) &&
         copy_defined_at(m1, m2.updated(from + n, m1(from)), from + 1, until, n, from + n)
       }
@@ -663,7 +643,6 @@ object IMap {
       can_copy(m1, from, until, n) && copy_defined_at(m1, m2, from, until, n, i))
     copy(m1, m2, from, until, n)(i) == m2(i) because {
       if (from >= until) trivial
-      else if (n >= 0) acc_copy_out(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
       else acc_copy_out(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
     }
   } holds
@@ -672,13 +651,8 @@ object IMap {
     require(isDefinedBetween(m1, from, until) && i >= from + n && i < until + n &&
       can_copy(m1, from, until, n) && copy_defined_at(m1, m2, from, until, n, i) && defined_between_at(m1, from, until, i - n))
     copy(m1, m2, from, until, n)(i) == m1(i - n) because {
-      if (n >= 0) {
-        if (i == until - 1 + n) acc_copy_out(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
-        else acc_copy_in(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n, i)
-      } else {
-        if (i == from + n) acc_copy_out(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
-        else acc_copy_in(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
-      }
+      if (i == from + n) acc_copy_out(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
+      else acc_copy_in(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i)
     }
   } holds
 
@@ -710,6 +684,13 @@ object IMap {
     }
   } holds
 
+  def updated_toList[T] (m : Map[BigInt, T], i : BigInt, e : T, from : BigInt, until : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && (i < from || i >= until) && updated_defined_between(m, i, e, from, until))
+    toList(m.updated(i, e), from, until) == toList(m, from, until) because {
+      updated_toList(m, i, e, from + 1, until)
+    }
+  } holds
+
   def toList_cons[T] (m : Map[BigInt, T], i : BigInt, j : BigInt) : Boolean = {
     require(isDefinedBetween(m, i, j) && i < j)
     Cons(m(i), toList(m, i + 1, j)) == toList(m, i, j)
@@ -735,14 +716,24 @@ object IMap {
     require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
     toList(copy(m1, m2, from, until, n), from + n, until + n) == toList(m1, from, until) because {
       if (from >= until) trivial
-      else if (n >= 0) {
-          toList_copy(m1, m2.updated(until - 1 + n, m1(until - 1)), from, until - 1, n) &&
-          acc_copy(m1, m2, from, until, n, until - 1 + n) &&
-          toList_snoc(copy(m1, m2, from, until, n), from + n, until + n) &&
-          toList_snoc(m1, from, until)
-      } else {
+      else {
           toList_copy(m1, m2.updated(from + n, m1(from)), from + 1, until, n) &&
           acc_copy(m1, m2, from, until, n, from + n)
+      }
+    }
+  } holds
+
+  def toList_copy[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n) && isDefinedBetween(m2, i, j) &&
+      (i < from + n && j <= from + n || i >= until + n && j >= until + n || i >= j) && copy_defined_between(m1, m2, from, until, n, i, j))
+    toList(copy(m1, m2, from, until, n), i, j) == toList(m2, i, j) because {
+      if (from >= until || i >= j) check{toList(copy(m1, m2, from, until, n), i, j) == toList(m2, i, j)}
+      else {
+        check {
+          acc_copy(m1, m2, from, until, n, i) &&
+          toList_copy(m1, m2.updated(from + n, m1(from)), from + 1, until, n, i, j) &&
+          updated_toList(m2, from + n, m1(from), i, j)
+        }
       }
     }
   } holds
@@ -763,10 +754,12 @@ object IMap {
 sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
 
   def :+ (e : T) : MapArray[T] = {
+    require(inv)
     append(e)
   }
 
   def ++ (m : MapArray[T]) : MapArray[T] = {
+    require(inv && m.inv)
     append(m)
   }
 
@@ -923,7 +916,22 @@ object MapArrayLemmas {
 
   def append_toList[T] (m : MapArray[T], e : T) : Boolean = {
     require(m.inv)
-    (m :+ e).toList == m.toList :+ e
+      (m :+ e).toList == m.toList :+ e because {
+        IMap.toList_snoc((m :+ e).map, 0, m.size + 1) &&
+        IMap.updated_toList(m.map, m.size, e, 0, m.size)
+      }
+  } holds
+
+  def append_toList[T] (m1 : MapArray[T], m2 : MapArray[T]) : Boolean = {
+    require(m1.inv && m2.inv)
+      (m1 ++ m2).toList == m1.toList ++ m2.toList because {
+        if (m1.size == 0) IMap.toList_copy(m2.map, m1.map, 0, m2.size, m1.size)
+        else {
+          IMap.toList_append((m1 ++ m2).map, 0, m1.size, m1.size + m2.size) &&
+          IMap.toList_copy(m2.map, m1.map, 0, m2.size, m1.size, 0, m1.size) &&
+          IMap.toList_copy(m2.map, m1.map, 0, m2.size, m1.size)
+        }
+      }
   } holds
 
   def drop_toList[T] (m : MapArray[T], n : BigInt) : Boolean = {
@@ -941,7 +949,11 @@ object MapArrayLemmas {
   def prepend_toList[T] (m : MapArray[T], e : T) : Boolean = {
     require(m.inv)
     m.prepend(e).toList == Cons(e, m.toList) because {
-      acc_prepend(m, e, 0) && IMap.toList_cons(m.prepend(e).map, 0, m.size + 1)
+      check {
+        IMap.toList_append(m.prepend(e).map, 0, 1, m.size + 1) &&
+        acc_prepend(m, e, 0) &&
+        IMap.toList_copy(m.map, MapArray.create(1, e).map, 0, m.size, 1)
+      }
     }
   } holds
 

@@ -9,6 +9,9 @@ LEON_LIBRARY = $(shell find $(LEON_LIBRARY_DIR) -name *.scala)
 # Functions to be verified.
 FUNS ?=
 
+# Verify files containing the specified functions.
+VF ?= no
+
 # Timeout for each verification condition.
 TIMEOUT ?= 5
 
@@ -169,7 +172,11 @@ ifeq ($(RESOLVE_DEPENDENCY),yes)
 	@echo Resolving dependencies...
 	@$(call find_imports, `cat $(SOURCE) | xargs`)
 	@cat $(DEPEND) | sed 's/^/  /g'
+ifeq ($(VF),yes)
+	$(LEON) $(LEON_FLAGS) `cat $(DEPEND) | xargs`
+else
 	$(LEON) $(LEON_FLAGS) --functions=$@ `cat $(DEPEND) | xargs`
+endif
 	@rm -f $(SOURCE) $(DEPEND) $(PROCESSED) $(ERROR)
 else
 %:
