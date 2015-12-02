@@ -4,6 +4,7 @@ import leon.lang._
 import leon.annotation._
 import leon.proof._
 import scala.language.postfixOps
+import scala.language.implicitConversions
 import duck.collection._
 import duck.spec.ListLemmas._
 
@@ -749,25 +750,109 @@ object IMap {
     }
   } holds
 
+  def toList_take[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until))
+    if (n <= 0) toList(m, from, until).take(n) == Nil[T]()
+    else if (n >= until - from) {
+      if (from >= until) trivial
+      else toList_take(m, from + 1, until, n - 1)
+    } else defined_between_shrink(m, from, until, from, from + n) && toList(m, from, until).take(n) == toList(m, from, from + n) because {
+      if (from >= until) trivial
+      else if (n == 1) trivial
+      else toList_take(m, from + 1, until, n - 1)
+    }
+  } holds
+
+  /* Forall && Exists */
+
+  def forall[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, p : T => Boolean) : Boolean = {
+    require(isDefinedBetween(m, from, until))
+    if (from >= until) true
+    else p(m(from)) && forall(m, from + 1, until, p)
+  } ensuring { res =>
+    res ==> !exists(m, from, until, (x : T) => !p(x))
+  }
+
+  def exists[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, p : T => Boolean) : Boolean = {
+    require(isDefinedBetween(m, from, until))
+    if (from >= until) false
+    else p(m(from)) || exists(m, from + 1, until, p)
+  } ensuring { res =>
+    res ==> !forall(m, from, until, (x : T) => !p(x))
+  }
+
+  def forall_acc[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, p : T => Boolean, i : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && forall(m, from, until, p) && i >= from && i < until && defined_between_at(m, from, until, i))
+    p(m(i)) because {
+      if (i == from) trivial
+      else forall_acc(m, from + 1, until, p, i)
+    }
+  } holds
+
+  def forall_shrink[T] (m : Map[BigInt, T], from : BigInt, until : BigInt, p : T => Boolean, i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m, from, until) && forall(m, from, until, p) && i >= from && j <= until && defined_between_shrink(m, from, until, i, j))
+    forall(m, i, j, p) because {
+      if (i >= j) trivial
+      else if (i == from) forall_shrink(m, from + 1, until, p, i + 1, j)
+      else forall_shrink(m, from + 1, until, p, i, j)
+    }
+  } holds
+
+  def forall_tran[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt, p : T => Boolean) : Boolean = {
+    require(isDefinedBetween(m, i, j) && isDefinedBetween(m, j, k) && defined_between_tran(m, i, j, k))
+    if (forall(m, i, j, p) && forall(m, j, k, p)) forall(m, i, k, p) because {
+      if (i >= j) forall_shrink(m, j, k, p, i, k)
+      else forall_tran(m, i + 1, j, k, p)
+    } else if (forall(m, i, k, p) && j >= i && j <= k) forall(m, i, j, p) && forall(m, j, k, p) because {
+      forall_shrink(m, i, k, p, i, j) && forall_shrink(m, i, k, p, j, k)
+    } else
+      trivial
+  } holds
+
+  def copy_forall[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, p : T => Boolean) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n))
+    (
+      (forall(m1, from, until, p) ==> forall(copy(m1, m2, from, until, n), from + n, until + n, p)) &&
+      (forall(copy(m1, m2, from, until, n), from + n, until + n, p) ==> forall(m1, from, until, p))
+    ) because {
+      if (forall(m1, from, until, p) || forall(copy(m1, m2, from, until, n), from + n, until + n, p)) {
+        if (from >= until) trivial
+        else {
+          acc_copy(m1, m2, from, until, n, from + n) &&
+          copy_forall(m1, m2.updated(from + n, m1(from)), from + 1, until, n, p)
+        }
+      } else trivial
+    }
+  } holds
+
+  def copy_forall[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, n : BigInt, p : T => Boolean,
+    i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m1, from, until) && can_copy(m1, from, until, n) && isDefinedBetween(m2, i, j) &&
+      (j <= from + n || i >= until + n) && copy_defined_between(m1, m2, from, until, n, i, j))
+    (
+      (forall(m2, i, j, p) ==> forall(copy(m1, m2, from, until, n), i, j, p)) &&
+      (forall(copy(m1, m2, from, until, n), i, j, p) ==> forall(m2, i, j, p))
+    ) because {
+      if (from >= until || i >= j) trivial
+      else {
+        acc_copy(m1, m2, from, until, n, i) &&
+        copy_forall(m1, m2, from, until, n, p, i + 1, j)
+      }
+    }
+  } holds
+
 }
 
 sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
 
   def :+ (e : T) : MapArray[T] = {
     require(inv)
-    append(e)
+    snoc(e)
   }
 
   def ++ (m : MapArray[T]) : MapArray[T] = {
     require(inv && m.inv)
     append(m)
-  }
-
-  def append (e : T) : MapArray[T] = {
-    require(inv)
-    MapArray(map.updated(size, e), size + 1)
-  } ensuring { res =>
-    res.size == size + 1 && res.inv because IMap.updated_defined_between_extend(map, size, e, 0, size)
   }
 
   def append (m : MapArray[T]) : MapArray[T] = {
@@ -797,6 +882,20 @@ sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
     ) && res.inv
   }
 
+  def exists (p : T => Boolean) : Boolean = {
+    require(inv)
+    IMap.exists(map, 0, size, p)
+  } ensuring { res =>
+    res ==> !forall(!p(_))
+  }
+
+  def forall (p : T => Boolean) : Boolean = {
+    require(inv)
+    IMap.forall(map, 0, size, p)
+  } ensuring { res =>
+    res ==> !exists(!p(_))
+  }
+
   def isDefinedAt (i : BigInt) : Boolean = {
     map.isDefinedAt(i)
   }
@@ -812,13 +911,24 @@ sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
     res.size == size + 1 && res.inv
   }
 
-  def updated (i : BigInt, e : T) : MapArray[T] = {
-    require(inv && i >= 0 && i < size)
-    MapArray(map.updated(i, e), size)
+  def snoc (e : T) : MapArray[T] = {
+    require(inv)
+    MapArray(map.updated(size, e), size + 1)
   } ensuring { res =>
-    res.size == size && res.inv because {
-      IMap.updated_defined_until(map, i, e, size)
-    }
+    res.size == size + 1 && res.inv because IMap.updated_defined_between_extend(map, size, e, 0, size)
+  }
+
+  def take (n : BigInt) : MapArray[T] = {
+    require(inv && ((n >= 0 && n <= size) ==> IMap.defined_between_shrink(map, 0, size, 0, n)))
+    if (n <= 0) MapArray.empty[T]
+    else if (n >= size) this
+    else MapArray(IMap.copy(map, IMap.empty[T], 0, n, 0), n)
+  } ensuring { res =>
+    res.size == (
+      if (n <= 0) BigInt(0)
+      else if (n >= size) size
+      else n
+    ) && res.inv
   }
 
   def toList : List[T] = {
@@ -826,6 +936,15 @@ sealed case class MapArray[T] (map : Map[BigInt, T], size : BigInt) {
     IMap.toList(map, 0, size)
   } ensuring { res =>
     res.size == size
+  }
+
+  def updated (i : BigInt, e : T) : MapArray[T] = {
+    require(inv && i >= 0 && i < size)
+    MapArray(map.updated(i, e), size)
+  } ensuring { res =>
+    res.size == size && res.inv because {
+      IMap.updated_defined_until(map, i, e, size)
+    }
   }
 
   def inv : Boolean = {
@@ -853,14 +972,21 @@ object MapArray {
 
 object MapArrayLemmas {
 
+  implicit def to_imap[T] (m : MapArray[T]) : Map[BigInt, T] = m.map
+
   def defined_until_at[T] (m : MapArray[T], n : BigInt, i : BigInt) : Boolean = {
       require(i >= 0 && i < n && m.isDefinedUntil(n))
-      m.isDefinedAt(i) because IMap.defined_until_at(m.map, n, i)
+      m.isDefinedAt(i) because IMap.defined_until_at(m, n, i)
     } holds
 
   def index_defined[T] (m : MapArray[T], i : BigInt) : Boolean = {
     require(m.inv && i >= 0 && i < m.size)
     m.isDefinedAt(i) because defined_until_at(m, m.size, i)
+  } holds
+
+  def snoc_is_append[T] (m : MapArray[T], e : T) : Boolean = {
+    require(m.inv)
+    (m :+ e) == (m ++ MapArray.create(1, e))
   } holds
 
   def acc_updated_eq[T] (m : MapArray[T], i : BigInt, e : T, j : BigInt) : Boolean = {
@@ -873,9 +999,9 @@ object MapArrayLemmas {
     m.updated(i, e)(j) == m(j)
   } holds
 
-  def acc_append[T] (m : MapArray[T], e : T, i : BigInt) : Boolean = {
+  def acc_snoc[T] (m : MapArray[T], e : T, i : BigInt) : Boolean = {
     require(m.inv && i >= 0 && i <= m.size)
-    m.append(e)(i) == (
+    (m :+ e)(i) == (
       if (i >= 0 && i < m.size) m(i)
       else e
     )
@@ -883,11 +1009,11 @@ object MapArrayLemmas {
 
   def acc_append[T] (m1 : MapArray[T], m2 : MapArray[T], i : BigInt) : Boolean = {
     require(m1.inv && m2.inv && i >= 0 && i < m1.size + m2.size)
-    m1.append(m2)(i) == (
+    (m1 ++ m2)(i) == (
       if (i >= 0 && i < m1.size) m1(i)
       else m2(i - m1.size)
     ) because {
-      IMap.acc_copy(m2.map, m1.map, 0, m2.size, m1.size, i)
+      IMap.acc_copy(m2, m1, 0, m2.size, m1.size, i)
     }
   } holds
 
@@ -895,7 +1021,7 @@ object MapArrayLemmas {
     require(m.inv)
     if (n <= 0 && i >= 0 && i < m.size) m.drop(n)(i) == m(i) because { index_defined(m, i) }
     else if (n > 0 && i >= 0 && i < m.size - n) m.drop(n)(i) == m(i + n) because {
-      index_defined(m.drop(n), i) && IMap.acc_copy(m.map, IMap.empty[T], n, m.size, -n, i) && index_defined(m, i + n)
+      index_defined(m.drop(n), i) && IMap.acc_copy(m, IMap.empty[T], n, m.size, -n, i) && index_defined(m, i + n)
     } else trivial
   } holds
 
@@ -907,29 +1033,37 @@ object MapArrayLemmas {
     }
   } holds
 
-  def acc_toList[T] (m : MapArray[T], i : BigInt) : Boolean = {
-    require(m.inv && i >= 0 && i < m.size)
-    m.toList(i) == m(i) because {
-      IMap.acc_toList(m.map, 0, m.size, i)
+  def acc_take[T] (m : MapArray[T], n : BigInt, i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < n && i < m.size && index_defined(m, i) && index_defined(m.take(n), i))
+    m.take(n)(i) == m(i) because {
+      if (n <= 0 || n >= m.size) trivial
+      else IMap.acc_copy(m, IMap.empty[T], 0, n, 0, i)
     }
   } holds
 
-  def append_toList[T] (m : MapArray[T], e : T) : Boolean = {
+  def acc_toList[T] (m : MapArray[T], i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size)
+    m.toList(i) == m(i) because {
+      IMap.acc_toList(m, 0, m.size, i)
+    }
+  } holds
+
+  def snoc_toList[T] (m : MapArray[T], e : T) : Boolean = {
     require(m.inv)
       (m :+ e).toList == m.toList :+ e because {
-        IMap.toList_snoc((m :+ e).map, 0, m.size + 1) &&
-        IMap.updated_toList(m.map, m.size, e, 0, m.size)
+        IMap.toList_snoc(m :+ e, 0, m.size + 1) &&
+        IMap.updated_toList(m, m.size, e, 0, m.size)
       }
   } holds
 
   def append_toList[T] (m1 : MapArray[T], m2 : MapArray[T]) : Boolean = {
     require(m1.inv && m2.inv)
       (m1 ++ m2).toList == m1.toList ++ m2.toList because {
-        if (m1.size == 0) IMap.toList_copy(m2.map, m1.map, 0, m2.size, m1.size)
+        if (m1.size == 0) IMap.toList_copy(m2, m1, 0, m2.size, m1.size)
         else {
-          IMap.toList_append((m1 ++ m2).map, 0, m1.size, m1.size + m2.size) &&
-          IMap.toList_copy(m2.map, m1.map, 0, m2.size, m1.size, 0, m1.size) &&
-          IMap.toList_copy(m2.map, m1.map, 0, m2.size, m1.size)
+          IMap.toList_append(m1 ++ m2, 0, m1.size, m1.size + m2.size) &&
+          IMap.toList_copy(m2, m1, 0, m2.size, m1.size, 0, m1.size) &&
+          IMap.toList_copy(m2, m1, 0, m2.size, m1.size)
         }
       }
   } holds
@@ -939,9 +1073,9 @@ object MapArrayLemmas {
     m.drop(n).toList == m.toList.drop(n) because {
       if (n <= 0) trivial
       else {
-        IMap.defined_between_shrink(m.map, 0, m.size, n, m.size) &&
-        IMap.toList_copy(m.map, IMap.empty[T], n, m.size, -n) &&
-        IMap.toList_drop(m.map, 0, m.size, n)
+        IMap.defined_between_shrink(m, 0, m.size, n, m.size) &&
+        IMap.toList_copy(m, IMap.empty[T], n, m.size, -n) &&
+        IMap.toList_drop(m, 0, m.size, n)
       }
     }
   } holds
@@ -950,11 +1084,73 @@ object MapArrayLemmas {
     require(m.inv)
     m.prepend(e).toList == Cons(e, m.toList) because {
       check {
-        IMap.toList_append(m.prepend(e).map, 0, 1, m.size + 1) &&
+        IMap.toList_append(m.prepend(e), 0, 1, m.size + 1) &&
         acc_prepend(m, e, 0) &&
-        IMap.toList_copy(m.map, MapArray.create(1, e).map, 0, m.size, 1)
+        IMap.toList_copy(m, MapArray.create(1, e), 0, m.size, 1)
       }
     }
+  } holds
+
+  def take_toList[T] (m : MapArray[T], n : BigInt) : Boolean = {
+    require(m.inv)
+    m.take(n).toList == m.toList.take(n) because {
+      if (n <= 0) trivial
+      else if (n >= m.size) take_all(m.toList, n)
+      else {
+        IMap.defined_between_shrink(m, 0, m.size, 0, n) &&
+        IMap.toList_copy(m, IMap.empty[T], 0, n, 0) &&
+        IMap.toList_take(m, 0, m.size, n)
+      }
+    }
+  } holds
+
+  def acc_forall[T] (m : MapArray[T], p : T => Boolean, i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size && m.forall(p))
+    p(m(i)) because IMap.forall_acc(m, 0, m.size, p, i)
+  } holds
+
+  def take_forall[T] (m : MapArray[T], n : BigInt, p : T => Boolean) : Boolean = {
+    require(m.inv && m.forall(p))
+    m.take(n).forall(p) because {
+      if (n <= 0) trivial
+      else if (n >= m.size) trivial
+      else {
+        IMap.defined_between_shrink(m, 0, m.size, 0, n) &&
+        IMap.forall_shrink(m, 0, m.size, p, 0, n) &&
+        IMap.copy_forall(m, IMap.empty[T], 0, n, 0, p)
+      }
+    }
+  } holds
+
+  def append_forall[T] (m1 : MapArray[T], m2 : MapArray[T], p : T => Boolean) : Boolean = {
+    require(m1.inv && m2.inv)
+      (
+        ((m1 ++ m2).forall(p) ==> (m1.forall(p) && m2.forall(p))) &&
+        ((m1.forall(p) && m2.forall(p)) ==> (m1 ++ m2).forall(p))
+      ) because {
+        if ((m1 ++ m2).forall(p)) {
+          IMap.forall_shrink(m1 ++ m2, 0, m1.size + m2.size, p, 0, m1.size) &&
+          IMap.copy_forall(m2, m1, 0, m2.size, m1.size, p, 0, m1.size) &&
+          IMap.forall_shrink(m1 ++ m2, 0, m1.size + m2.size, p, m1.size, m1.size + m2.size) &&
+          IMap.copy_forall(m2, m1, 0, m2.size, m1.size, p)
+        } else if (m1.forall(p) && m2.forall(p)) {
+          IMap.copy_forall(m2, m1, 0, m2.size, m1.size, p, 0, m1.size) &&
+          IMap.copy_forall(m2, m1, 0, m2.size, m1.size, p) &&
+          IMap.forall_tran(m1 ++ m2, 0, m1.size, m1.size + m2.size, p)
+        } else trivial
+      }
+  } holds
+
+  def snoc_forall[T] (m : MapArray[T], e : T, p : T => Boolean) : Boolean = {
+    require(m.inv)
+      (
+        (m :+ e).forall(p) ==> (m.forall(p) && p(e)) &&
+        (m.forall(p) && p(e)) ==> (m :+ e).forall(p)
+      ) because {
+        if ((m :+ e).forall(p) || m.forall(p) && p(e)) {
+          snoc_is_append(m, e) && append_forall(m, MapArray.create(1, e), p)
+        } else trivial
+      }
   } holds
 
 }

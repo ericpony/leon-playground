@@ -425,5 +425,15 @@ object ListLemmas {
     }
   } holds
 
+  def take_all[A] (l : List[A], n : BigInt) : Boolean = {
+    require(n >= l.size)
+    l.take(n) == l because {
+      l match {
+        case Nil() => trivial
+        case Cons(hd, tl) => take_all(tl, n - 1)
+      }
+    }
+  } holds
+
 }
 
