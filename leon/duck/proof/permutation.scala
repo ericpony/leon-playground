@@ -1,6 +1,5 @@
 package duck.proof
 
-import duck.proof.sugar._
 import duck.collection._
 
 import leon.annotation._
@@ -12,6 +11,7 @@ import DeleteOps._
 import PermutationSpec._
 import PermutationOps._
 import PermutationLemmas._
+import duck.spec.ListLemmas._
 
 import scala.language.postfixOps
 
@@ -98,10 +98,11 @@ object PermutationOps {
       val h1 = l1.head
       l2.contains(h1) && permutation(l1.tail, delete(l2, h1))
     }
-  } ensuring { res => res implies
-    l1.size == l2.size &&
+  } ensuring { res => res ==> (
+      l1.size == l2.size &&
       permutation(l2, l1) &&
       l1.content == l2.content
+    )
   }
 }
 
@@ -333,4 +334,119 @@ object PermutationLemmas {
       }
     }
   } holds
+
+  @induct
+  def cons_snoc_perm[V] (l : List[V], e : V) : Boolean = {
+    permutation(e :: l, l :+ e)
+  } holds
+
+  def rotate_perm[V] (l : List[V], n : BigInt) : Boolean = {
+    require(!l.isEmpty)
+    permutation(l.rotate(n), l) because {
+      cut_as_take_drop(l, n mod l.size) &&
+      permutation_concat_comm(l.take(n mod l.size), l.drop(n mod l.size))
+    }
+  } holds
+
+  def permutation_replace[V] (x : List[V], y : List[V], a : List[V], b : List[V]) : Boolean = {
+    require(permutation(x, y))
+    ((permutation(x, a) && permutation(y, b)) ==> (permutation(a, b) because {
+      permutation_comm_lemma(x, a) && permutation_tran_lemma(a, x, y) && permutation_tran_lemma(a, y, b)
+    })) &&
+    ((permutation(a, x) && permutation(y, b)) ==> (permutation(a, b) because {
+      permutation_tran_lemma(a, x, y) && permutation_tran_lemma(a, y, b)
+    })) &&
+    ((permutation(x, a) && permutation(b, y)) ==> (permutation(a, b) because {
+      permutation_comm_lemma(x, a) && permutation_tran_lemma(a, x, y) && permutation_comm_lemma(b, y) && permutation_tran_lemma(a, y, b)
+    })) &&
+    ((permutation(a, x) && permutation(b, y)) ==> (permutation(a, b) because {
+      permutation_tran_lemma(a, x, y) && permutation_comm_lemma(b, y) && permutation_tran_lemma(a, y, b)
+    })) &&
+    ((permutation(y, a) && permutation(x, b)) ==> (permutation(a, b) because {
+      permutation_comm_lemma(x, y) && permutation_comm_lemma(y, a) && permutation_tran_lemma(a, y, x) && permutation_tran_lemma(a, x, b)
+    })) &&
+    ((permutation(a, y) && permutation(x, b)) ==> (permutation(a, b) because {
+      permutation_comm_lemma(x, y) && permutation_tran_lemma(a, y, x) && permutation_tran_lemma(a, x, b)
+    })) &&
+    ((permutation(y, a) && permutation(b, x)) ==> (permutation(a, b) because {
+      permutation_comm_lemma(x, y) && permutation_comm_lemma(y, a) && permutation_tran_lemma(a, y, x) && permutation_comm_lemma(b, x) && permutation_tran_lemma(a, x, b)
+    })) &&
+    ((permutation(a, y) && permutation(b, x)) ==> (permutation(a, b) because {
+      permutation_comm_lemma(x, y) && permutation_tran_lemma(a, y, x) && permutation_comm_lemma(b, x) && permutation_tran_lemma(a, x, b)
+    }))
+  } holds
+
+  /* Used to prove permutation3 */
+  def permutation3_swap2[V] (x : List[V], y : List[V], z : List[V]) : Boolean = {
+    permutation(x ++ y ++ z, x ++ z ++ y) because {
+      permutation_concat_assoc(x, y, z) &&
+      permutation_concat_comm(y, z) && permutation_prepend(x, y ++ z, z ++ y) &&
+      permutation_tran(x ++ y ++ z, x ++ (y ++ z), x ++ (z ++ y)) &&
+      permutation_concat_assoc(x, z, y) && permutation_comm(x ++ z ++ y, x ++ (z ++ y)) &&
+      permutation_tran(x ++ y ++ z, x ++ (z ++ y), x ++ z ++ y)
+    } && permutation(x ++ y ++ z, y ++ x ++ z) because {
+      permutation_concat_comm(x, y) && permutation_append(x ++ y, y ++ x, z)
+    } && permutation(x ++ y ++ z, z ++ y ++ x) because {
+      permutation_concat_comm(x, y) && permutation_append(x ++ y, y ++ x, z) &&
+      permutation_concat_comm(y ++ x, z) &&
+      permutation_concat_assoc(z, y, x) &&
+      permutation_comm(z ++ y ++ x, z ++ (y ++ x)) &&
+      permutation_tran(x ++ y ++ z, y ++ x ++ z, z ++ (y ++ x)) &&
+      permutation_tran(x ++ y ++ z, z ++ (y ++ x), z ++ y ++ x)
+    }
+  } holds
+
+  /* Used to prove permutation3 */
+  def permutation3_swap_noassoc[V] (x : List[V], y : List[V], z : List[V]) : Boolean = {
+    permutation(x ++ y ++ z, x ++ y ++ z) because { permutation_refl(x ++ y ++ z) } &&
+    permutation(x ++ y ++ z, x ++ z ++ y) because { permutation3_swap2(x, y, z) } &&
+    permutation(x ++ y ++ z, y ++ x ++ z) because { permutation3_swap2(x, y, z) } &&
+    permutation(x ++ y ++ z, y ++ z ++ x) because { permutation3_swap2(x, y, z) && permutation3_swap2(y, x, z) && permutation_tran(x ++ y ++ z, y ++ x ++ z, y ++ z ++ x) } &&
+    permutation(x ++ y ++ z, z ++ x ++ y) because { permutation3_swap2(x, y, z) && permutation3_swap2(x, z, y) && permutation_tran(x ++ y ++ z, x ++ z ++ y, z ++ x ++ y) } &&
+    permutation(x ++ y ++ z, z ++ y ++ x) because { permutation3_swap2(x, y, z) }
+  } holds
+
+  def permutation3[V] (x : List[V], y : List[V], z : List[V]) : Boolean = {
+    permutation(x ++ y ++ z, x ++ y ++ z) because { permutation3_swap_noassoc(x, y, z) } &&
+    permutation(x ++ y ++ z, x ++ z ++ y) because { permutation3_swap_noassoc(x, y, z) } &&
+    permutation(x ++ y ++ z, y ++ x ++ z) because { permutation3_swap_noassoc(x, y, z) } &&
+    permutation(x ++ y ++ z, y ++ z ++ x) because { permutation3_swap_noassoc(x, y, z) } &&
+    permutation(x ++ y ++ z, z ++ x ++ y) because { permutation3_swap_noassoc(x, y, z) } &&
+    permutation(x ++ y ++ z, z ++ y ++ x) because { permutation3_swap_noassoc(x, y, z) } &&
+    permutation(x ++ y ++ z, x ++ (y ++ z)) because {
+      permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(x, y, z) && permutation_tran(x ++ y ++ z, x ++ y ++ z, x ++ (y ++ z))
+    } &&
+    permutation(x ++ y ++ z, x ++ z ++ y) because {
+      permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(x, y, z) && permutation_tran(x ++ y ++ z, x ++ y ++ z, x ++ (y ++ z))
+    } &&
+    permutation(x ++ y ++ z, y ++ x ++ z) because {
+      permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(y, x, z) && permutation_tran(x ++ y ++ z, y ++ x ++ z, y ++ (x ++ z))
+    } &&
+    permutation(x ++ y ++ z, y ++ z ++ x) because {
+      permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(y, z, x) && permutation_tran(x ++ y ++ z, y ++ z ++ x, y ++ (z ++ x))
+    } &&
+    permutation(x ++ y ++ z, z ++ x ++ y) because {
+      permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(z, x, y) && permutation_tran(x ++ y ++ z, z ++ x ++ y, z ++ (x ++ y))
+    } &&
+    permutation(x ++ y ++ z, z ++ y ++ x) because {
+      permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(z, y, x) && permutation_tran(x ++ y ++ z, z ++ y ++ x, z ++ (y ++ x))
+    }
+  } holds
+
+  def append5_swap2_perm[T] (a : List[T], b : List[T], c : List[T], d : List[T], e : List[T]) : Boolean = {
+    permutation(a ++ b ++ c ++ d ++ e, a ++ d ++ c ++ b ++ e) because {
+      permutation_concat_comm(b, d) &&
+      permutation_append(b ++ d, d ++ b, c) &&
+      permutation3(b, c, d) && permutation_tran(b ++ c ++ d, b ++ d ++ c, d ++ b ++ c) &&
+      permutation3(d, b, c) && permutation_tran(b ++ c ++ d, d ++ b ++ c, d ++ c ++ b) &&
+      permutation_prepend(a, b ++ c ++ d, d ++ c ++ b) &&
+      permutation_concat_assoc(a, b ++ c, d) && permutation_concat_assoc(a, d ++ c, b) &&
+      permutation_replace(a ++ (b ++ c ++ d), a ++ (d ++ c ++ b), a ++ (b ++ c) ++ d, a ++ (d ++ c) ++ b) &&
+      permutation_concat_assoc(a, b, c) && permutation_comm(a ++ b ++ c, a ++ (b ++ c)) && permutation_append(a ++ (b ++ c), a ++ b ++ c, d) &&
+      permutation_concat_assoc(a, d, c) && permutation_comm(a ++ d ++ c, a ++ (d ++ c)) && permutation_append(a ++ (d ++ c), a ++ d ++ c, b) &&
+      permutation_replace(a ++ (b ++ c) ++ d, a ++ (d ++ c) ++ b, a ++ b ++ c ++ d, a ++ d ++ c ++ b) &&
+      permutation_append(a ++ b ++ c ++ d, a ++ d ++ c ++ b, e)
+    }
+  } holds
+
 }

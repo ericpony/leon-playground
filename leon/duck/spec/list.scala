@@ -88,6 +88,10 @@ object ListLemmas {
     Nil() ++ l1 == l1
   }.holds
 
+  def consIsAppend[T] (l: List[T], t: T): Boolean = {
+    (t :: l) == Cons[T](t, Nil[T]()) ++ l
+  } holds
+
   def snocIsAppend[T] (l: List[T], t: T): Boolean = {
     ((l :+ t) == l ++ Cons[T](t, Nil())) because {
       l match {
@@ -431,6 +435,18 @@ object ListLemmas {
       l match {
         case Nil() => trivial
         case Cons(hd, tl) => take_all(tl, n - 1)
+      }
+    }
+  } holds
+
+  def cut_as_take_drop[A] (l : List[A], n : BigInt) : Boolean = {
+    l.take(n) ++ l.drop(n) == l because {
+      if (n <= 0) trivial
+      else {
+        l match {
+          case Nil() => trivial
+          case Cons(hd, tl) => cut_as_take_drop(tl, n - 1)
+        }
       }
     }
   } holds

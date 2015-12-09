@@ -7,6 +7,9 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 import duck.collection._
 import duck.spec.ListLemmas._
+import duck.proof.PermutationOps._
+import duck.proof.PermutationSpec._
+import duck.proof.PermutationLemmas._
 
 case class EmptyArray[K, V] () extends FunctionalArray[K, V]
 case class UpdatedArray[K, V] (a : FunctionalArray[K, V], i : K, e : V) extends FunctionalArray[K, V]
@@ -671,11 +674,27 @@ object IMap {
     }
   } holds
 
+  def toList_snoc[T] (m : Map[BigInt, T], e : T, i : BigInt, j : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && i <= j && updated_defined_between(m, j, e, i, j))
+    toList(m.updated(j, e), i, j + 1) == toList(m, i, j) :+ e because {
+      if (i == j) trivial
+      else toList_snoc(m, e, i + 1, j)
+    }
+  } holds
+
   def toList_append[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
     require(isDefinedBetween(m, i, k) && i <= j && j <= k && defined_between_tran(m, i, j, k))
     toList(m, i, j) ++ toList(m, j, k) == toList(m, i, k) because {
-      if (i == j) check{toList(m, i, j) ++ toList(m, j, k) == toList(m, i, k)}
+      if (i == j) trivial
       else toList_append(m, i + 1, j, k)
+    }
+  } holds
+
+  def toList_contains[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && k >= i && k < j && defined_between_at(m, i, j, k))
+    toList(m, i, j).contains(m(k)) because {
+      if (i == k) trivial
+      else toList_contains(m, i + 1, j, k)
     }
   } holds
 
@@ -692,7 +711,9 @@ object IMap {
 
   def toList_copy[T] (m1 : Map[BigInt, T], m2 : Map[BigInt, T], from : BigInt, until : BigInt, offset : BigInt, i : BigInt, j : BigInt) : Boolean = {
     require(isDefinedBetween(m1, from, until) && isDefinedBetween(m2, i, j) &&
-      (i < offset && j <= offset || i >= offset + until - from && j >= offset + until - from || i >= j) && copy_defined_between(m1, m2, from, until, offset, i, j))
+      (i < offset && j <= offset || i >= offset + until - from && j >= offset + until - from || i >= j) &&
+      copy_defined_between(m1, m2, from, until, offset, i, j)
+    )
     toList(copy(m1, m2, from, until, offset), i, j) == toList(m2, i, j) because {
       if (from >= until || i >= j) trivial
       else {
@@ -724,6 +745,129 @@ object IMap {
       if (from >= until) trivial
       else if (n == 1) trivial
       else toList_take(m, from + 1, until, n - 1)
+    }
+  } holds
+
+  /* Swap */
+
+  def swap[T] (m : Map[BigInt, T], i : BigInt, j : BigInt) : Map[BigInt, T] = {
+    require(m.isDefinedAt(i) && m.isDefinedAt(j))
+    m.updated(i, m(j)).updated(j, m(i))
+  } ensuring { res =>
+    res(i) == m(j) && res(j) == m(i)
+  }
+
+  def acc_swap[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
+    require(m.isDefinedAt(i) && m.isDefinedAt(j) && m.isDefinedAt(k))
+    swap(m, i, j)(k) == (
+      if (k == i) m(j)
+      else if (k == j) m(i)
+      else m(k)
+    )
+  } holds
+
+  def swap_defined_between[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && m.isDefinedAt(n1) && m.isDefinedAt(n2))
+    isDefinedBetween(swap(m, n1, n2), i, j) because { swap_defined_between(m, i + 1, j, n1, n2) }
+  } holds
+
+  def swap_toList_comm[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && m.isDefinedAt(n1) && m.isDefinedAt(n2) && swap_defined_between(m, i, j, n1, n2))
+    toList(swap(m, n1, n2), i, j) == toList(swap(m, n2, n1), i, j) because {
+      if (i >= j) trivial
+      else swap_toList_comm(m, i + 1, j, n1, n2)
+    }
+  } holds
+
+  def swap_toList_eq[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && m.isDefinedAt(n1) && m.isDefinedAt(n2) && swap_defined_between(m, i, j, n1, n2))
+    ((n1 == n2) ==> (toList(swap(m, n1, n2), i, j) == toList(m, i, j))) &&
+    (((n1 < i || n1 >= j) && (n2 < i || n2 >= j)) ==> (toList(swap(m, n1, n2), i, j) == toList(m, i, j) because {
+      if (i >= j) trivial
+      else swap_toList_eq(m, i + 1, j, n1, n2)
+    }))
+  } holds
+
+  def swap_toList_contains_strict[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt, k : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && m.isDefinedAt(n1) && m.isDefinedAt(n2) &&
+      ((k >= i && k < j) ==> defined_between_at(m, i, j, k)) && swap_defined_between(m, i, j, n1, n2))
+    (
+      ((n1 < i || n1 >= j) && (n2 < i || n2 >= j) && (k >= i && k < j)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        swap_toList_eq(m, i, j, n1, n2) && toList_contains(m, i, j, k)
+      })
+    ) && (
+      ((n1 < i || n1 >= j) && (n2 >= i && n2 < j) && (k >= i && k < j && k != n2 || k == n1)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        if (i == k) trivial
+        else if (i == n2) {
+          if (k >= i && k < j && k != n2) swap_toList_contains_strict(m, i + 1, j, n1, n2, k)
+          else trivial
+        } else
+          swap_toList_contains_strict(m, i + 1, j, n1, n2, k)
+      })
+    ) && (
+      ((n1 >= i && n1 < j) && (n2 >= i && n2 < j) && (k >= i && k < j) && (n1 <= n2)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        if (i == n1 && k == n2 || i == n2 && k == n1) trivial
+        else if (i == k) {
+          if (k == n1) swap_toList_contains_strict(m, i + 1, j, n1, n2, k)
+          else swap_toList_contains_strict(m, i + 1, j, n1, n2, k)
+        } else swap_toList_contains_strict(m, i + 1, j, n1, n2, k)
+      })
+    )
+  } holds
+
+  def swap_toList_contains[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt, k : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && m.isDefinedAt(n1) && m.isDefinedAt(n2) &&
+      ((k >= i && k < j) ==> defined_between_at(m, i, j, k)) && swap_defined_between(m, i, j, n1, n2))
+    (
+      ((n1 < i || n1 >= j) && (n2 < i || n2 >= j) && (k >= i && k < j)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        swap_toList_contains_strict(m, i, j, n1, n2, k)
+      })
+    ) && (
+      ((n1 < i || n1 >= j) && (n2 >= i && n2 < j) && (k >= i && k < j && k != n2 || k == n1)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        swap_toList_contains_strict(m, i, j, n1, n2, k)
+      })
+    ) && (
+      ((n1 >= i && n1 < j) && (n2 < i || n2 >= j) && (k >= i && k < j && k != n1 || k == n2)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        swap_toList_comm(m, i, j, n1, n2) && swap_toList_contains_strict(m, i, j, n2, n1, k)
+      })
+    ) && (
+      ((n1 >= i && n1 < j) && (n2 >= i && n2 < j) && (k >= i && k < j)) ==> (toList(swap(m, n1, n2), i, j).contains(m(k)) because {
+        if (n1 <= n2) swap_toList_contains_strict(m, i, j, n1, n2, k)
+        else swap_toList_comm(m, i, j, n1, n2) && swap_toList_contains_strict(m, i, j, n2, n1, k)
+      })
+    )
+  } holds
+
+  /* Used to prove swap_toList_perm */
+  def swap_toList_append[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && i <= n1 && n1 < n2 && n2 < j &&
+      defined_between_at(m, i, j, n1) && defined_between_at(m, i, j, n2) &&
+      defined_between_shrink(m, i, j, i, n1) && defined_between_shrink(m, i, j, n1 + 1, n2) &&
+      defined_between_shrink(m, i, j, n2 + 1, j) &&
+      swap_defined_between(m, i, j, n1, n2))
+    toList(swap(m, n1, n2), i, j) == toList(m, i, n1) ++ Cons(m(n2), Nil[T]()) ++ toList(m, n1 + 1, n2) ++ Cons(m(n1), Nil[T]()) ++ toList(m, n2 + 1, j) because {
+      swap_toList_eq(m, i, n1, n1, n2) && swap_toList_eq(m, n1 + 1, n2, n1, n2) && swap_toList_eq(m, n2 + 1, j, n1, n2) &&
+      toList_append(swap(m, n1, n2), i, n2 + 1, j) &&
+      toList_append(swap(m, n1, n2), i, n2, n2 + 1) &&
+      toList_append(swap(m, n1, n2), i, n1 + 1, n2) &&
+      toList_append(swap(m, n1, n2), i, n1, n1 + 1)
+    }
+  } holds
+
+  def swap_toList_perm[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt) : Boolean = {
+    require(isDefinedBetween(m, i, j) && i <= n1 && n1 < j && i <= n2 && n2 < j && swap_defined_between(m, i, j, n1, n2))
+    permutation(toList(swap(m, n1, n2), i, j), toList(m, i, j)) because {
+      if (n1 == n2) swap_toList_eq(m, i, j, n1, n2) && permutation_refl(toList(m, i, j))
+      else if (n1 <= n2) {
+        swap_toList_append(m, i, j, n1, n2) &&
+        toList_append(m, i, n2 + 1, j) &&
+        toList_append(m, i, n2, n2 + 1) &&
+        toList_append(m, i, n1 + 1, n2) &&
+        toList_append(m, i, n1, n1 + 1) &&
+        append5_swap2_perm(toList(m, i, n1), Cons(m(n2), Nil[T]()), toList(m, n1 + 1, n2), Cons(m(n1), Nil[T]()), toList(m, n2 + 1, j))
+      } else {
+        swap_toList_comm(m, i, j, n1, n2) && swap_toList_perm(m, i, j, n2, n1)
+      }
     }
   } holds
 
@@ -877,11 +1021,24 @@ sealed case class MapArray[T] (map : Map[BigInt, T], from : BigInt, until : BigI
     res ==> !exists(!p(_))
   }
 
+  def isEmpty : Boolean = {
+    require(inv)
+    size == 0
+  }
+
   def prepend (e : T) : MapArray[T] = {
     require(inv)
     MapArray(map.updated(from - 1, e), from - 1, until)
   } ensuring { res =>
     res.size == size + 1 && res.inv because IMap.updated_defined_between(map, from - 1, e, from, until)
+  }
+
+  def rotate (n : BigInt) : MapArray[T] = {
+    require(inv)
+    if (isEmpty) MapArray.empty[T]
+    else drop(n mod size) ++ take(n mod size)
+  } ensuring { res =>
+    res.size == size && res.inv
   }
 
   def size : BigInt = until - from
@@ -1008,6 +1165,17 @@ object MapArrayLemmas {
     else m.prepend(e)(i) == m(i - 1)
   } holds
 
+  def acc_rotate[T] (m : MapArray[T], n : BigInt, i : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size)
+    (if (i < m.size - (n mod m.size)) m.rotate(n)(i) == m(i + (n mod m.size))
+    else m.rotate(n)(i) == m(i - m.size + (n mod m.size))) because {
+      acc_append(m.drop(n mod m.size), m.take(n mod m.size), i) && (
+        if (i < m.size - (n mod m.size)) acc_drop(m, n mod m.size, i)
+        else acc_take(m, n mod m.size, i - m.size + (n mod m.size))
+      )
+    }
+  } holds
+
   def acc_swap[T] (m : MapArray[T], i : BigInt, j : BigInt, k : BigInt) : Boolean = {
     require(m.inv && i >= 0 && i < m.size && j >= 0 && j < m.size && k >= 0 && k < m.size &&
       index_defined(m, i) && index_defined(m, j) && index_defined(m, k))
@@ -1061,12 +1229,30 @@ object MapArrayLemmas {
     m.prepend(e).toList == Cons(e, m.toList) because { IMap.updated_toList(m, m.from - 1, e, m.from, m.until) }
   } holds
 
+  def rotate_toList[T] (m : MapArray[T], n : BigInt) : Boolean = {
+    require(m.inv)
+    m.rotate(n).toList == m.toList.rotate(n) because {
+      if (m.isEmpty) trivial
+      else {
+        append_toList(m.drop(n mod m.size), m.take(n mod m.size)) &&
+        drop_toList(m, n mod m.size) && take_toList(m, n mod m.size)
+      }
+    }
+  } holds
+
   def take_toList[T] (m : MapArray[T], n : BigInt) : Boolean = {
     require(m.inv)
     m.take(n).toList == m.toList.take(n) because {
       if (n <= 0) trivial
       else if (n >= m.size) take_all(m.toList, n)
       else IMap.toList_take(m, m.from, m.until, n)
+    }
+  } holds
+
+  def swap_toList_perm[T] (m : MapArray[T], i : BigInt, j : BigInt) : Boolean = {
+    require(m.inv && i >= 0 && i < m.size && j >= 0 && j < m.size)
+    permutation(m.swap(i, j).toList, m.toList) because {
+      IMap.swap_toList_perm(m, m.from, m.until, m.from + i, m.from + j)
     }
   } holds
 
