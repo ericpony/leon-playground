@@ -10,6 +10,10 @@ import duck.spec.ListLemmas._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationSpec._
 import duck.proof.PermutationLemmas
+import duck.proof.MinOps._
+import duck.proof.MinLemmas._
+import duck.proof.DeleteOps._
+import duck.spec.ListHeap._
 
 object AHeap {
 
@@ -35,11 +39,6 @@ object AHeap {
     ((c(x, y) >= 0) ==> (c(y, x) <= 0)) &&
     ((c(x, y) > 0) ==> (c(y, x) < 0))
   } holds
-
-  def min[T] (c : (T, T) => Int, x : T, y : T) : T = {
-    if (c(x, y) <= 0) x
-    else y
-  }
 
   /* Access tree nodes */
 
@@ -618,10 +617,10 @@ object AHeap {
   /* Insert */
 
   def insert[T] (array : MapArray[T], c : (T, T) => Int, e : T) : MapArray[T] = {
-    require(array.inv && well_ordered(array, c) && is_descendant_of_zero(array.size) && well_ordered_append(array, c, 0, e))
+    require(array.inv && well_ordered(array, c) && is_descendant_of_zero(array.size) && (array.size > 0 ==> well_ordered_append(array, c, 0, e)))
     percolatingUp(array :+ e, c, 0, array.size)
   } ensuring { res =>
-    res.size == array.size + 1 && res.inv && (
+    res.size == array.size + 1 && res.inv && well_ordered(res, c) && (
       if (res.size == 1) res(0) == e
       else if (c(e, array(0)) <= 0) res(0) == e
       else res(0) == array(0)
@@ -974,61 +973,110 @@ object AHeap {
     }
   } holds
 
-  def deleteMin[T] (array : MapArray[T], c : (T, T) => Int) : MapArray[T] = {
-    require(array.inv && array.size > 0 && well_ordered(array, c) &&
+  def deleteMin_op[T] (array : MapArray[T], c : (T, T) => Int) : MapArray[T] = {
+    require(array.inv && well_ordered(array, c) &&
       ((1 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 1)) &&
       ((2 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 2))
     )
-    if (array.size == 1) MapArray.empty[T]
+    if (array.size <= 1) MapArray.empty[T]
     else percolatingDown(array.drop(1).rotate(array.size - 2), c, 0)
   } ensuring { res =>
-    res.size == array.size - 1 && res.inv
+    res.size == (if (array.isEmpty) BigInt(0) else array.size - 1) && res.inv && well_ordered(res, c)
   }
 
   /* This lemma is not finished. Always get stack overflow. */
   def deleteMin_root[T] (array : MapArray[T], c : (T, T) => Int) : Boolean = {
-    require(array.inv && array.size > 0 && well_ordered(array, c) &&
+    require(array.inv && well_ordered(array, c) &&
       ((1 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 1)) &&
       ((2 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 2))
     )
     val size = array.size
     val last = array(size - 1)
-    val deleted = deleteMin(array, c)
-    if (size == 1) deleted.isEmpty
+    val deleted = deleteMin_op(array, c)
+    if (size <= 1) deleted.isEmpty
     else if (size == 2) deleted(0) == array(1)
     else if (size > 2 && c(last, array(1)) <= 0 && c(last, array(2)) <= 0) deleted(0) == last
     else true
   } holds // unknown
 
   def deleteMin_perm[T] (array : MapArray[T], c : (T, T) => Int) : Boolean = {
-    require(array.inv && array.size > 0 && well_ordered(array, c) &&
+    require(array.inv && well_ordered(array, c) &&
       ((1 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 1)) &&
       ((2 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 2))
     )
-    permutation(deleteMin(array, c).toList, array.toList.drop(1)) because {
-      if (array.size == 1) trivial
+    permutation(deleteMin_op(array, c).toList, array.toList.drop(1)) because {
+      if (array.size <= 1) trivial
       else {
         MapArrayLemmas.rotate_toList(array.drop(1), array.size - 2) &&
         MapArrayLemmas.drop_toList(array, 1) &&
         PermutationLemmas.rotate_perm(array.drop(1).toList, array.size - 2) &&
-        permutation_tran(deleteMin(array, c).toList, array.drop(1).rotate(array.size - 2).toList, array.drop(1).toList)
+        permutation_tran(deleteMin_op(array, c).toList, array.drop(1).rotate(array.size - 2).toList, array.drop(1).toList)
       }
     }
   } holds
+
+  def deleteMin_toList_perm[T] (array : MapArray[T], c : (T, T) => Int) : Boolean = {
+    require(array.inv && well_ordered(array, c) && !array.isEmpty)
+    permutation(deleteMin_op(array, c).toList, delete(array.toList, array(0))) because {
+      deleteMin_perm(array, c) && MapArrayLemmas.drop_toList(array, 1)
+    }
+  } holds
+
+  def deleteMin[T] (array : MapArray[T], c : (T, T) => Int) : MapArray[T] = {
+    require(array.inv && well_ordered(array, c))
+    deleteMin_op(array, c)
+  } ensuring { res =>
+    res.size == (if (array.isEmpty) BigInt(0) else array.size - 1) && res.inv && well_ordered(res, c) &&
+    permutation(res.toList, array.toList.drop(1)) because { deleteMin_perm(array, c) } &&
+    ((!array.isEmpty) ==> permutation(res.toList, delete(array.toList, array(0))) because { deleteMin_toList_perm(array, c) })
+  }
+
+  /* Merge */
+
+  def merge_op[T] (a1 : MapArray[T], a2 : MapArray[T], c : (T, T) => Int) : MapArray[T] = {
+    require(a1.inv && a2.inv && well_ordered(a1, c) && well_ordered(a2, c))
+    if (a2.isEmpty) a1
+    else merge_op(insert(a1, c, a2(0)), deleteMin(a2, c), c)
+  } ensuring { res =>
+    res.size == a1.size + a2.size && res.inv && well_ordered(res, c)
+  }
+
+  def merge_perm[T] (a1 : MapArray[T], a2 : MapArray[T], c : (T, T) => Int) : Boolean = {
+    require(a1.inv && a2.inv && well_ordered(a1, c) && well_ordered(a2, c))
+    permutation(merge_op(a1, a2, c).toList, a1.toList ++ a2.toList) because {
+      if (a2.isEmpty) permutation_refl(a1.toList)
+      else {
+        merge_perm(insert(a1, c, a2(0)), deleteMin(a2, c), c) &&
+        PermutationLemmas.cons_snoc_perm(a1.toList, a2(0)) &&
+        permutation_comm(a2(0) :: a1.toList, a1.toList :+ a2(0)) &&
+        permutation_tran(insert(a1, c, a2(0)).toList, a1.toList :+ a2(0), a2(0) :: a1.toList) &&
+        PermutationLemmas.permutation_concat(insert(a1, c, a2(0)).toList, deleteMin(a2, c).toList, a2(0) :: a1.toList, delete(a2.toList, a2(0))) &&
+        permutation_tran(merge_op(a1, a2, c).toList, insert(a1, c, a2(0)).toList ++ deleteMin(a2, c).toList, (a2(0) :: a1.toList) ++ delete(a2.toList, a2(0))) &&
+        PermutationLemmas.permutation_concat_move(a1.toList, a2.toList, a2(0)) &&
+        permutation_tran(merge_op(a1, a2, c).toList, (a2(0) :: a1.toList) ++ delete(a2.toList, a2(0)), a1.toList ++ a2.toList)
+      }
+    }
+  } holds
+
+  def merge[T] (a1 : MapArray[T], a2 : MapArray[T], c : (T, T) => Int) : MapArray[T] = {
+    require(a1.inv && a2.inv && well_ordered(a1, c) && well_ordered(a2, c))
+    merge_op(a1, a2, c)
+  } ensuring { res =>
+    res.size == a1.size + a2.size && res.inv && well_ordered(res, c) &&
+    permutation(res.toList, a1.toList ++ a2.toList) because { merge_perm(a1, a2, c) }
+  }
 
 }
 
 case class ArrayHeap[T] (array : MapArray[T], c : (T, T) => Int) {
 
   def deleteMin : ArrayHeap[T] = {
-    require(inv && size > 0 &&
-      ((1 < size - 1) ==> AHeap.drop_rotate_well_ordered(array, c, 1)) &&
-      ((2 < size - 1) ==> AHeap.drop_rotate_well_ordered(array, c, 2))
-    )
+    require(inv)
     ArrayHeap(AHeap.deleteMin(array, c), c)
   } ensuring { res =>
-    res.size == size - 1 && res.inv && res.c == c &&
-    permutation(res.toList, array.toList.drop(1)) because { AHeap.deleteMin_perm(array, c) }
+    res.size == (if (isEmpty) BigInt(0) else size - 1) && res.inv && res.c == c &&
+    permutation(res.toList, array.toList.drop(1)) &&
+    ((!isEmpty) ==> permutation(res.toList, delete(array.toList, findMin.get)))
   }
 
   def findMin : Option[T] = {
@@ -1040,7 +1088,7 @@ case class ArrayHeap[T] (array : MapArray[T], c : (T, T) => Int) {
   }
 
   def insert (e : T) : ArrayHeap[T] = {
-    require(inv && AHeap.is_descendant_of_zero(size) && AHeap.well_ordered_append(array, c, 0, e))
+    require(inv)
     ArrayHeap(AHeap.insert(array, c, e), c)
   } ensuring { res =>
     res.size == array.size + 1 && res.inv && res.c == c && (
@@ -1053,6 +1101,14 @@ case class ArrayHeap[T] (array : MapArray[T], c : (T, T) => Int) {
   def isEmpty : Boolean = {
     require(inv)
     array.size == 0
+  }
+
+  def merge (h : ArrayHeap[T]) : ArrayHeap[T] = {
+    require(inv && h.inv && c == h.c)
+    ArrayHeap(AHeap.merge(array, h.array, c), c)
+  } ensuring { res =>
+    res.size == size + h.size && res.inv && res.c == c &&
+    permutation(res.toList, toList ++ h.toList)
   }
 
   def size : BigInt = {
@@ -1068,5 +1124,105 @@ case class ArrayHeap[T] (array : MapArray[T], c : (T, T) => Int) {
   def inv : Boolean = {
     AHeap.valid(array, c)
   }
+
+}
+
+object BigIntArrayHeap {
+
+  def compare : (BigInt, BigInt) => Int = (x : BigInt, y : BigInt) => {
+    if (x == y) 0
+    else if (x < y) -1
+    else 1
+  }
+
+  /*
+   * This lemma needs the leon option "--assumepre" to be verified.
+   * Otherwise, the inductive call to well_ordered_smaller_than_all will fail
+   * even the preconditions for the inductive call hold.
+   */
+  def well_ordered_smaller_than_all (m : MapArray[BigInt], from : BigInt, until : BigInt) : Boolean = {
+    require(m.inv && AHeap.well_ordered(m, compare) && m.size > 0 && from >= m.from && from <= m.until && until >= m.from && until <= m.until &&
+      IMap.defined_between_shrink(m.map, m.from, m.until, from, until))
+    IMap.toList(m.map, from, until).forall(compare(m(0), _) <= 0) because {
+      if (from >= until) trivial
+      else {
+        AHeap.is_descendant_of_zero(from - m.from) &&
+        AHeap.well_ordered_at(m, compare, 0, from - m.from) &&
+        well_ordered_smaller_than_all(m, from + 1, until)
+      }
+    }
+  } holds
+
+  /* This lemma needs the leon option "--assumepre" to be verified. */
+  def well_ordered_smaller_than_all (m : MapArray[BigInt]) : Boolean = {
+    require(m.inv && AHeap.well_ordered(m, compare) && m.size > 0)
+    m.toList.forall(compare(m(0), _) <= 0) because { well_ordered_smaller_than_all(m, m.from, m.until) }
+  } holds
+
+  def findMin_toList_min (h : ArrayHeap[BigInt]) : Boolean = {
+    require(h.inv && !h.isEmpty && h.c == compare)
+    h.findMin.get == min(h.toList) because {
+      well_ordered_smaller_than_all(h.array) && is_min(h.toList, h.findMin.get)
+    }
+  } holds
+
+}
+
+object ArrayHeapListHeapBisim {
+
+  def bisim (ah : ArrayHeap[BigInt], lh : ListHeap) : Boolean = {
+    ah.inv && ah.c == BigIntArrayHeap.compare && permutation(ah.toList, lh.toList)
+  }
+
+  /*
+   * This lemma needs the leon option "--assumepre" to be verified.
+   * Otherwise, the lemma BigIntArrayHeap.findMin_toList_min(ah) cannot be applied.
+   */
+  def findMin_bisim (ah : ArrayHeap[BigInt], lh : ListHeap) : Boolean = {
+    require(bisim(ah, lh))
+    ah.findMin == lh.findMin because {
+      if (ah.isEmpty) trivial
+      else {
+        BigIntArrayHeap.findMin_toList_min(ah) &&
+        LeftistHeapLemmas.min_permutation(ah.toList, lh.toList)
+      }
+    }
+  } holds
+
+  def deleteMin_bisim (ah : ArrayHeap[BigInt], lh : ListHeap) : Boolean = {
+    require(bisim(ah, lh))
+    bisim(ah.deleteMin, lh.deleteMin) because {
+      if (ah.isEmpty) trivial
+      else {
+        findMin_bisim(ah, lh) &&
+        PermutationLemmas.permutation_delete(ah.toList, lh.toList, ah.findMin.get) &&
+        permutation_tran(ah.deleteMin.toList, delete(ah.toList, ah.findMin.get), lh.deleteMin.toList)
+      }
+    }
+  } holds 
+
+  def insert_bisim (ah : ArrayHeap[BigInt], lh : ListHeap, e : BigInt) : Boolean = {
+    require(bisim(ah, lh))
+    bisim(ah.insert(e), lh.insert(e)) because {
+      PermutationLemmas.cons_snoc_perm(ah.toList, e) &&
+      permutation_comm(e :: ah.toList, ah.toList :+ e) &&
+      permutation_tran(ah.insert(e).toList, ah.toList :+ e, e :: ah.toList) &&
+      PermutationLemmas.permutation_cons(ah.toList, lh.toList, e) &&
+      permutation_tran(ah.insert(e).toList, e :: ah.toList, e :: lh.toList)
+    }
+  } holds
+
+  def merge_bisim (ah1 : ArrayHeap[BigInt], ah2 : ArrayHeap[BigInt], lh1 : ListHeap, lh2 : ListHeap, e : BigInt) : Boolean = {
+    require(bisim(ah1, lh1) && bisim(ah2, lh2))
+    bisim(ah1.merge(ah2), lh1.merge(lh2)) because {
+      PermutationLemmas.permutation_concat(ah1.toList, ah2.toList, lh1.toList, lh2.toList) &&
+      permutation_tran(ah1.merge(ah2).toList, ah1.toList ++ ah2.toList, lh1.merge(lh2).toList)
+    }
+  } holds
+
+  def size_bisim (ah : ArrayHeap[BigInt], lh : ListHeap, e : BigInt) : Boolean = {
+    require(bisim(ah, lh))
+    ah.size == lh.size
+  } holds
 
 }

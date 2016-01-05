@@ -6,6 +6,7 @@ import leon.lang._
 import leon.proof._
 import MinOps._
 import MinLemmas._
+import duck.spec.ListLemmas
 
 import scala.language.postfixOps
 
@@ -100,4 +101,17 @@ object MinLemmas {
     require(list contains m)
     min(list) <= m
   } holds
+
+  def is_min (l : List[BigInt], n : BigInt) : Boolean = {
+    require(l.contains(n) && l.forall(n <= _))
+    min(l) == n because {
+      l match {
+        case Nil() => trivial
+        case Cons(hd, Nil()) => trivial
+        case Cons(hd, tl) if hd == n => min_lemma2(tl) && ListLemmas.apply_forall(tl, n <= (_ : BigInt), min(tl))
+        case Cons(hd, tl) => is_min(tl, n)
+      }
+    }
+  } holds
+
 }

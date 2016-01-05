@@ -449,4 +449,40 @@ object PermutationLemmas {
     }
   } holds
 
+  def cons_concat_perm1[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
+    permutation(e :: (l1 ++ l2), (e :: l1) ++ l2) because { permutation_refl(e :: (l1 ++ l2)) }
+  } holds
+
+  def cons_concat_perm2[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
+    permutation(e :: (l1 ++ l2), l1 ++ (e :: l2)) because {
+      permutation_cons_tail(l1, l2, e) && permutation_comm(l1 ++ (e :: l2), e :: (l1 ++ l2))
+    }
+  } holds
+
+  def delete_concat_perm1[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
+    require(l1.contains(e))
+    permutation(delete(l1 ++ l2, e), delete(l1, e) ++ l2) because {
+      delete_concat(l1, l2, e) && permutation_eq(delete(l1 ++ l2, e), delete(l1, e) ++ l2)
+    }
+  } holds
+
+  def delete_concat_perm2[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
+    require(l2.contains(e))
+    permutation(delete(l1 ++ l2, e), l1 ++ delete(l2, e)) because {
+      l1 match {
+        case Nil() => permutation_refl(delete(l2, e))
+        case Cons(hd, tl) if hd == e => delete_concat_perm2(tl, l2, e)
+        case Cons(hd, tl) => delete_concat_perm2(tl, l2, e)
+      }
+    }
+  } holds
+
+  def permutation_concat_move[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
+    require(l2.contains(e))
+    permutation((e :: l1) ++ delete(l2, e), l1 ++ l2) because {
+      delete_concat_perm2(e :: l1, l2, e) &&
+      permutation_comm(delete((e :: l1) ++ l2, e), (e :: l1) ++ delete(l2, e))
+    }
+  } holds
+
 }
