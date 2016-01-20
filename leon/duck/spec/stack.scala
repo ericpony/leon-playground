@@ -7,6 +7,7 @@ import scala.language.postfixOps
 import duck.collection._
 import duck.spec.ListArray._
 
+/*
 abstract class Stack[T] {
   def isEmpty : Boolean = { size == 0 }
   def pop : Stack[T]
@@ -14,6 +15,7 @@ abstract class Stack[T] {
   def size : BigInt
   def top : T
 }
+*/
 
 case class ListStack[T] (list : List[T]) /*extends Stack[T]*/ {
 
