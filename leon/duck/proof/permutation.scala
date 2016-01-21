@@ -113,28 +113,25 @@ object PermutationLemmas {
     permutation(a :: b :: list, b :: a :: list)
   } holds
 
-  @induct
   def permutation_cons_tail[V] (l1: List[V], l2: List[V], e: V): Boolean = {
-    permutation(l1 ++ (e :: l2), (e :: l1) ++ l2) because
-      check {
+    permutation(l1 ++ (e :: l2), (e :: l1) ++ l2) because {
+      if (l1 == Nil[V]()) {
+        check { permutation_refl(e :: l2) }
+      } else {
         val h1 = l1.head
-        if (l1 == Nil[V]()) {
-          check { permutation_refl(e :: l2) }
-        } else {
-          // permutation (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2)
-          permutation_cons_tail(l1.tail, l2, e) &&
-            // permutation (h1 :: (l1.tail ++ (e :: l2)), h1 :: (e :: l1.tail) ++ l2)
-            permutation_cons(l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2, h1) &&
-            // permutation (h1 :: e :: l1.tail ++ l2, e :: h1 :: l1.tail ++ l2)
-            permutation_car_swap(l1.tail ++ l2, h1, e) &&
-            permutation_tran_lemma(l1 ++ (e :: l2),
-              h1 :: e :: l1.tail ++ l2,
-              (e :: l1) ++ l2)
-        }
+        // permutation (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2)
+        permutation_cons_tail(l1.tail, l2, e) &&
+        // permutation (h1 :: (l1.tail ++ (e :: l2)), h1 :: (e :: l1.tail) ++ l2)
+        permutation_cons(l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2, h1) &&
+        // permutation (h1 :: e :: l1.tail ++ l2, e :: h1 :: l1.tail ++ l2)
+        permutation_car_swap(l1.tail ++ l2, h1, e) &&
+        permutation_tran_lemma(l1 ++ (e :: l2),
+          h1 :: e :: l1.tail ++ l2,
+          (e :: l1) ++ l2)
       }
+    }
   } holds
 
-  @induct
   def permutation_delete_cons[V] (l1: List[V], l2: List[V]): Boolean = {
     require(l2 != Nil[V]())
     val h2 = l2.head
@@ -151,7 +148,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_concat_comm_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
     permutation(l1 ++ l2, l2 ++ l1) because {
       if (l1 == Nil[V]())
@@ -171,13 +167,11 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_tail_delete[V] (l1: List[V], l2: List[V]): Boolean = {
     require(l1 != Nil[V]() && permutation(l1, l2))
     permutation(l1.tail, delete(l2, l1.head))
   } holds
 
-  @induct
   def permutation_delete[V] (l1: List[V], l2: List[V], e: V): Boolean = {
     require(permutation(l1, l2))
     permutation(delete(l1, e), delete(l2, e)) because {
@@ -197,7 +191,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_delete_cons[V] (l1: List[V], h2: V, t2: List[V]): Boolean = {
     require(permutation(delete(l1, h2), t2) && l1.contains(h2))
     permutation(l1, Cons(h2, t2)) because {
@@ -216,7 +209,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_comm_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
     permutation(l2, l1) because {
@@ -232,7 +224,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_tran_lemma[V] (l1: List[V], l2: List[V], l3: List[V]): Boolean = {
     require(permutation(l1, l2) && permutation(l2, l3))
     permutation(l1, l3) because {
@@ -248,13 +239,11 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_cons[V] (l1: List[V], l2: List[V], e: V): Boolean = {
     require(permutation(l1, l2))
     permutation(e :: l1, e :: l2)
   } holds
 
-  @induct
   def permutation_content_lemma[V] (l1: List[V], l2: List[V]): Boolean = {
     require(permutation(l1, l2))
     l1.content == l2.content because {
@@ -270,7 +259,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_concat[V] (l1: List[V], l2: List[V], t1: List[V], t2: List[V]): Boolean = {
     require(permutation(l1, t1) && permutation(l2, t2))
     permutation(l1 ++ l2, t1 ++ t2) because {
@@ -323,7 +311,6 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_concat_assoc_lemma[V] (l1: List[V], l2: List[V], l3: List[V]): Boolean = {
     permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because {
       if (l1 == Nil[V]()) {
