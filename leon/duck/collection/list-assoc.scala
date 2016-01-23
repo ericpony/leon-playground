@@ -5,11 +5,12 @@ import duck.proof.KListLemmas._
 import leon.proof._
 import leon.lang._
 import leon.annotation._
+import leon.collection._
 
 /**
- * KList
- * List of key-value pairs with integer keys
- */
+  * KList
+  * List of key-value pairs with integer keys
+  */
 package object KList {
 
   case class Item[K, V] (key: K, value: V)
@@ -22,25 +23,25 @@ package object KList {
   sealed abstract class KList[K, V] {
 
     def size: BigInt = (this match {
-      case KNil()      => BigInt(0)
+      case KNil() => BigInt(0)
       case KCons(h, t) => 1 + t.size
     }) ensuring (_ >= 0)
 
     def content: Set[Item[K, V]] = this match {
-      case KNil()      => Set[Item[K, V]]()
+      case KNil() => Set[Item[K, V]]()
       case KCons(h, t) => Set(h) ++ t.content
     }
 
     def contains (v: Item[K, V]): Boolean = (this match {
       case KCons(h, t) if h == v => true
-      case KCons(_, t)           => t.contains(v)
-      case KNil()                => false
+      case KCons(_, t) => t.contains(v)
+      case KNil() => false
     }) ensuring {
       _ == (content contains v) && hasKey(v.key)
     }
 
     def ++ (that: KList[K, V]): KList[K, V] = (this match {
-      case KNil()       => that
+      case KNil() => that
       case KCons(x, xs) => KCons[K, V](x, xs ++ that)
     }) ensuring { res =>
       (res.content == this.content ++ that.content) &&
@@ -64,14 +65,14 @@ package object KList {
 
     def :+ (t: Item[K, V]): KList[K, V] = {
       this match {
-        case KNil()       => KCons(t, this)
+        case KNil() => KCons(t, this)
         case KCons(x, xs) => KCons(x, xs :+ (t))
       }
     } ensuring (res => (res.size == size + 1) && (res.content == content ++ Set(t)))
 
     def reverse: KList[K, V] = {
       this match {
-        case KNil()       => this
+        case KNil() => this
         case KCons(x, xs) => xs.reverse :+ x
       }
     } ensuring (res => (res.size == size) && (res.content == content))
@@ -82,7 +83,7 @@ package object KList {
 
     def take (i: BigInt): KList[K, V] = {
       (this, i) match {
-        case (KNil(), _)      => KNil[K, V]()
+        case (KNil(), _) => KNil[K, V]()
         case (KCons(h, t), i) => if (i <= BigInt(0)) KNil[K, V]() else KCons(h, t.take(i - 1))
       }
     } ensuring { res =>
@@ -95,7 +96,7 @@ package object KList {
 
     def drop (i: BigInt): KList[K, V] = {
       (this, i) match {
-        case (KNil(), _)      => KNil[K, V]()
+        case (KNil(), _) => KNil[K, V]()
         case (KCons(h, t), i) => if (i <= BigInt(0)) KCons[K, V](h, t) else t.drop(i - 1)
       }
     } ensuring { res =>
@@ -113,7 +114,7 @@ package object KList {
 
     def replace (from: Item[K, V], to: Item[K, V]): KList[K, V] = {
       this match {
-        case KNil()      => KNil[K, V]()
+        case KNil() => KNil[K, V]()
         case KCons(h, t) =>
           val r = t.replace(from, to)
           if (h == from) KCons(to, r) else KCons(h, r)
@@ -127,12 +128,12 @@ package object KList {
     }
 
     /**
-     * Delete ALL occurrences of e from the list
-     */
+      * Delete ALL occurrences of e from the list
+      */
     def - (e: Item[K, V]): KList[K, V] = {
       this match {
         case KCons(h, t) => if (e == h) t - e else KCons(h, t - e)
-        case KNil()      => KNil[K, V]()
+        case KNil() => KNil[K, V]()
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -142,7 +143,7 @@ package object KList {
     def -- (that: KList[K, V]): KList[K, V] = {
       this match {
         case KCons(h, t) => if (that.contains(h)) t -- that else KCons(h, t -- that)
-        case KNil()      => KNil[K, V]()
+        case KNil() => KNil[K, V]()
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -152,7 +153,7 @@ package object KList {
     def & (that: KList[K, V]): KList[K, V] = {
       this match {
         case KCons(h, t) => if (that.contains(h)) KCons(h, t & that) else t & that
-        case KNil()      => KNil[K, V]()
+        case KNil() => KNil[K, V]()
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -164,16 +165,18 @@ package object KList {
 
     def update (data: Item[K, V]): KList[K, V] = {
       this match {
-        case KNil()               => data :: KNil[K, V]()
+        case KNil() => data :: KNil[K, V]()
         case KCons(Item(k, v), t) =>
           if (k == data.key) Item(k, data.value) :: t
           else Item(k, v) :: t.update(data)
       }
+    } ensuring {
+      res => this.keys.contains(data.key) || res == this
     }
 
     def hasKey (key: K): Boolean = {
       this match {
-        case KNil()               => false
+        case KNil() => false
         case KCons(Item(k, v), t) => k == key || t.hasKey(key)
       }
     } ensuring {
@@ -190,11 +193,11 @@ package object KList {
     }
 
     /**
-     * Get the first element in this list with the provided key.
-     */
+      * Get the first element in this list with the provided key.
+      */
     def getFirst (key: K): Option[Item[K, V]] = {
       this match {
-        case KNil()      => None[Item[K, V]]()
+        case KNil() => None[Item[K, V]]()
         case KCons(h, t) => if (h.key == key) Some[Item[K, V]](h) else t.getFirst(key)
       }
     } ensuring { res =>
@@ -204,21 +207,21 @@ package object KList {
     }
 
     /**
-     * Get the last element in this list with the provided key.
-     */
+      * Get the last element in this list with the provided key.
+      */
     def getLast (key: K) = this.reverse.getFirst(key)
 
     /**
-     * Get all elements in this list with the provided key.
-     * The order in which the elements are stored in the returned list
-     * is consistent with the order they are stored in the original list.
-     * Note: This version of getAll is easier to verify for Leon than
-     * the concise version
-     * def getAll (key: K) = this.filter(item => item.key == key).
-     */
+      * Get all elements in this list with the provided key.
+      * The order in which the elements are stored in the returned list
+      * is consistent with the order they are stored in the original list.
+      * Note: This version of getAll is easier to verify for Leon than
+      * the concise version
+      * def getAll (key: K) = this.filter(item => item.key == key).
+      */
     def getAll (key: K): KList[K, V] = {
       this match {
-        case KNil()      => KNil[K, V]()
+        case KNil() => KNil[K, V]()
         case KCons(h, t) => if (h.key == key) KCons(h, t.getAll(key)) else t.getAll(key)
       }
     } ensuring { res =>
@@ -229,14 +232,14 @@ package object KList {
     }
 
     /**
-     * Get an element from the list with the provided key.
-     */
+      * Get an element from the list with the provided key.
+      */
     def get = getFirst _
 
     /**
-     * Obtain a new list by removing the first occurrence of e
-     * from this list.
-     */
+      * Obtain a new list by removing the first occurrence of e
+      * from this list.
+      */
     def deleteFirst (e: Item[K, V]): KList[K, V] = {
       if (this == KNil[K, V]()) this
       else if (head == e) tail
@@ -252,12 +255,12 @@ package object KList {
     }
 
     /**
-     * Obtain a new list by removing the first element with
-     * the provided key from this list.
-     */
+      * Obtain a new list by removing the first element with
+      * the provided key from this list.
+      */
     def deleteFirst (key: K): KList[K, V] = {
       this match {
-        case KNil()      => this
+        case KNil() => this
         case KCons(h, t) => if (h.key == key) t else KCons(h, t.deleteFirst(key))
       }
     } ensuring { res =>
@@ -272,18 +275,18 @@ package object KList {
     }
 
     /**
-     * Obtain a new list by removing the last element with
-     * the provided key from this list.
-     */
+      * Obtain a new list by removing the last element with
+      * the provided key from this list.
+      */
     def deleteLast (key: K) = this.reverse.deleteFirst(key)
 
     /**
-     * Obtain a new list by removing all element with the
-     * provided key from this list.
-     */
+      * Obtain a new list by removing all element with the
+      * provided key from this list.
+      */
     def deleteAll (key: K): KList[K, V] = {
       this match {
-        case KNil()      => this
+        case KNil() => this
         case KCons(h, t) => if (h.key == key) t.deleteAll(key) else KCons(h, t.deleteAll(key))
       }
     } ensuring { res =>
@@ -303,7 +306,7 @@ package object KList {
       ((this: @unchecked) match {
         case KCons(h, KNil()) =>
           KNil[K, V]()
-        case KCons(h, t)      =>
+        case KCons(h, t) =>
           KCons[K, V](h, t.init)
       })
     } ensuring { (r: KList[K, V]) =>
@@ -315,26 +318,26 @@ package object KList {
       require(!isEmpty)
       (this: @unchecked) match {
         case KCons(h, KNil()) => h
-        case KCons(_, t)      => t.last
+        case KCons(_, t) => t.last
       }
-    } ensuring { this.contains _ }
+    } ensuring {this.contains _}
 
     def lastOption: Option[Item[K, V]] = {
       this match {
         case KCons(h, t) => t.lastOption.orElse(Some(h))
-        case KNil()      => None[Item[K, V]]()
+        case KNil() => None[Item[K, V]]()
       }
-    } ensuring { _.isDefined != this.isEmpty }
+    } ensuring {_.isDefined != this.isEmpty}
 
     def headOption: Option[Item[K, V]] = {
       this match {
         case KCons(h, t) => Some(h)
-        case KNil()      => None[Item[K, V]]()
+        case KNil() => None[Item[K, V]]()
       }
-    } ensuring { _.isDefined != this.isEmpty }
+    } ensuring {_.isDefined != this.isEmpty}
 
     def unique: KList[K, V] = this match {
-      case KNil()      => KNil()
+      case KNil() => KNil()
       case KCons(h, t) => KCons(h, t.unique - h)
     }
 
@@ -347,55 +350,55 @@ package object KList {
 
     def isEmpty = this match {
       case KNil() => true
-      case _      => false
+      case _ => false
     }
 
     // Higher-order API
     def map[K2, V2] (f: Item[K, V] => Item[K2, V2]): KList[K2, V2] = {
       this match {
-        case KNil()      => KNil[K2, V2]()
+        case KNil() => KNil[K2, V2]()
         case KCons(h, t) => f(h) :: t.map(f)
       }
-    } ensuring { _.size == this.size }
+    } ensuring {_.size == this.size}
 
     def mapList[V2] (f: Item[K, V] => V2): List[V2] = {
       this match {
-        case KNil()      => Nil[V2]()
+        case KNil() => Nil[V2]()
         case KCons(h, t) => f(h) :: t.mapList(f)
       }
-    } ensuring { _.size == this.size }
+    } ensuring {_.size == this.size}
 
     def foldLeft[V2] (z: V2)(f: (V2, Item[K, V]) => V2): V2 = this match {
-      case KNil()      => z
+      case KNil() => z
       case KCons(h, t) => t.foldLeft(f(z, h))(f)
     }
 
     def foldRight[V2] (z: V2)(f: (Item[K, V], V2) => V2): V2 = this match {
-      case KNil()      => z
+      case KNil() => z
       case KCons(h, t) => f(h, t.foldRight(z)(f))
     }
 
     def scanLeft[K2, V2] (z: Item[K2, V2])(f: (Item[K2, V2], Item[K, V]) => Item[K2, V2]): KList[K2, V2] = {
       this match {
-        case KNil()      => z :: KNil[K2, V2]()
+        case KNil() => z :: KNil[K2, V2]()
         case KCons(h, t) => z :: t.scanLeft(f(z, h))(f)
       }
-    } ensuring { !_.isEmpty }
+    } ensuring {!_.isEmpty}
 
     def scanRight[K2, V2] (z: Item[K2, V2])(f: (Item[K, V], Item[K2, V2]) => Item[K2, V2]): KList[K2, V2] = {
       this match {
-        case KNil()      => z :: KNil[K2, V2]()
+        case KNil() => z :: KNil[K2, V2]()
         case KCons(h, t) =>
           val rest@KCons(h1, _) = t.scanRight(z)(f)
           f(h, h1) :: rest
       }
-    } ensuring { !_.isEmpty }
+    } ensuring {!_.isEmpty}
 
     def filter (p: Item[K, V] => Boolean): KList[K, V] = {
       this match {
-        case KNil()              => KNil[K, V]()
+        case KNil() => KNil[K, V]()
         case KCons(h, t) if p(h) => KCons(h, t.filter(p))
-        case KCons(_, t)         => t.filter(p)
+        case KCons(_, t) => t.filter(p)
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -412,7 +415,7 @@ package object KList {
 
     def partition (p: Item[K, V] => Boolean): (KList[K, V], KList[K, V]) = {
       this match {
-        case KNil()      => (KNil[K, V](), KNil[K, V]())
+        case KNil() => (KNil[K, V](), KNil[K, V]())
         case KCons(h, t) =>
           val (l1, l2) = t.partition(p)
           if (p(h)) (h :: l1, l2)
@@ -427,7 +430,7 @@ package object KList {
     def withFilter (p: Item[K, V] => Boolean) = filter(p)
 
     def forall (p: Item[K, V] => Boolean): Boolean = this match {
-      case KNil()      => true
+      case KNil() => true
       case KCons(h, t) => p(h) && t.forall(p)
     }
 
@@ -435,19 +438,19 @@ package object KList {
 
     def find (p: Item[K, V] => Boolean): Option[Item[K, V]] = {
       this match {
-        case KNil()              => None[Item[K, V]]()
+        case KNil() => None[Item[K, V]]()
         case KCons(h, t) if p(h) => Some(h)
-        case KCons(_, t)         => t.find(p)
+        case KCons(_, t) => t.find(p)
       }
     } ensuring { res =>
       res match {
         case Some(r) => (content contains r) && p(r)
-        case None()  => true
+        case None() => true
       }
     }
 
     def groupBy[K2] (f: Item[K, V] => K2): Map[K2, KList[K, V]] = this match {
-      case KNil()      => Map.empty[K2, KList[K, V]]
+      case KNil() => Map.empty[K2, KList[K, V]]
       case KCons(h, t) =>
         val key: K2 = f(h)
         val rest: Map[K2, KList[K, V]] = t.groupBy(f)
@@ -458,7 +461,7 @@ package object KList {
     def takeWhile (p: Item[K, V] => Boolean): KList[K, V] = {
       this match {
         case KCons(h, t) if p(h) => KCons(h, t.takeWhile(p))
-        case _                   => KNil[K, V]()
+        case _ => KNil[K, V]()
       }
     } ensuring { res =>
       (res forall p) &&
@@ -469,7 +472,7 @@ package object KList {
     def dropWhile (p: Item[K, V] => Boolean): KList[K, V] = {
       this match {
         case KCons(h, t) if p(h) => t.dropWhile(p)
-        case _                   => this
+        case _ => this
       }
     } ensuring { res =>
       (res.size <= this.size) &&
@@ -479,7 +482,7 @@ package object KList {
 
     def count (p: Item[K, V] => Boolean): BigInt = {
       this match {
-        case KNil()      => BigInt(0)
+        case KNil() => BigInt(0)
         case KCons(h, t) =>
           (if (p(h)) BigInt(1) else BigInt(0)) + t.count(p)
       }

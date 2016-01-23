@@ -443,14 +443,14 @@ sealed abstract class List[T] {
       case (_, _) => false
     }
   } ensuring { res =>
-    res ==> size <= l.size
+    res ==> (size <= l.size)
   }
 
   // not in Scala List
   def isSuffixOf (l : List[T]) : Boolean = {
     reverse.isPrefixOf(l.reverse)
   } ensuring { res =>
-    res ==> size <= l.size
+    res ==> (size <= l.size)
   }
 
   def last: T = {

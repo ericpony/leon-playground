@@ -2,6 +2,7 @@ package duck.proof
 
 import duck.collection._
 import leon.annotation._
+//import leon.collection.List._
 import leon.lang._
 import leon.proof._
 import DeleteSpec._
