@@ -86,21 +86,21 @@ object DistinctListOps {
   }
 }
 
-
 object DistinctListLemmas {
 
   @induct
   def insert_comm_permutation[V] (set : List[V], e : V, f : V) : Boolean = {
+    //require(distinct(set))
     permutation(insert(insert(set, e), f), insert(insert(set, f), e))
   } holds /* verified */
 
   def insert_permutation[V] (s : List[V], t : List[V], e : V) : Boolean = {
-    require(permutation(s, t))
+    require(permutation(s, t)) // && distinct(s) && distinct(t))
     permutation(insert(s, e), insert(t, e))
   } holds /* verified */
 
   def delete_permutation[V] (s : List[V], t : List[V], e : V) : Boolean = {
-    require(permutation(s, t))
+    require(permutation(s, t)) // && distinct(s) && distinct(t))
     permutation(delete(s, e), delete(t, e)) because {
       if (!s.contains(e))
         trivial
@@ -109,112 +109,112 @@ object DistinctListLemmas {
     }
   } holds /* verified */
 
-//  def union_comm (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
-//    require(distinct(l1) && distinct(l2))
-//    val L1 = union(l1, l2)
-//    val L2 = union(l2, l1)
-//    permutation(L1, L2) because {
-//      if (l1 == Nil[BigInt]() || l2 == Nil[BigInt]())
-//        permutation_refl(L1)
-//      else {
-//        check {!delete(l2, l1.head).contains(l1.head)} &&
-//          union_comm(l1, delete(l2, l1.head)) &&
-//          check {union(l1, delete(l2, l1.head)) == L1} &&
-//          permutation_comm(delete(L2, L1.head), L1.tail) &&
-//          permutation_delete_cons(L2, L1.head, L1.tail) &&
-//          permutation_comm(L2, L1)
-//      }
-//    }
-//  } holds
-
   @induct
   def delete_distinct[V] (set : List[V], e : V) : Boolean = {
     require(distinct(set))
     distinct(delete(set, e))
   } holds /* verified */
 
-  def union_insert_delete_permutation[V] (s : List[V], t : List[V], e : V) : Boolean = {
-    require(s contains e)
-    permutation(
-      insert(union(delete(s, e), t), e),
-      union(s, t)
-    ) because {
-      if (s.head == e) {
-        union_insert_delete_permutation_2(s, t)
-      } else {
-        union_insert_delete_permutation_3(s, t, e) &&
-          insert_permutation(
-            insert(union(delete(s.tail, e), t), e),
-            union(s.tail, t), s.head) &&
-          insert_comm_permutation(
-            union(delete(s.tail, e), t),
-            s.head, e) &&
-          permutation_tran(
-            insert(insert(union(delete(s.tail, e), t), s.head), e),
-            insert(insert(union(delete(s.tail, e), t), e), s.head),
-            insert(union(s.tail, t), s.head))
-      }
-    }
-  } holds /* verified */
+  //  def union_comm (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
+  //    require(distinct(l1) && distinct(l2))
+  //    val L1 = union(l1, l2)
+  //    val L2 = union(l2, l1)
+  //    permutation(L1, L2) because {
+  //      if (l1 == Nil[BigInt]() || l2 == Nil[BigInt]())
+  //        permutation_refl(L1)
+  //      else {
+  //        check {!delete(l2, l1.head).contains(l1.head)} &&
+  //          union_comm(l1, delete(l2, l1.head)) &&
+  //          check {union(l1, delete(l2, l1.head)) == L1} &&
+  //          permutation_comm(delete(L2, L1.head), L1.tail) &&
+  //          permutation_delete_cons(L2, L1.head, L1.tail) &&
+  //          permutation_comm(L2, L1)
+  //      }
+  //    }
+  //  } holds
 
-  def union_insert_delete_permutation_2[V] (s : List[V], t : List[V]) : Boolean = {
-    require(s != Nil[V]())
-    permutation(
-      insert(union(s.tail, t), s.head),
-      union(s, t)
-    ) because {
-      insert(union(s.tail, t), s.head) == union(s, t) &&
-        permutation_eq(insert(union(s.tail, t), s.head), union(s, t))
-    }
-  } holds /* verified */
-
-  def union_insert_delete_permutation_3[V] (s : List[V], t : List[V], e : V) : Boolean = {
-    require(s != Nil[V]() && s.tail.contains(e))
-    permutation(
-      insert(union(delete(s.tail, e), t), e),
-      union(s.tail, t)
-    ) because
-      union_insert_delete_permutation(s.tail, t, e)
-  } holds /* verified */
-
-  def union_permutation[V] (s : List[V], t : List[V], u : List[V], v : List[V]) : Boolean = {
-    require(permutation(s, u) && permutation(t, v))
-    permutation(union(s, t), union(u, v)) because {
-      if (s.isEmpty) trivial
-      else {
-        union_permutation(s.tail, t, delete(u, s.head), v) &&
-          insert_permutation(
-            union(s.tail, t),
-            union(delete(u, s.head), v),
-            s.head) &&
-          union_permutation_2(s, t, u, v) &&
-          union_permutation_3(s, t, u, v) &&
-          permutation_tran(
-            insert(union(s.tail, t), s.head),
-            insert(union(delete(u, s.head), v), s.head),
-            union(u, v))
-      }
-    }
-  } holds /* verified */
-
-  def union_permutation_2[V] (s : List[V], t : List[V], u : List[V], v : List[V]) : Boolean = {
-    require(permutation(s, u) && permutation(t, v) && s != Nil[V]())
-    permutation(
-      insert(union(s.tail, t), s.head),
-      insert(union(delete(u, s.head), v), s.head)
-    ) because {
-      union_permutation(s.tail, t, delete(u, s.head), v) &&
-        permutation(union(s.tail, t), union(delete(u, s.head), v)) &&
-        insert_permutation(union(s.tail, t), union(delete(u, s.head), v), s.head)
-    }
-  } holds /* verified */
-
-  def union_permutation_3[V] (s : List[V], t : List[V], u : List[V], v : List[V]) : Boolean = {
-    require(permutation(s, u) && permutation(t, v) && s != Nil[V]())
-    permutation(
-      insert(union(delete(u, s.head), v), s.head),
-      union(u, v)
-    ) because
-      union_insert_delete_permutation(u, v, s.head)
-  } holds /* verified */
+  //  def union_insert_delete_permutation[V] (s : List[V], t : List[V], e : V) : Boolean = {
+  //    require(s.contains(e))// && distinct(s) && distinct(t))
+  //    permutation(
+  //      insert(union(delete(s, e), t), e),
+  //      union(s, t)
+  //    ) because {
+  //      if (s.head == e) {
+  //        union_insert_delete_permutation_2(s, t)
+  //      } else {
+  //        union_insert_delete_permutation_3(s, t, e) &&
+  //          insert_permutation(
+  //            insert(union(delete(s.tail, e), t), e),
+  //            union(s.tail, t), s.head) &&
+  //          insert_comm_permutation(
+  //            union(delete(s.tail, e), t),
+  //            s.head, e) &&
+  //          permutation_tran(
+  //            insert(insert(union(delete(s.tail, e), t), s.head), e),
+  //            insert(insert(union(delete(s.tail, e), t), e), s.head),
+  //            insert(union(s.tail, t), s.head))
+  //      }
+  //    }
+  //  } holds /* verified */
+  //
+  //  def union_insert_delete_permutation_2[V] (s : List[V], t : List[V]) : Boolean = {
+  //    require(s != Nil[V]())// && distinct(s) && distinct(t))
+  //    permutation(
+  //      insert(union(s.tail, t), s.head),
+  //      union(s, t)
+  //    ) because {
+  //      insert(union(s.tail, t), s.head) == union(s, t) &&
+  //        permutation_eq(insert(union(s.tail, t), s.head), union(s, t))
+  //    }
+  //  } holds /* verified */
+  //
+  //  def union_insert_delete_permutation_3[V] (s : List[V], t : List[V], e : V) : Boolean = {
+  //    require(s != Nil[V]() && s.tail.contains(e))// && distinct(s) && distinct(t))
+  //    permutation(
+  //      insert(union(delete(s.tail, e), t), e),
+  //      union(s.tail, t)
+  //    ) because
+  //      union_insert_delete_permutation(s.tail, t, e)
+  //  } holds /* verified */
+  //
+  //  def union_permutation[V] (s : List[V], t : List[V], u : List[V], v : List[V]) : Boolean = {
+  //    require(permutation(s, u) && permutation(t, v))// && distinct(s) && distinct(t) && distinct(u) && distinct(v))
+  //    permutation(union(s, t), union(u, v)) because {
+  //      if (s.isEmpty) trivial
+  //      else {
+  //        union_permutation(s.tail, t, delete(u, s.head), v) &&
+  //          insert_permutation(
+  //            union(s.tail, t),
+  //            union(delete(u, s.head), v),
+  //            s.head) &&
+  //          union_permutation_2(s, t, u, v) &&
+  //          union_permutation_3(s, t, u, v) &&
+  //          permutation_tran(
+  //            insert(union(s.tail, t), s.head),
+  //            insert(union(delete(u, s.head), v), s.head),
+  //            union(u, v))
+  //      }
+  //    }
+  //  } holds /* verified */
+  //
+  //  def union_permutation_2[V] (s : List[V], t : List[V], u : List[V], v : List[V]) : Boolean = {
+  //    require(permutation(s, u) && permutation(t, v) && s != Nil[V]())// && distinct(s) && distinct(t) && distinct(u) && distinct(v))
+  //    permutation(
+  //      insert(union(s.tail, t), s.head),
+  //      insert(union(delete(u, s.head), v), s.head)
+  //    ) because {
+  //      union_permutation(s.tail, t, delete(u, s.head), v) &&
+  //        permutation(union(s.tail, t), union(delete(u, s.head), v)) &&
+  //        insert_permutation(union(s.tail, t), union(delete(u, s.head), v), s.head)
+  //    }
+  //  } holds /* verified */
+  //
+  //  def union_permutation_3[V] (s : List[V], t : List[V], u : List[V], v : List[V]) : Boolean = {
+  //    require(permutation(s, u) && permutation(t, v) && s != Nil[V]())// && distinct(s) && distinct(t) && distinct(u) && distinct(v))
+  //    permutation(
+  //      insert(union(delete(u, s.head), v), s.head),
+  //      union(u, v)
+  //    ) because
+  //      union_insert_delete_permutation(u, v, s.head)
+  //  } holds /* verified */
 }

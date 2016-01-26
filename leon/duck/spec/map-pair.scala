@@ -20,12 +20,10 @@ import scala.language.postfixOps
   */
 object PairMapSpec {
 
-  def ~[K, V] (m1: KList[K, V], m2: KList[K, V]) = {
-    m1.size == m2.size && m1.content == m2.content
-  }
+  // def ~[K, V] (m1 : KList[K, V], m2 : KList[K, V]) = permutation(m1, m2)
 
   @ignore
-  def update_invariant[K, V] (m1: KList[K, V], m2: KList[K, V], e: Item[K, V]): Boolean = {
+  def update_invariant[K, V] (m1 : KList[K, V], m2 : KList[K, V], e : Item[K, V]) : Boolean = {
     require(m1 ~ m2 && distinct(m1.keys) && distinct(m2.keys))
     m1.update(e) ~ m2.update(e) because {
       if (!m1.hasKey(e.key) || !m2.hasKey(e.key))
@@ -35,29 +33,29 @@ object PairMapSpec {
     }
   } holds /* verified by Leon */
 
-  def merge_invariant[K, V] (m1: KList[K, V], m2: KList[K, V], m3: KList[K, V], m4: KList[K, V]) = {
+  def merge_invariant[K, V] (m1 : KList[K, V], m2 : KList[K, V], m3 : KList[K, V], m4 : KList[K, V]) = {
     require(m1 ~ m2 && m3 ~ m4)
     (m1 ++ m3) ~ (m2 ++ m4)
   } holds /* verified by Leon */
 
   @induct
-  def insert_commu_lemma[K, V] (m: KList[K, V], p1: Item[K, V], p2: Item[K, V]) = {
+  def insert_commu_lemma[K, V] (m : KList[K, V], p1 : Item[K, V], p2 : Item[K, V]) = {
     require(p1.key != p2.key)
     m.update(p1).update(p2) ~ m.update(p2).update(p1)
   } holds /* verified by Leon */
 
-  def merge_commu_lemma[K, V] (m1: KList[K, V], m2: KList[K, V]) = {
+  def merge_commu_lemma[K, V] (m1 : KList[K, V], m2 : KList[K, V]) = {
     require((m1.keys & m2.keys) == Nil[K]())
     (m2 ++ m1) ~ (m1 ++ m2)
   } holds /* verified by Leon */
 
   @ignore
-  def merge_commu_lemma2[K, V] (m1: KList[K, V], m2: KList[K, V]) = {
+  def merge_commu_lemma2[K, V] (m1 : KList[K, V], m2 : KList[K, V]) = {
     require((m1.keys & m2.keys) == Nil[K]() && distinct(m1.keys) && distinct(m2.keys))
     merge(m1, m2) ~ merge(m2, m1)
   } holds /* timeout */
 
-  def merge_assoc_lemma[K, V] (m1: KList[K, V], m2: KList[K, V], m3: KList[K, V]) = {
+  def merge_assoc_lemma[K, V] (m1 : KList[K, V], m2 : KList[K, V], m3 : KList[K, V]) = {
     require((m1.keys & m2.keys) == Nil[K]() &&
       (m2.keys & m3.keys) == Nil[K]() &&
       (m3.keys & m1.keys) == Nil[K]())
@@ -65,7 +63,7 @@ object PairMapSpec {
   } holds /* verified by Leon */
 
   @induct
-  def merge[K, V] (m1: KList[K, V], m2: KList[K, V]): KList[K, V] = {
+  def merge[K, V] (m1 : KList[K, V], m2 : KList[K, V]) : KList[K, V] = {
     m1 match {
       case KNil() => m2
       case KCons(hd, tl) => merge(tl, m2.update(hd))

@@ -271,6 +271,7 @@ object LeftistHeap {
             permutation(res, delete(heap, heap.findMin.get))))
     } /* verified by Leon */
 
+    @ignore
     def deleteMin_wrong_lemma (h : HeapNode) : Boolean = {
       require(h.isHeap && !h.isEmpty)
       h.deleteMin == h
