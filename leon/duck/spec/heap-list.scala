@@ -8,6 +8,7 @@ import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
 import duck.proof.MinOps._
+import duck.proof.MinLemmas._
 import duck.proof.DeleteOps._
 
 import leon.lang._
@@ -80,7 +81,7 @@ object Heap_List_BisimulationSpec {
       if (h.isEmpty)
         trivial
       else {
-        bisim_deleteMin(h, l) &&
+        bisim_findMin(h, l) &&
           permutation_delete(h, l, h.findMin.get)
       }
     }
