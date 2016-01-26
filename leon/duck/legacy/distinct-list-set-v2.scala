@@ -1,6 +1,6 @@
 package duck.collection
 
-import duck.proof.DistinctOps._
+import duck.spec.DistinctListOps._
 import leon.lang._
 import leon.annotation._
 

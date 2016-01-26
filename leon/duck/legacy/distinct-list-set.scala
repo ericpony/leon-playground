@@ -1,8 +1,6 @@
 package duck.proof
 
-import duck.proof.sugar._
-import duck.proof.DistinctSpec._
-import duck.proof.DistinctOps._
+import duck.spec.DistinctListOps._
 import duck.proof.PermutationSpec._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._

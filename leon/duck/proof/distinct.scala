@@ -11,6 +11,10 @@ import DistinctLemmas._
 
 import scala.language.postfixOps
 
+/**********************************************************
+  *  Deprecated. Use duck/spec/distinct-list.scala instead.
+  *********************************************************/
+
 @library
 object DistinctSpec {
   @induct
@@ -35,10 +39,10 @@ object DistinctSpec {
 @library
 object DistinctOps {
   /**
-   * Tell whether a list contains no duplicate elements.
-   * @param list a list
-   * @return whether list contains no duplicate elements
-   */
+    * Tell whether a list contains no duplicate elements.
+    * @param list a list
+    * @return whether list contains no duplicate elements
+    */
   def distinct[V] (list: List[V]): Boolean = {
     if (list == Nil[V]()) trivial
     else !list.tail.contains(list.head) && distinct(list.tail)
@@ -89,15 +93,11 @@ object DistinctLemmas {
     val L1 = delete(l1, e)
     val L2 = delete(l2, e)
     if (l1 contains e) {
-      L1.content == L2.content && distinct(L1) && distinct(L2) because {
-        check {
-          distinct_delete_content0(l1, e) && distinct_delete_content0(l2, e)
-        }
-      }
+      L1.content == L2.content && distinct(L1) && distinct(L2) because
+        distinct_delete_content0(l1, e) && distinct_delete_content0(l2, e)
     } else {
-      L1.content == L2.content && distinct(L1) && distinct(L2) because {
-        check { delete_not_contains(l1, e) && delete_not_contains(l2, e) }
-      }
+      L1.content == L2.content && distinct(L1) && distinct(L2) because
+        delete_not_contains(l1, e) && delete_not_contains(l2, e)
     }
   } holds
 }

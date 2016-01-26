@@ -7,6 +7,7 @@ import duck.proof.DistinctOps._
 
 //import leon.collection._
 import leon.lang._
+import leon.proof._
 import leon.annotation._
 
 import scala.language.postfixOps
@@ -18,45 +19,63 @@ import scala.language.postfixOps
   * by the new value.
   */
 object PairMapSpec {
+
+  def ~[K, V] (m1: KList[K, V], m2: KList[K, V]) = {
+    m1.size == m2.size && m1.content == m2.content
+  }
+
+  @ignore
+  def update_invariant[K, V] (m1: KList[K, V], m2: KList[K, V], e: Item[K, V]): Boolean = {
+    require(m1 ~ m2 && distinct(m1.keys) && distinct(m2.keys))
+    m1.update(e) ~ m2.update(e) because {
+      if (!m1.hasKey(e.key) || !m2.hasKey(e.key))
+        trivial
+      else
+        update_invariant(m1.delete(e.key), m2.delete(e.key), e)
+    }
+  } holds /* verified by Leon */
+
+  def merge_invariant[K, V] (m1: KList[K, V], m2: KList[K, V], m3: KList[K, V], m4: KList[K, V]) = {
+    require(m1 ~ m2 && m3 ~ m4)
+    (m1 ++ m3) ~ (m2 ++ m4)
+  } holds /* verified by Leon */
+
   @induct
-  def insert_commu_lemma[K, V] (map: KList[K, V], p1: Item[K, V], p2: Item[K, V]) = {
+  def insert_commu_lemma[K, V] (m: KList[K, V], p1: Item[K, V], p2: Item[K, V]) = {
     require(p1.key != p2.key)
-    map.update(p1).update(p2).content == map.update(p2).update(p1).content
+    m.update(p1).update(p2) ~ m.update(p2).update(p1)
   } holds /* verified by Leon */
 
-  def merge_commu_lemma[K, V] (map1: KList[K, V], map2: KList[K, V]) = {
-    require((map1.keys & map2.keys) == Nil[K]())
-    val m1 = map2 ++ map1
-    val m2 = map1 ++ map2
-    m1.size == m2.size && m1.content == m2.content
+  def merge_commu_lemma[K, V] (m1: KList[K, V], m2: KList[K, V]) = {
+    require((m1.keys & m2.keys) == Nil[K]())
+    (m2 ++ m1) ~ (m1 ++ m2)
   } holds /* verified by Leon */
 
-  def merge_commu_lemma2[K, V] (map1: KList[K, V], map2: KList[K, V]) = {
-    require((map1.keys & map2.keys) == Nil[K]() && distinct(map1.keys) && distinct(map2.keys))
-    val m1 = merge(map1, map2)
-    val m2 = merge(map2, map1)
-    m1.size == m2.size && m1.content == m2.content
+  @ignore
+  def merge_commu_lemma2[K, V] (m1: KList[K, V], m2: KList[K, V]) = {
+    require((m1.keys & m2.keys) == Nil[K]() && distinct(m1.keys) && distinct(m2.keys))
+    merge(m1, m2) ~ merge(m2, m1)
   } holds /* timeout */
 
-  def merge_assoc_lemma[K, V] (map1: KList[K, V], map2: KList[K, V], map3: KList[K, V]) = {
-    require((map1.keys & map2.keys) == Nil[K]() &&
-      (map2.keys & map3.keys) == Nil[K]() &&
-      (map3.keys & map1.keys) == Nil[K]())
-    (map1 ++ (map2 ++ map3)).content == ((map1 ++ map2) ++ map3).content
+  def merge_assoc_lemma[K, V] (m1: KList[K, V], m2: KList[K, V], m3: KList[K, V]) = {
+    require((m1.keys & m2.keys) == Nil[K]() &&
+      (m2.keys & m3.keys) == Nil[K]() &&
+      (m3.keys & m1.keys) == Nil[K]())
+    (m1 ++ (m2 ++ m3)) ~ ((m1 ++ m2) ++ m3)
   } holds /* verified by Leon */
 
   @induct
-  def merge[K, V] (map1: KList[K, V], map2: KList[K, V]): KList[K, V] = {
-    map1 match {
-      case KNil() => map2
-      case KCons(hd, tl) => merge(tl, map2.update(hd))
+  def merge[K, V] (m1: KList[K, V], m2: KList[K, V]): KList[K, V] = {
+    m1 match {
+      case KNil() => m2
+      case KCons(hd, tl) => merge(tl, m2.update(hd))
     }
   }
-//  ensuring {
-//    res => (distinct(map1.keys) &&
-//      distinct(map2.keys) &&
-//      (map1.keys & map2.keys) == Nil[K]()) ==> (res.size == map1.size + map2.size)
-//  }
+  //  ensuring {
+  //    res => (distinct(m1.keys) &&
+  //      distinct(m2.keys) &&
+  //      (m1.keys & m2.keys) == Nil[K]()) ==> (res.size == m1.size + m2.size)
+  //  }
 
 }
 

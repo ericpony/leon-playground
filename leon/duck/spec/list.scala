@@ -1,12 +1,14 @@
 package duck.spec
 
 import duck.collection._
+import duck.spec.DistinctListOps._
+
 import leon.annotation._
 import leon.lang._
 import leon.proof._
-import scala.language.postfixOps
 import ListOps._
-import duck.proof.DistinctOps._
+
+import scala.language.postfixOps
 
 @library
 object ListSpec {
