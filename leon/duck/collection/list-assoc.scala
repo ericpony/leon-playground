@@ -5,7 +5,6 @@ import duck.proof.KListLemmas._
 import leon.proof._
 import leon.lang._
 import leon.annotation._
-import leon.collection._
 
 /**
   * KList
@@ -165,14 +164,19 @@ package object KList {
     def ~~ (that : KList[K, V]) = this.content == that.content
 
     def update (data : Item[K, V]) : KList[K, V] = {
-      this match {
-        case KNil() => data :: KNil[K, V]()
-        case KCons(Item(k, v), t) =>
-          if (k == data.key) Item(k, data.value) :: t
-          else Item(k, v) :: t.update(data)
+      if (!hasKey(data.key))
+        data :: this
+      else {
+        this match {
+          case KNil() => data :: KNil[K, V]()
+          case KCons(Item(k, v), t) =>
+            if (k == data.key) Item(k, data.value) :: t
+            else Item(k, v) :: t.update(data)
+        }
       }
     } ensuring {
-      res => res.size > 0 // && res.hasKey(data.key)
+      res => res.size > 0 && res.hasKey(data.key)
+      //res.forall(p => p.key != data.key || p.value == data.value)
     }
 
     def hasKey (key : K) : Boolean = {
@@ -183,13 +187,14 @@ package object KList {
     } ensuring {
       res => {
         res implies
-          get(key).isDefined and
-          contains(get(key).get) and
-          getAll(key) != KNil[K, V]()
+          get(key).isDefined &&
+            // Adding the following line will lead to unsoundness
+            // contains(get(key).get) &&
+            getAll(key) != KNil[K, V]()
       } and {
         !res implies
-          !get(key).isDefined and
-          getAll(key) == KNil[K, V]()
+          !get(key).isDefined &&
+            getAll(key) == KNil[K, V]()
       }
     }
 
@@ -321,21 +326,21 @@ package object KList {
         case KCons(h, KNil()) => h
         case KCons(_, t) => t.last
       }
-    } ensuring {this.contains _}
+    } ensuring { this.contains _ }
 
     def lastOption : Option[Item[K, V]] = {
       this match {
         case KCons(h, t) => t.lastOption.orElse(Some(h))
         case KNil() => None[Item[K, V]]()
       }
-    } ensuring {_.isDefined != this.isEmpty}
+    } ensuring { _.isDefined != this.isEmpty }
 
     def headOption : Option[Item[K, V]] = {
       this match {
         case KCons(h, t) => Some(h)
         case KNil() => None[Item[K, V]]()
       }
-    } ensuring {_.isDefined != this.isEmpty}
+    } ensuring { _.isDefined != this.isEmpty }
 
     def unique : KList[K, V] = this match {
       case KNil() => KNil()
@@ -360,14 +365,14 @@ package object KList {
         case KNil() => KNil[K2, V2]()
         case KCons(h, t) => f(h) :: t.map(f)
       }
-    } ensuring {_.size == this.size}
+    } ensuring { _.size == this.size }
 
     def mapList[V2] (f : Item[K, V] => V2) : List[V2] = {
       this match {
         case KNil() => Nil[V2]()
         case KCons(h, t) => f(h) :: t.mapList(f)
       }
-    } ensuring {_.size == this.size}
+    } ensuring { _.size == this.size }
 
     def foldLeft[V2] (z : V2)(f : (V2, Item[K, V]) => V2) : V2 = this match {
       case KNil() => z
@@ -384,7 +389,7 @@ package object KList {
         case KNil() => z :: KNil[K2, V2]()
         case KCons(h, t) => z :: t.scanLeft(f(z, h))(f)
       }
-    } ensuring {!_.isEmpty}
+    } ensuring { !_.isEmpty }
 
     def scanRight[K2, V2] (z : Item[K2, V2])(f : (Item[K, V], Item[K2, V2]) => Item[K2, V2]) : KList[K2, V2] = {
       this match {
@@ -393,7 +398,7 @@ package object KList {
           val rest@KCons(h1, _) = t.scanRight(z)(f)
           f(h, h1) :: rest
       }
-    } ensuring {!_.isEmpty}
+    } ensuring { !_.isEmpty }
 
     def filter (p : Item[K, V] => Boolean) : KList[K, V] = {
       this match {

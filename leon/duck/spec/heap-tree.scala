@@ -263,9 +263,9 @@ object LeftistHeap {
            deleteMin_wrong_lemma after the following line is uncommented. */
         //res.size >= max(heap.size, heap.size - 1) &&
         res.size == max(0, heap.size - 1) &&
-        res.toList == heap.toList.tail &&
-        res.content.subsetOf(heap.content) && (
-        heap.isEmpty || res.isEmpty ||
+        (!heap.isEmpty implies res.toList == heap.toList.tail) &&
+        res.content.subsetOf(heap.content) &&
+        (heap.isEmpty || res.isEmpty ||
           (heap.findMin.get <= res.findMin.get &&
             heap.content == res.content ++ Set(heap.findMin.get) &&
             permutation(res, delete(heap, heap.findMin.get))))

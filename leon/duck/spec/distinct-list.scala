@@ -17,17 +17,17 @@ case class DistinctList[V] (list : List[V]) {
   def insert (e : V) : List[V] = {
     require(distinct(list))
     DistinctListOps.insert(list, e)
-  } ensuring {distinct(_)}
+  } ensuring { distinct(_) }
 
   def insertAll (other : List[V]) = {
     require(distinct(list) && distinct(other))
     union(list, other)
-  } ensuring {distinct(_)}
+  } ensuring { distinct(_) }
 
   def remove (e : V) : List[V] = {
     require(distinct(list))
     DistinctListOps.remove(list, e)
-  } ensuring {distinct(_)}
+  } ensuring { distinct(_) }
 }
 
 object DistinctListOps {
@@ -114,6 +114,12 @@ object DistinctListLemmas {
     require(distinct(set))
     distinct(delete(set, e))
   } holds /* verified */
+
+//  @induct
+//  def cons_distinct[V] (set : List[V], e : V) : Boolean = {
+//    require(distinct(set) && !set.contains(e))
+//    distinct(e::set)
+//  } holds /* verified */
 
   //  def union_comm (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
   //    require(distinct(l1) && distinct(l2))
