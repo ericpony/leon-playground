@@ -259,23 +259,14 @@ object LeftistHeap {
       }
     } ensuring { res =>
       res.isHeap &&
-        /* Leon wrongly proves this post-condition and
-           deleteMin_wrong_lemma after the following line is uncommented. */
-        //res.size >= max(heap.size, heap.size - 1) &&
         res.size == max(0, heap.size - 1) &&
-        (!heap.isEmpty implies res.toList == heap.toList.tail) &&
+        ((!heap.isEmpty) implies permutation(res.toList, heap.toList.tail)) &&
         res.content.subsetOf(heap.content) &&
         (heap.isEmpty || res.isEmpty ||
           (heap.findMin.get <= res.findMin.get &&
             heap.content == res.content ++ Set(heap.findMin.get) &&
             permutation(res, delete(heap, heap.findMin.get))))
     } /* verified by Leon */
-
-    @ignore
-    def deleteMin_wrong_lemma (h : HeapNode) : Boolean = {
-      require(h.isHeap && !h.isEmpty)
-      h.deleteMin == h
-    } holds
 
     def merge (h : HeapNode) : HeapNode = {
       require(heap.isHeap && h.isHeap)
