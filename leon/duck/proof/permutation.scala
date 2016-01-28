@@ -55,7 +55,7 @@ object PermutationSpec {
     require(permutation(l1, l2))
     permutation(l1 ++ ll, l2 ++ ll) because {
       if (l1 == Nil[V]()) {
-        check {permutation_refl(ll)}
+        check { permutation_refl(ll) }
       } else {
         val h1 = l1.head
         // permutation(l1 ++ ll, l2 ++ ll) because
@@ -87,10 +87,10 @@ object PermutationSpec {
 @library
 object PermutationOps {
   /**
-    * Tell whether a list is a permutation of the other
-    * @param l1, l2 are lists
-    * @return whether l1 is a permutation of l2
-    */
+   * Tell whether a list is a permutation of the other
+   * @param l1, l2 are lists
+   * @return whether l1 is a permutation of l2
+   */
   def permutation[V] (l1 : List[V], l2 : List[V]) : Boolean = {
     if (l1 == Nil[V]) {
       l1 == l2
@@ -116,7 +116,7 @@ object PermutationLemmas {
   def permutation_cons_tail[V] (l1 : List[V], l2 : List[V], e : V) : Boolean = {
     permutation(l1 ++ (e :: l2), (e :: l1) ++ l2) because {
       if (l1 == Nil[V]()) {
-        check {permutation_refl(e :: l2)}
+        check { permutation_refl(e :: l2) }
       } else {
         val h1 = l1.head
         // permutation (l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2)
@@ -209,6 +209,14 @@ object PermutationLemmas {
     }
   } holds
 
+  @induct
+  def permutation_cons_delete[V] (l : List[V], e : V) : Boolean = {
+    require(l contains e)
+    permutation(Cons(e, delete(l, e)), l) ||
+      permutation(l, Cons(e, delete(l, e))) because
+      permutation_refl(l)
+  } holds
+
   def permutation_comm_lemma[V] (l1 : List[V], l2 : List[V]) : Boolean = {
     require(permutation(l1, l2))
     permutation(l2, l1) because {
@@ -260,8 +268,8 @@ object PermutationLemmas {
         val h1 = l1.head
         l1.content == l1.tail.content ++ Set(h1) &&
           l2.content == delete(l2, h1).content ++ Set(h1) &&
-          check {delete_content(l2, h1)} &&
-          check {permutation_content_lemma(l1.tail, delete(l2, h1))}
+          check { delete_content(l2, h1) } &&
+          check { permutation_content_lemma(l1.tail, delete(l2, h1)) }
       }
     }
   } holds
@@ -392,21 +400,21 @@ object PermutationLemmas {
 
   /* Used to prove permutation3 */
   def permutation3_swap_noassoc[V] (x : List[V], y : List[V], z : List[V]) : Boolean = {
-    permutation(x ++ y ++ z, x ++ y ++ z) because {permutation_refl(x ++ y ++ z)} &&
-      permutation(x ++ y ++ z, x ++ z ++ y) because {permutation3_swap2(x, y, z)} &&
-      permutation(x ++ y ++ z, y ++ x ++ z) because {permutation3_swap2(x, y, z)} &&
-      permutation(x ++ y ++ z, y ++ z ++ x) because {permutation3_swap2(x, y, z) && permutation3_swap2(y, x, z) && permutation_tran(x ++ y ++ z, y ++ x ++ z, y ++ z ++ x)} &&
-      permutation(x ++ y ++ z, z ++ x ++ y) because {permutation3_swap2(x, y, z) && permutation3_swap2(x, z, y) && permutation_tran(x ++ y ++ z, x ++ z ++ y, z ++ x ++ y)} &&
-      permutation(x ++ y ++ z, z ++ y ++ x) because {permutation3_swap2(x, y, z)}
+    permutation(x ++ y ++ z, x ++ y ++ z) because { permutation_refl(x ++ y ++ z) } &&
+      permutation(x ++ y ++ z, x ++ z ++ y) because { permutation3_swap2(x, y, z) } &&
+      permutation(x ++ y ++ z, y ++ x ++ z) because { permutation3_swap2(x, y, z) } &&
+      permutation(x ++ y ++ z, y ++ z ++ x) because { permutation3_swap2(x, y, z) && permutation3_swap2(y, x, z) && permutation_tran(x ++ y ++ z, y ++ x ++ z, y ++ z ++ x) } &&
+      permutation(x ++ y ++ z, z ++ x ++ y) because { permutation3_swap2(x, y, z) && permutation3_swap2(x, z, y) && permutation_tran(x ++ y ++ z, x ++ z ++ y, z ++ x ++ y) } &&
+      permutation(x ++ y ++ z, z ++ y ++ x) because { permutation3_swap2(x, y, z) }
   } holds
 
   def permutation3[V] (x : List[V], y : List[V], z : List[V]) : Boolean = {
-    permutation(x ++ y ++ z, x ++ y ++ z) because {permutation3_swap_noassoc(x, y, z)} &&
-      permutation(x ++ y ++ z, x ++ z ++ y) because {permutation3_swap_noassoc(x, y, z)} &&
-      permutation(x ++ y ++ z, y ++ x ++ z) because {permutation3_swap_noassoc(x, y, z)} &&
-      permutation(x ++ y ++ z, y ++ z ++ x) because {permutation3_swap_noassoc(x, y, z)} &&
-      permutation(x ++ y ++ z, z ++ x ++ y) because {permutation3_swap_noassoc(x, y, z)} &&
-      permutation(x ++ y ++ z, z ++ y ++ x) because {permutation3_swap_noassoc(x, y, z)} &&
+    permutation(x ++ y ++ z, x ++ y ++ z) because { permutation3_swap_noassoc(x, y, z) } &&
+      permutation(x ++ y ++ z, x ++ z ++ y) because { permutation3_swap_noassoc(x, y, z) } &&
+      permutation(x ++ y ++ z, y ++ x ++ z) because { permutation3_swap_noassoc(x, y, z) } &&
+      permutation(x ++ y ++ z, y ++ z ++ x) because { permutation3_swap_noassoc(x, y, z) } &&
+      permutation(x ++ y ++ z, z ++ x ++ y) because { permutation3_swap_noassoc(x, y, z) } &&
+      permutation(x ++ y ++ z, z ++ y ++ x) because { permutation3_swap_noassoc(x, y, z) } &&
       permutation(x ++ y ++ z, x ++ (y ++ z)) because {
       permutation3_swap_noassoc(x, y, z) && permutation_concat_assoc(x, y, z) && permutation_tran(x ++ y ++ z, x ++ y ++ z, x ++ (y ++ z))
     } &&
@@ -444,7 +452,7 @@ object PermutationLemmas {
   } holds
 
   def cons_concat_perm1[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
-    permutation(e :: (l1 ++ l2), (e :: l1) ++ l2) because {permutation_refl(e :: (l1 ++ l2))}
+    permutation(e :: (l1 ++ l2), (e :: l1) ++ l2) because { permutation_refl(e :: (l1 ++ l2)) }
   } holds
 
   def cons_concat_perm2[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
