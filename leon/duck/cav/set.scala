@@ -8,25 +8,23 @@ import leon.lang._
 import leon.proof._
 import ListSetLemmas._
 import ListSetOps._
-import ListSetSpec._
 
 import scala.language.postfixOps
 
-/**
- * TODO: Prove union_assoc.
- */
-object CombinerSpec {
+object SetAggregationProof {
 
   def corr[V] (m1 : (V, List[V]), m2 : (V, List[V])) = m1._1 == m2._1 && m1._2 ~ m2._2
 
   def min (a : BigInt, b : BigInt) = if (a > b) b else a
 
   def comb_assoc_lemma (m1 : (BigInt, List[BigInt]), m2 : (BigInt, List[BigInt]), m3 : (BigInt, List[BigInt])) = {
+    require(distinct(m1._2) && distinct(m2._2) && distinct(m3._2))
     corr(comb(m1, comb(m2, m3)), comb(comb(m1, m2), m3)) because
       union_assoc(m1._2, m2._2, m3._2)
   } holds
 
   def comb_comm_lemma (m1 : (BigInt, List[BigInt]), m2 : (BigInt, List[BigInt])) = {
+    require(distinct(m1._2) && distinct(m2._2))
     corr(comb(m1, m2), comb(m2, m1)) because
       union_comm(m1._2, m2._2)
   } holds
@@ -34,9 +32,6 @@ object CombinerSpec {
   def comb (m1 : (BigInt, List[BigInt]), m2 : (BigInt, List[BigInt])) : (BigInt, List[BigInt]) = {
     (min(m1._1, m2._1), union(m1._2, m2._2))
   }
-}
-
-object ListSetSpec {
 
   def insert_invariant[V] (l1 : List[V], l2 : List[V], e : V) : Boolean = {
     require(distinct(l1) && distinct(l2) && l1 ~ l2)
@@ -60,11 +55,59 @@ object ListSetSpec {
     }
   } holds
 
-  // TODO: prove this lemma.
+  /* REMARK: Need ~20 seconds to verify. */
   def union_assoc[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
-    union(union(l1, l2), l3) ~ union(l1, union(l2, l3)) because {
-      union_assoc(l1, l2, l3) // remove me
+    require(distinct(l1) && distinct(l2) && distinct(l3))
+    union(l1, union(l2, l3)) ~ union(union(l1, l2), l3) because {
+      if (l1.isEmpty) {
+        l1 ++ union(l2, l3) == union(l2, l3) &&
+          union(l1, l2) ++ l3 == l2 ++ l3 because union_identity(l2) &&
+          union(l1, union(l2, l3)) == union(l2, l3) because union_identity(union(l2, l3))
+      } else {
+        val h = l1.head
+        val tl = l1.tail
+        union(tl, union(l2, l3)) ~ union(union(tl, l2), l3) because {
+          union_assoc(tl, l2, l3)
+        } && {
+          if (l2.contains(h)) {
+            union(l1, union(l2, l3)) == union(tl, union(l2, l3)) because {
+              uniquate_contains(l2 ++ l3, h) &&
+                delete_contains_uniquate(l1 ++ union(l2, l3), h)
+            } &&
+              union(union(tl, l2), l3) ~ union(union(l1, l2), l3) because {
+              //union(tl, l2) == union(l1, l2) because
+              delete_contains_uniquate(l1 ++ l2, h) &&
+                permutation_eq(union(tl, l2), union(l1, l2)) &&
+                permutation_append(union(tl, l2), union(l1, l2), l3) &&
+                uniquate_perm(union(tl, l2) ++ l3, union(l1, l2) ++ l3)
+            }
+          } else if (l3.contains(h)) {
+            /// !l2.contains(h) && l3.contains(h)
+            union(l1, union(l2, l3)) == union(tl, union(l2, l3)) because {
+              uniquate_contains(l2 ++ l3, h) &&
+                delete_contains_uniquate(l1 ++ union(l2, l3), h)
+            } &&
+              union(union(tl, l2), l3) ~ union(union(l1, l2), l3) because {
+              delete_contains_uniquate(union(l1, l2) ++ l3, h) &&
+                permutation_eq(union(union(tl, l2), l3), union(union(l1, l2), l3))
+            }
+          } else {
+            /// !(l2 ++ l3).contains(h)
+            union(l1, union(l2, l3)) == Cons(h, union(tl, union(l2, l3))) because {
+              delete_uniquate_assoc(l1 ++ union(l2, l3), h)
+            } &&
+              union(union(l1, l2), l3) == Cons(h, union(union(tl, l2), l3))
+          }
+        }
+      }
     }
+  } holds
+
+  @induct
+  def union_identity[V] (l : List[V]) : Boolean = {
+    require(distinct(l))
+    union(Nil[V](), l) == l && union(l, Nil[V]()) == l because
+      union_comm(l, Nil[V]())
   } holds
 }
 
@@ -74,11 +117,13 @@ object ListSetOps {
     if (l.contains(e)) l
     else e :: l
   } ensuring {
-    res => distinct(l) ==> distinct(res)
+    distinct(l) ==> distinct(_)
   }
 
   def union[T] (l1 : List[T], l2 : List[T]) : List[T] = {
     (l1 ++ l2).distinct
+  } ensuring {
+    distinct(_) because uniquate_is_distinct(l1 ++ l2)
   }
 }
 
@@ -106,18 +151,6 @@ object ListSetLemmas {
   @induct
   def uniquate_is_distinct[T] (list : List[T]) : Boolean = {
     distinct(list.distinct)
-  } holds
-
-  def delete_contains_uniquate[T] (list : List[T], e : T) : Boolean = {
-    require(delete(list, e).contains(e))
-    list.distinct == delete(list, e).distinct because {
-      list match {
-        case Nil() => trivial
-        case Cons(hd, tl) =>
-          if (hd == e) uniquate_contains(tl, hd)
-          else delete_contains_uniquate(tl, e)
-      }
-    }
   } holds
 
   @induct
@@ -150,6 +183,18 @@ object ListSetLemmas {
               delete_neq_not_contains(tl, hd, e) &&
               delete_uniquate_assoc(tl, e)
           }
+      }
+    }
+  } holds
+
+  def delete_contains_uniquate[T] (list : List[T], e : T) : Boolean = {
+    require(delete(list, e).contains(e))
+    list.distinct == delete(list, e).distinct because {
+      list match {
+        case Nil() => trivial
+        case Cons(hd, tl) =>
+          if (hd == e) uniquate_contains(tl, hd)
+          else delete_contains_uniquate(tl, e)
       }
     }
   } holds
