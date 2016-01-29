@@ -2,7 +2,6 @@ package duck.spec
 
 import duck.collection._
 import duck.spec.SortedListOps._
-import duck.proof.sugar._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
@@ -17,41 +16,35 @@ import scala.language.postfixOps
 import scala.language.implicitConversions
 
 import LeftistHeap._
-import LeftistHeapLemmas._
 
 /**
   * LeftistHeap as List
   */
 object LeftistHeapSpec {
+
   /**
     * h1 ~ h2 implies h1.insert(e) ~ h2.insert(e)
     */
   def insert_invariant (h1 : HeapNode, h2 : HeapNode, e : BigInt) : Boolean = {
     require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.insert(e) ~ h2.insert(e) because {
-      val l1 = h1.insert(e)
-      val l2 = h2.insert(e)
-      heap_insert_lemma(h1, e) &&
-        heap_insert_lemma(h2, e) &&
-        permutation_cons(h1, h2, e) &&
-        permutation_tran_lemma(l1, e :: h1, e :: h2) &&
-        permutation_tran_lemma(l1, e :: h2, l2)
+      permutation_cons(h1, h2, e) &&
+      permutation_tran_lemma(h1.insert(e), e :: h1, e :: h2) &&
+      permutation_comm(h2.insert(e), e :: h2) &&
+      permutation_tran_lemma(h1.insert(e), e :: h2, h2.insert(e))
     }
   } holds /* verified by Leon */
 
   /**
-    * h1 ~ h2 implies h1.merge(h) ~ h2.merge(h)
+    * h1 ~ h3 && h1 ~ h4 implies h1.merge(h2) ~ h3.merge(h4)
     */
-  def merge_invariant (h1 : HeapNode, h2 : HeapNode, h : HeapNode) : Boolean = {
-    require(h1.isHeap && h2.isHeap && h.isHeap && h1 ~ h2)
-    h1.merge(h) ~ h2.merge(h) because {
-      val l1 = h1.merge(h)
-      val l2 = h2.merge(h)
-      heap_merge_lemma(h1, h) &&
-        heap_merge_lemma(h2, h) &&
-        permutation_append(h1, h2, h) &&
-        permutation_tran(l1, h1 ++ h, h2 ++ h) &&
-        permutation_tran(l1, h2 ++ h, l2)
+  def merge_invariant (h1 : HeapNode, h2 : HeapNode, h3 : HeapNode, h4 : HeapNode) : Boolean = {
+    require(h1.isHeap && h2.isHeap && h3.isHeap && h4.isHeap && h1 ~ h3 && h2 ~ h4)
+    h1.merge(h2) ~ h3.merge(h4) because {
+      permutation_concat(h1, h2, h3, h4) &&
+      permutation_tran(h1.merge(h2), h1 ++ h2, h3 ++ h4) &&
+      permutation_comm(h3.merge(h4), h3 ++ h4) &&
+      permutation_tran(h1.merge(h2), h3 ++ h4, h3.merge(h4))
     }
   } holds /* verified by Leon */
 
@@ -61,13 +54,8 @@ object LeftistHeapSpec {
   def findMin_invariant (h1 : HeapNode, h2 : HeapNode) : Boolean = {
     require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.findMin == h2.findMin because {
-      if (h1.isEmpty || h2.isEmpty)
-        trivial
-      else {
-        findMin_lemma(h1) &&
-          findMin_lemma(h2) &&
-          min_permutation(h1, h2)
-      }
+      if (h1.isEmpty || h2.isEmpty) trivial
+      else min_permutation(h1, h2)
     }
   } holds /* verified by Leon */
 
@@ -77,11 +65,13 @@ object LeftistHeapSpec {
   def deleteMin_invariant (h1 : HeapNode, h2 : HeapNode) : Boolean = {
     require(h1.isHeap && h2.isHeap && h1 ~ h2)
     h1.deleteMin ~ h2.deleteMin because {
-      if (h1.isEmpty || h2.isEmpty)
-        trivial
+      if (h1.isEmpty || h2.isEmpty) trivial
       else {
         findMin_invariant(h1, h2) &&
-          permutation_delete(h1, h2, h1.findMin.get)
+        permutation_delete(h1, h2, h1.findMin.get) && // permutation(delete(h1, h1.findMin.get), delete(h2, h2.findMin.get))
+        permutation_tran(h1.deleteMin, delete(h1, h1.findMin.get), delete(h2, h2.findMin.get)) &&
+        permutation_comm(h2.deleteMin, delete(h2, h2.findMin.get)) &&
+        permutation_tran(h1.deleteMin, delete(h2, h2.findMin.get), h2.deleteMin)
       }
     }
   } holds /* verified by Leon */
@@ -100,17 +90,13 @@ object LeftistHeapSpec {
   def insert_comm_prop (h : HeapNode, e1 : BigInt, e2 : BigInt) : Boolean = {
     require(h.isHeap)
     h.insert(e1).insert(e2) ~ h.insert(e2).insert(e1) because {
-      heap_insert_lemma(h, e1) &&
-        heap_insert_lemma(h, e2) &&
-        heap_insert_lemma(h.insert(e1), e2) &&
-        heap_insert_lemma(h.insert(e2), e1) &&
-        permutation_cons(h.insert(e1), e1 :: h, e2) &&
-        permutation_cons(h.insert(e2), e2 :: h, e1) &&
-        permutation_tran(h.insert(e1).insert(e2), e2 :: h.insert(e1), e2 :: e1 :: h) &&
-        permutation_tran(h.insert(e2).insert(e1), e1 :: h.insert(e2), e1 :: e2 :: h) &&
-        permutation_prefix_comm(e1, e2, h) &&
-        permutation_tran(h.insert(e1).insert(e2), e2 :: e1 :: h, e1 :: e2 :: h) &&
-        permutation_tran(h.insert(e1).insert(e2), e1 :: e2 :: h, h.insert(e2).insert(e1))
+      permutation_cons(h.insert(e1), e1 :: h, e2) &&
+      permutation_cons(h.insert(e2), e2 :: h, e1) &&
+      permutation_tran(h.insert(e1).insert(e2), e2 :: h.insert(e1), e2 :: e1 :: h) &&
+      permutation_tran(h.insert(e2).insert(e1), e1 :: h.insert(e2), e1 :: e2 :: h) &&
+      permutation_car_swap(h, e1, e2) &&
+      permutation_tran(h.insert(e1).insert(e2), e2 :: e1 :: h, e1 :: e2 :: h) &&
+      permutation_tran(h.insert(e1).insert(e2), e1 :: e2 :: h, h.insert(e2).insert(e1))
     }
   } holds /* verified by Leon */
 
@@ -120,11 +106,9 @@ object LeftistHeapSpec {
   def merge_comm_prop (h1 : HeapNode, h2 : HeapNode) : Boolean = {
     require(h1.isHeap && h2.isHeap)
     h1.merge(h2) ~ h2.merge(h1) because {
-      heap_merge_lemma(h1, h2) &&
-        heap_merge_lemma(h2, h1) &&
-        permutation_concat_comm(h1, h2) &&
-        permutation_tran(h1.merge(h2), h1 ++ h2, h2 ++ h1) &&
-        permutation_tran(h1.merge(h2), h2 ++ h1, h2.merge(h1))
+      permutation_concat_comm(h1, h2) &&
+      permutation_tran(h1.merge(h2), h1 ++ h2, h2 ++ h1) &&
+      permutation_tran(h1.merge(h2), h2 ++ h1, h2.merge(h1))
     }
   } holds /* verified by Leon */
 
@@ -134,17 +118,13 @@ object LeftistHeapSpec {
   def merge_assoc_prop (h1 : HeapNode, h2 : HeapNode, h3 : HeapNode) : Boolean = {
     require(h1.isHeap && h2.isHeap && h3.isHeap)
     h1.merge(h2).merge(h3) ~ h1.merge(h2.merge(h3)) because {
-      heap_merge_lemma(h1, h2) &&
-        heap_merge_lemma(h1.merge(h2), h3) &&
-        permutation_append(h1.merge(h2), h1 ++ h2, h3) &&
-        permutation_tran(h1.merge(h2).merge(h3), h1.merge(h2) ++ h3, h1 ++ h2 ++ h3) &&
-        heap_merge_lemma(h2, h3) &&
-        heap_merge_lemma(h1, h2.merge(h3)) &&
-        permutation_prepend(h1, h2.merge(h3), h2 ++ h3) &&
-        permutation_tran(h1.merge(h2.merge(h3)), h1 ++ h2.merge(h3), h1 ++ (h2 ++ h3)) &&
-        permutation_concat_assoc(h1, h2, h3) &&
-        permutation_tran(h1.merge(h2).merge(h3), h1 ++ h2 ++ h3, h1 ++ (h2 ++ h3)) &&
-        permutation_tran(h1.merge(h2).merge(h3), h1 ++ (h2 ++ h3), h1.merge(h2.merge(h3)))
+      permutation_append(h1.merge(h2), h1 ++ h2, h3) &&
+      permutation_tran(h1.merge(h2).merge(h3), h1.merge(h2) ++ h3, h1 ++ h2 ++ h3) &&
+      permutation_prepend(h1, h2.merge(h3), h2 ++ h3) &&
+      permutation_tran(h1.merge(h2.merge(h3)), h1 ++ h2.merge(h3), h1 ++ (h2 ++ h3)) &&
+      permutation_concat_assoc(h1, h2, h3) &&
+      permutation_tran(h1.merge(h2).merge(h3), h1 ++ h2 ++ h3, h1 ++ (h2 ++ h3)) &&
+      permutation_tran(h1.merge(h2).merge(h3), h1 ++ (h2 ++ h3), h1.merge(h2.merge(h3)))
     }
   } holds /* verified by Leon */
 
@@ -157,18 +137,15 @@ object LeftistHeapSpec {
     val L1 = foldl_insert(Empty(), l1)
     val L2 = foldl_insert(Empty(), l2)
     L ~ L1.merge(L2) because {
-      foldl_insert_lemma(Empty(), l1 ++ l2) &&
-        foldl_insert_lemma(Empty(), l1) &&
-        foldl_insert_lemma(Empty(), l2) &&
-        heap_merge_lemma(L1, L2) &&
-        permutation_append(L1, l1, l2) &&
-        permutation_prepend(L1, L2, l2) &&
-        permutation_tran(L1 ++ L2, L1 ++ l2, l1 ++ l2) &&
-        permutation(l1 ++ l2, L) && // STRANGE: shouldn't need this line
-        permutation_tran(L1 ++ L2, l1 ++ l2, L) &&
-        permutation_tran(L, L1 ++ L2, L1.merge(L2))
+      permutation_append(L1, l1, l2) &&
+      permutation_prepend(L1, L2, l2) &&
+      permutation_tran(L1 ++ L2, L1 ++ l2, l1 ++ l2) &&
+      permutation(l1 ++ l2, L) && // STRANGE: shouldn't need this line
+      permutation_tran(L1 ++ L2, l1 ++ l2, L) &&
+      permutation_tran(L, L1 ++ L2, L1.merge(L2))
     }
   } holds /* verified by Leon */
+
 }
 
 /**
@@ -199,6 +176,7 @@ object LeftistHeapSpec0 {
     val L2 = foldl_insert(Empty(), l2)
     L ~~ L1.merge(L2)
   } holds /* verified by Leon */
+
 }
 
 object LeftistHeap {
@@ -215,7 +193,7 @@ object LeftistHeap {
   }
 
   case object HeapNode {
-    implicit def toList (h : HeapNode) : List[BigInt] = h.toList
+    implicit def toList (h : HeapNode) : List[BigInt] = LeftistHeapOps(h).toList
 
     implicit def toLeftistHeap (h : HeapNode) : LeftistHeapOps = LeftistHeapOps(h)
   }
@@ -241,14 +219,15 @@ object LeftistHeap {
         case Node(_, v, _, _) => Some(v)
       }
     } ensuring { res =>
-      !heap.isEmpty implies
-        res.isDefined && {
-          val m = res.get
-          val Node(_, _, left, right) = heap
-          val p1 = m <= min(left.findMin.getOrElse(m), right.findMin.getOrElse(m))
-          val p2 = heap.content == heap.deleteMin.content ++ Set(m)
-          p1 && p2
+      (!heap.isEmpty) ==> (res.isDefined && res.get == min(heap) because {
+        val Node(_, v, l, r) = heap
+        if (l == Empty() && r == Empty()) trivial
+        else {
+          ((!l.isEmpty) ==> (l.findMin.get == min(l))) &&
+          ((!r.isEmpty) ==> (r.findMin.get == min(r))) &&
+          min_concat_lemma(l, r)
         }
+      })
     } /* verified by Leon */
 
     def deleteMin : HeapNode = {
@@ -259,55 +238,46 @@ object LeftistHeap {
       }
     } ensuring { res =>
       res.isHeap &&
-        res.size == max(0, heap.size - 1) &&
-        ((!heap.isEmpty) implies permutation(res.toList, heap.toList.tail)) &&
-        res.content.subsetOf(heap.content) &&
-        (heap.isEmpty || res.isEmpty ||
-          (heap.findMin.get <= res.findMin.get &&
-            heap.content == res.content ++ Set(heap.findMin.get) &&
-            permutation(res, delete(heap, heap.findMin.get))))
+      res.size == max(0, heap.size - 1) &&
+      ((!heap.isEmpty) ==> (permutation(res.toList, heap.toList.tail))) &&
+      ((!heap.isEmpty) ==> (permutation(res, delete(heap, heap.findMin.get)))) &&
+      res.content.subsetOf(heap.content) &&
+      ((!heap.isEmpty) ==> (heap.content == res.content ++ Set(heap.findMin.get))) &&
+      ((!heap.isEmpty && !res.isEmpty) ==> (heap.findMin.get <= res.findMin.get))
     } /* verified by Leon */
 
     def merge (h : HeapNode) : HeapNode = {
       require(heap.isHeap && h.isHeap)
-      heap match {
-        case Empty() => h
-        case Node(_, v1, l1, r1) => h.heap match {
-          case Empty() => heap
-          case Node(_, v2, l2, r2) =>
-            if (v1 <= v2)
-              build(v1, l1, r1.merge(h))
-            else
-              build(v2, l2, merge(r2))
-        }
-      }
+      LeftistHeap.merge(heap, h)
     } ensuring { res =>
       res.isHeap &&
-        res.size == heap.size + h.size &&
-        res.content == heap.content ++ h.content &&
-        permutation(res, heap ++ h) &&
-        (res != Empty() implies {
-          val v = res.findMin.get
-          v == min(heap.findMin.getOrElse(v), h.findMin.getOrElse(v))
-        })
+      res.size == heap.size + h.size &&
+      res.content == heap.content ++ h.content &&
+      permutation(res, heap ++ h) because { LeftistHeap.merge_perm(heap, h) } &&
+      ((!res.isEmpty) ==> (res.findMin.get == min(heap.findMin.getOrElse(res.findMin.get), h.findMin.getOrElse(res.findMin.get))))
     } /* verified by Leon */
 
     def insert (element : BigInt) : HeapNode = {
       require(heap.isHeap)
       merge(Node(1, element, Empty(), Empty()))
-      // HeapNode(1, element, Empty(), Empty()).merge(this)
     } ensuring { res =>
       res.isHeap &&
-        res.size == heap.size + 1 &&
-        res.content == heap.content ++ Set(element)
+      res.size == heap.size + 1 &&
+      res.content == heap.content ++ Set(element) &&
+      permutation(res, element :: heap) because {
+        permutation_prepend(heap, Node(1, element, Empty(), Empty()), Cons(element, Nil())) &&
+        permutation_tran(res, heap ++ Node(1, element, Empty(), Empty()), heap ++ Cons(element, Nil())) &&
+        permutation_concat_comm(heap, Cons(element, Nil())) &&
+        permutation_tran(res, heap ++ Cons(element, Nil()), element :: heap)
+      }
     } /* verified by Leon */
 
     def isHeap : Boolean = heap match {
       case Empty() => true
       case Node(_, v, left, right) =>
         left.isHeap && right.isHeap &&
-          rightHeight(left) >= rightHeight(right) &&
-          isPartiallyOrdered(v, left, right)
+        rightHeight(left) >= rightHeight(right) &&
+        isPartiallyOrdered(v, left, right)
     }
 
     def toList : List[BigInt] = {
@@ -317,12 +287,13 @@ object LeftistHeap {
       }
     } ensuring { res =>
       res.size == heap.size &&
-        (heap match {
-          case Empty() => true
-          case Node(_, v, l, r) =>
-            permutation(res, v :: (l.toList ++ r.toList)) because
-              permutation_refl(res)
-        })
+      res.content == heap.content &&
+      (heap match {
+        case Empty() => true
+        case Node(_, v, l, r) =>
+          permutation(res, v :: (l.toList ++ r.toList)) because
+          permutation_refl(res)
+      })
     }
 
     def toSortedList : List[BigInt] = {
@@ -332,7 +303,9 @@ object LeftistHeap {
         case _ => findMin.get :: deleteMin.toSortedList
       }
     } ensuring { res =>
-      isSorted(res) && res.size == heap.size
+      res.size == heap.size &&
+      res.content == heap.content &&
+      isSorted(res)
     }
 
     def ~ (l : List[BigInt]) : Boolean = permutation(heap, l)
@@ -350,222 +323,120 @@ object LeftistHeap {
   } ensuring (_ >= 0)
 
   def build (v : BigInt, l : HeapNode, r : HeapNode) : HeapNode = {
-    require(l.isHeap && r.isHeap &&
-      isPartiallyOrdered(v, l, r))
-    if (rightHeight(l) >= rightHeight(r))
-      Node(rightHeight(r) + 1, v, l, r)
-    else // swap l and r subtree
-      Node(rightHeight(l) + 1, v, r, l)
+    require(l.isHeap && r.isHeap && isPartiallyOrdered(v, l, r))
+    if (rightHeight(l) >= rightHeight(r)) Node(rightHeight(r) + 1, v, l, r)
+    else Node(rightHeight(l) + 1, v, r, l)
   } ensuring { res =>
     res.isHeap &&
-      permutation(res, v :: (l ++ r)) because {
+    permutation(res, v :: (l ++ r)) because {
       if (rightHeight(l) >= rightHeight(r)) true
       else {
         permutation(res, v :: (r ++ l)) &&
-          permutation_concat_comm(l, r) &&
-          permutation_cons(r ++ l, l ++ r, v) &&
-          permutation_tran(res, v :: (r ++ l), v :: (l ++ r))
+        permutation_concat_comm(l, r) &&
+        permutation_cons(r ++ l, l ++ r, v) &&
+        permutation_tran(res, v :: (r ++ l), v :: (l ++ r))
       }
     }
   } /* verified by Leon */
 
   def isPartiallyOrdered (value : BigInt, h1 : HeapNode, h2 : HeapNode) = {
     require(h1.isHeap && h2.isHeap)
-    h1 match {
-      case Empty() => h2 match {
-        case Empty() => true
-        case Node(_, v2, _, _) => value <= v2
-      }
-      case Node(_, v1, _, _) => value <= v1 && {
-        h2 match {
-          case Empty() => true
-          case Node(_, v2, _, _) => value <= v2
-        }
-      }
+    (h1, h2) match {
+      case (Empty(), Empty()) => true
+      case (Node(_, v1, _, _), Empty()) => value <= v1
+      case (Empty(), Node(_, v2, _, _)) => value <= v2
+      case (Node(_, v1, _, _), Node(_, v2, _, _)) => value <= v1 && value <= v2
     }
   }
 
-  def foldl_insert (heap : HeapNode, list : List[BigInt]) : HeapNode = {
-    require(heap.isHeap)
-    if (list == Nil[BigInt]()) heap
-    else foldl_insert(heap.insert(list.head), list.tail)
+  def merge (h1 : HeapNode, h2 : HeapNode) : HeapNode = {
+    require(h1.isHeap && h2.isHeap)
+      (h1, h2) match {
+      case (Empty(), _) => h2
+      case (_, Empty()) => h1
+      case (Node(_, v1, l1, r1), Node(_, v2, l2, r2)) =>
+        if (v1 <= v2) build(v1, l1, merge(r1, h2))
+        else build(v2, l2, merge(h1, r2))
+    }
   } ensuring { res =>
     res.isHeap &&
-      res.content == (heap.content ++ list.content)
+    res.size == h1.size + h2.size &&
+    res.content == h1.content ++ h2.content &&
+    (
+      res match {
+        case Empty() => true
+        case Node(_, v, _, _) =>
+          (h1, h2) match {
+            case (Empty(), Empty()) => true // impossible case
+            case (Empty(), Node(_, v2, _, _)) => v == v2
+            case (Node(_, v1, _, _), Empty()) => v == v1
+            case (Node(_, v1, _, _), Node(_, v2, _, _)) => v == min(v1, v2)
+          }
+      }
+    )
   } /* verified by Leon */
-}
 
-object LeftistHeapLemmas {
-
-  def List (e : BigInt) = Cons(e, Nil[BigInt]())
-
-  @induct
-  def list_decomposition (l1 : List[BigInt], l2 : List[BigInt], e : BigInt) = {
-    l1 ++ (e :: l2) == (l1 ++ List(e)) ++ l2
-  } holds
-
-  @induct
-  def permutation_first_last_swap (l : List[BigInt], e : BigInt) = {
-    permutation(e :: l, l ++ List(e))
-  } holds
-
-  @induct
-  def permutation_prefix_comm (a : BigInt, b : BigInt, l : List[BigInt]) = {
-    permutation(a :: b :: l, b :: a :: l)
-  } holds
-
-  /**
-    * WARNING: Need ~20 sec. to be verified on my desktop
-    */
-  def heap_insert_lemma (h : HeapNode, e : BigInt) : Boolean = {
-    require(h.isHeap)
-    h.insert(e) ~ (e :: h) because {
-      if (h.isEmpty)
-        trivial
-      else {
-        val Node(_, v, l, r) = h
-        val H = h.insert(e)
-        if (v <= e) {
-          h.insert(e) == build(v, l, r.merge(Node(1, e, Empty(), Empty()))) &&
-            // permutation(H, v :: (l ++ r.insert(e))) &&
-            // permutation(h, v :: (l ++ r)) &&
-            // permutation((l ++ List(e)) ++ r, (List(e) ++ l) ++ r) because {
-            permutation_concat_comm(l, List(e)) &&
-            permutation_append(l ++ List(e), List(e) ++ l, r) && // }
-            // permutation(e :: (l ++ r), (List(e) ++ l) ++ r) because
-            permutation_eq(e :: (l ++ r), (List(e) ++ l) ++ r) &&
-            // permutation(l ++ (e :: r), (l ++ List(e)) ++ r) because
-            list_decomposition(l, r, e) &&
-            permutation_eq(l ++ (e :: r), (l ++ List(e)) ++ r) &&
-            permutation_tran((l ++ List(e)) ++ r, (List(e) ++ l) ++ r, e :: (l ++ r)) &&
-            permutation_tran(l ++ (e :: r), (l ++ List(e)) ++ r, e :: (l ++ r)) &&
-            // permutation(r.insert(e), e :: r) because
-            heap_insert_lemma(r, e) &&
-            // permutation(l ++ (e::r), l ++ r.insert(e)) because
-            permutation_prepend(l, r.insert(e), e :: r) &&
-            permutation_tran(l ++ r.insert(e), l ++ (e :: r), e :: (l ++ r)) &&
-            permutation_tran(l ++ r.insert(e), l ++ (e :: r), e :: (l ++ r)) &&
-            // permutation(v :: (l ++ r.insert(e)), v :: (e :: (l ++ r))) because
-            permutation_cons(l ++ r.insert(e), e :: (l ++ r), v) &&
-            // permutation(H, v :: e :: (l ++ r)) because
-            permutation_tran(H, v :: (l ++ r.insert(e)), v :: e :: (l ++ r)) &&
-            permutation_prefix_comm(v, e, l ++ r) &&
-            permutation_tran(H, v :: e :: (l ++ r), e :: v :: (l ++ r)) &&
-            permutation_cons(h, v :: (l ++ r), e) &&
-            permutation_tran(H, e :: v :: (l ++ r), e :: h) &&
-            permutation(H, e :: h)
-        } else {
-          h.insert(e) == build(e, Empty(), h.merge(Empty())) &&
-            permutation(H, e :: h)
-        }
+  /** One verification condition of this lemma may need more than 5 seconds to verify. */
+  def merge_perm[T] (heap : HeapNode, h : HeapNode) : Boolean = {
+    require(heap.isHeap && h.isHeap)
+    permutation(merge(heap, h), heap ++ h) because {
+      (heap, h.heap) match {
+        case (Empty(), _) => permutation_refl(h)
+        case (_, Empty()) => permutation_refl(heap)
+        case (Node(_, v1, l1, r1), Node(_, v2, l2, r2)) =>
+          if (v1 <= v2) {
+            merge_perm(r1, h) && // permutation(merge(r1, h), r1 ++ h)
+            concat_permutation_lemma(l1, merge(r1, h), r1 ++ h) && // permutation(l1 ++ (merge(r1, h)), l1 ++ (r1 ++ h))
+            permutation_cons(l1 ++ (merge(r1, h)), l1 ++ (r1 ++ h), v1) && // permutation(v1 :: (l1 ++ (merge(r1, h))), v1 :: (l1 ++ (r1 ++ h)))
+            permutation_tran(build(v1, l1, merge(r1, h)), v1 :: (l1 ++ (merge(r1, h))), v1 :: (l1 ++ (r1 ++ h))) &&
+            //
+            permutation_concat_assoc(l1, r1, h) && // permutation(l1 ++ r1 ++ h, l1 ++ (r1 ++ h))
+            permutation_cons(l1 ++ r1 ++ h, l1 ++ (r1 ++ h), v1) && // permutation(v1 :: (l1 ++ r1 ++ h), v1 :: (l1 ++ (r1 ++ h)))
+            permutation_comm(v1 :: (l1 ++ r1 ++ h), v1 :: (l1 ++ (r1 ++ h))) && // permutation(v1 :: (l1 ++ (r1 ++ h)), v1 :: (l1 ++ r1 ++ h))
+            permutation_tran(build(v1, l1, merge(r1, h)), v1 :: (l1 ++ (r1 ++ h)), v1 :: (l1 ++ r1 ++ h))
+          } else {
+            merge_perm(heap, r2) && // permutation(merge(heap, r2), heap ++ r2)
+            concat_permutation_lemma(l2, merge(heap, r2), heap ++ r2) && // permutation(l2 ++ (merge(heap, r2)), l2 ++ (heap ++ r2))
+            permutation_cons(l2 ++ (merge(heap, r2)), l2 ++ (heap ++ r2), v2) && // permutation(v2 :: (l2 ++ (merge(heap, r2))), v2 :: (l2 ++ (heap ++ r2)))
+            permutation_tran(build(v2, l2, merge(heap, r2)), v2 :: (l2 ++ (merge(heap, r2))), v2 :: (l2 ++ (heap ++ r2))) &&
+            //
+            permutation_concat_assoc(l2, heap, r2) && // permutation(l2 ++ heap ++ r2, l2 ++ (heap ++ r2))
+            permutation_comm(l2 ++ heap ++ r2, l2 ++ (heap ++ r2)) && // permutation(l2 ++ (heap ++ r2), l2 ++ heap ++ r2)
+            permutation3(l2, heap, r2) && // permutation(l2 ++ heap ++ r2, heap ++ l2 ++ r2)
+            permutation_concat_assoc(heap, l2, r2) && // permutation(heap ++ l2 ++ r2, heap ++ (l2 ++ r2))
+            permutation_tran(l2 ++ heap ++ r2, heap ++ l2 ++ r2, heap ++ (l2 ++ r2)) &&
+            permutation_tran(l2 ++ (heap ++ r2), l2 ++ heap ++ r2, heap ++ (l2 ++ r2)) &&
+            //
+            permutation_cons(l2 ++ (heap ++ r2), heap ++ (l2 ++ r2), v2) && // permutation(v2 :: (l2 ++ (heap ++ r2)), v2 :: (heap ++ (l2 ++ r2)))
+            cons_concat_perm2(heap, l2 ++ r2, v2) && // permutation(v2 :: (heap ++ (l2 ++ r2)), heap ++ (v2 :: (l2 ++ r2)))
+            permutation_tran(v2 :: (l2 ++ (heap ++ r2)), v2 :: (heap ++ (l2 ++ r2)), heap ++ (v2 :: (l2 ++ r2))) &&
+            //
+            permutation_tran(build(v2, l2, merge(heap, r2)), v2 :: (l2 ++ (heap ++ r2)), heap ++ (v2 :: (l2 ++ r2)))
+          }
       }
     }
   } holds
 
-  /**
-    * Warning: Need ~20 sec. to be verified on my desktop
-    */
-  def heap_merge_lemma (h1 : HeapNode, h2 : HeapNode) : Boolean = {
-    require(h1.isHeap && h2.isHeap)
-    h1.merge(h2) ~ (h1 ++ h2) because {
-      h1 match {
-        case Empty() => permutation_refl(h2)
-        case Node(_, v1, l1, r1) => h2 match {
-          case Empty() => permutation_refl(h1)
-          case Node(_, v2, l2, r2) =>
-            val h = h1.merge(h2)
-            if (v1 <= v2) {
-              val l = l1
-              val r = r1.merge(h2)
-              //// h == build(v1, l, r) ////
-              // permutation((L1 ++ R1) ++ H2, L1 ++ R1 ++ H2) because
-              permutation_refl(l1 ++ r1 ++ h2) &&
-                // permutation(v1 :: ((l1 ++ r1) ++ h2), v1 :: (l1 ++ r1 ++ h2)) because
-                permutation_cons((l1 ++ r1) ++ h2, l1 ++ r1 ++ h2, v1) &&
-                h1 ++ h2 == v1 :: ((l1 ++ r1) ++ h2) &&
-                // permutation(L ++ R, l1 ++ r1 ++ h2) because {
-                // permutation(R, r1 ++ h2) because
-                heap_merge_lemma(r1, h2) &&
-                permutation_prepend(l, r, r1 ++ h2) &&
-                // permutation(l1 ++ r1 ++ h2, l1 ++ (r1 ++ h2)) because
-                permutation_concat_assoc(l1, r1, h2) &&
-                permutation_tran(l ++ r, l1 ++ (r1 ++ h2), l1 ++ r1 ++ h2) && // }
-                // permutation(h1 ++ h2, v1 :: (l ++ r)) because
-                // permutation(v1 :: (l ++ r), v1 :: (l1 ++ r1 ++ h2)) because
-                permutation_cons(l ++ r, l1 ++ r1 ++ h2, v1) &&
-                // permutation(h, v1 :: (l ++ r)) by post-cond of toList
-                permutation_tran(h, v1 :: (l ++ r), h1 ++ h2)
-            } else {
-              val l = l2
-              val r = h1.merge(r2)
-              //// h == build(v2, l, r) ////
-              // permutation(h, v2 :: (l ++ r))
-              // permutation(r, h1 ++ r2) because
-              heap_merge_lemma(h1, r2) &&
-                // permutation(l ++ (r2 ++ h1), l ++ (h1 ++ r2)) because {
-                permutation_concat_comm(h1, r2) &&
-                permutation_prepend(l, r2 ++ h1, h1 ++ r2) && // }
-                // permutation(l ++ (r2 ++ h1), (l ++ r2) ++ h1) because
-                permutation_concat_assoc(l, r2, h1) &&
-                // permutation(l ++ (h1 ++ r2), (l ++ r2) ++ h1) because
-                permutation_tran(l ++ (h1 ++ r2), l ++ (r2 ++ h1), (l ++ r2) ++ h1) &&
-                // permutation(r, h1 ++ r2) because
-                heap_merge_lemma(h1, r2) &&
-                permutation_prepend(l, r, h1 ++ r2) &&
-                permutation_tran(l ++ r, l ++ (h1 ++ r2), (l ++ r2) ++ h1) &&
-                // permutation(v2 :: (l ++ (h1 ++ r2)), v2 :: (l ++ r2) ++ h1) because
-                permutation_cons(l ++ r, (l ++ r2) ++ h1, v2) &&
-                permutation_eq(h2 ++ h1, v2 :: (l ++ r2) ++ h1) &&
-                permutation_tran(h, v2 :: (l ++ r), v2 :: (l ++ r2) ++ h1) &&
-                permutation_tran(h, v2 :: (l ++ r2) ++ h1, h2 ++ h1) &&
-                // permutation(h2 ++ h1, h1 ++ h2) because
-                permutation_concat_comm(h1, h2) &&
-                permutation_tran(h, h2 ++ h1, h1 ++ h2)
-            }
-        }
-      }
-    }
-  } holds /* verified by Leon */
-
-  def foldl_insert_lemma (heap : HeapNode, list : List[BigInt]) : Boolean = {
+  def foldl_insert (heap : HeapNode, list : List[BigInt]) : HeapNode = {
     require(heap.isHeap)
-    foldl_insert(heap, list) ~ (heap ++ list) because {
-      if (list == Nil[BigInt]()) trivial
-      else {
-        val H = foldl_insert(heap, list)
-        val Cons(h, t) = list
-        H == foldl_insert(heap.insert(h), t) &&
-          // permutation(H, heap.insert(h) ++ t) because
-          foldl_insert_lemma(heap.insert(h), t) &&
-          heap_insert_lemma(heap, h) &&
-          permutation_append(heap.insert(h), h :: heap, t) &&
-          permutation_tran(H, heap.insert(h) ++ t, (h :: heap) ++ t) &&
-          permutation_first_last_swap(heap, h) &&
-          permutation_append(h :: heap, heap ++ List(h), t) &&
-          list_decomposition(heap, t, h) &&
-          permutation_tran(H, (h :: heap) ++ t, heap ++ list)
+    list match {
+      case Nil() => heap
+      case Cons(hd, tl) => foldl_insert(heap.insert(hd), tl)
+    }
+  } ensuring { res =>
+    res.isHeap &&
+    res.content == (heap.content ++ list.content) &&
+    permutation(res, heap ++ list) because {
+      list match {
+        case Nil() => permutation_refl(res)
+        case Cons(hd, tl) =>
+          permutation_append(heap.insert(hd), hd :: heap, tl) && // permutation(heap.insert(hd) ++ tl, (hd :: heap) ++ tl)
+          permutation_cons_tail(heap, tl, hd) && // permutation(heap ++ (hd :: tl), (hd :: heap) ++ tl)
+          permutation_comm(heap ++ (hd :: tl), (hd :: heap) ++ tl) && // permutation((hd :: heap) ++ tl, heap ++ (hd :: tl))
+          permutation_tran(heap.insert(hd) ++ tl, (hd :: heap) ++ tl, heap ++ (hd :: tl)) &&
+          permutation_tran(res, heap.insert(hd) ++ tl, heap ++ (hd :: tl))
       }
     }
-  } holds /* verified by Leon */
+  } /* verified by Leon */
 
-  def findMin_lemma (h : HeapNode) : Boolean = {
-    require(h.isHeap)
-    (h.isEmpty || h.findMin.get == min(h)) because {
-      if (h.isEmpty)
-        trivial
-      else {
-        val Node(_, v, l, r) = h
-        if (l == Empty() && r == Empty())
-          trivial
-        else {
-          // h.findMin.get <= min(l) because
-          findMin_lemma(l) &&
-            // h.findMin.get <= min(r) because
-            findMin_lemma(r) &&
-            // min(min(l), min(r)) == min(l ++ r) because
-            min_concat_lemma(l, r)
-        }
-      }
-    }
-  } holds /* verified by Leon */
 }

@@ -3,7 +3,6 @@ package duck.spec
 import duck.collection._
 import duck.spec.SortedListOps._
 import duck.spec.LeftistHeap._
-import duck.spec.LeftistHeapLemmas._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationSpec._
@@ -33,7 +32,6 @@ object Heap_List_BisimulationSpec {
     h.insert(e) ~ l.insert(e) because {
       val L1 = h.insert(e)
       val L2 = l.insert(e)
-      heap_insert_lemma(h, e) &&
         permutation_cons(h, l, e) &&
         permutation_eq(e :: l, L2) &&
         permutation_tran_lemma(L1, e :: h, e :: l) &&
@@ -49,7 +47,6 @@ object Heap_List_BisimulationSpec {
     h1.merge(h2) ~ l1.merge(l2) because {
       val L1 = h1.merge(h2)
       val L2 = l1.merge(l2)
-      heap_merge_lemma(h1, h2) &&
         permutation_append(h1, l1, h2) &&
         permutation_prepend(l1, l2, h2) &&
         permutation_tran(h1 ++ h2, l1 ++ h2, l1 ++ l2) &&
@@ -63,12 +60,8 @@ object Heap_List_BisimulationSpec {
   def bisim_findMin (h: HeapNode, l: ListHeap): Boolean = {
     require(h.isHeap && h ~ l)
     h.findMin == l.findMin because {
-      if (h.isEmpty)
-        trivial
-      else {
-        findMin_lemma(h) &&
-          min_permutation(h, l)
-      }
+      if (h.isEmpty) trivial
+      else min_permutation(h, l)
     }
   } holds /* verified by Leon */
 
@@ -78,11 +71,11 @@ object Heap_List_BisimulationSpec {
   def bisim_deleteMin (h: HeapNode, l: ListHeap): Boolean = {
     require(h.isHeap && h ~ l)
     h.deleteMin ~ l.deleteMin because {
-      if (h.isEmpty)
-        trivial
+      if (h.isEmpty) trivial
       else {
         bisim_findMin(h, l) &&
-          permutation_delete(h, l, h.findMin.get)
+        permutation_delete(h, l, h.findMin.get) &&
+        permutation_tran(h.deleteMin, delete(h, h.findMin.get), delete(l, l.findMin.get))
       }
     }
   } holds /* verified by Leon */
