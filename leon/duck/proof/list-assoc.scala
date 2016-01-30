@@ -1,6 +1,5 @@
 package duck.proof
 
-import duck.proof.sugar._
 import duck.collection.KList._
 import leon.annotation._
 import leon.lang._
@@ -68,21 +67,32 @@ object KListLemmas {
     }
   } holds
 
-  @induct
+  def permutation_eq[K, V] (s : KList[K, V], t : KList[K, V]) : Boolean = {
+    require(s == t)
+    permutation(s, t) because {
+      if (s == KNil[K, V]())
+        trivial
+      else {
+        permutation_eq(s.tail, t.tail) &&
+          permutation_cons(s.tail, t.tail, s.head)
+      }
+    }
+  } holds
+
   def permutation_delete_cons[K, V] (l1 : KList[K, V], l2 : KList[K, V]) : Boolean = {
     require(l2 != KNil[K, V]())
     val h2 = l2.head
-    if (l1 == KNil[K, V]) {
-      permutation((l1 ++ l2).delete(h2), l1 ++ (l2.tail)) because
+    permutation((l1 ++ l2).delete(h2), l1 ++ (l2.tail)) because {
+      if (l1 == KNil[K, V]) {
         permutation_refl(l2.tail)
-    } else {
-      val h1 = l1.head
-      if (h1 == h2) {
-        permutation((l1 ++ l2).delete(h2), l1 ++ (l2.tail)) because
-          permutation_cons_tail(l1.tail, l2.tail, h1)
       } else {
-        permutation((l1 ++ l2).delete(h2), l1 ++ (l2.tail)) because
-          permutation_delete_cons(l1.tail, l2)
+        val h1 = l1.head
+        if (h1 == h2) {
+          permutation_cons_tail(l1.tail, l2.tail, h1)
+        } else {
+          permutation_delete_cons(l1.tail, l2) &&
+          permutation_cons((l1.tail ++ l2).delete(h2), l1.tail ++ (l2.tail), h1)
+        }
       }
     }
   } holds
@@ -134,22 +144,20 @@ object KListLemmas {
     }
   } holds
 
-  @induct
   def permutation_delete_cons[K, V] (l1 : KList[K, V], h2 : Item[K, V], t2 : KList[K, V]) : Boolean = {
     require(permutation(l1.delete(h2), t2) && l1.contains(h2))
-    if (l1 == KNil[K, V]()) {
-      permutation(l1, KCons(h2, t2))
-    } else {
-      val h1 = l1.head
-      if (h1 == h2) {
-        permutation(l1, KCons(h2, t2))
+    permutation(l1, KCons(h2, t2)) because {
+      if (l1 == KNil[K, V]()) {
+        trivial
       } else {
-        permutation(l1, KCons(h2, t2)) because
-          check {
-            (KCons(h2, t2) contains h1) &&
-              delete_comm(l1, h1, h2) &&
-              permutation_delete_cons(l1.tail, h2, t2 delete h1)
-          }
+        val h1 = l1.head
+        if (h1 == h2) {
+          trivial
+        } else {
+          (KCons(h2, t2) contains h1) &&
+          delete_comm(l1, h1, h2) &&
+          permutation_delete_cons(l1.tail, h2, t2 delete h1)
+        }
       }
     }
   } holds
@@ -265,21 +273,15 @@ object KListLemmas {
     }
   } holds
 
+  def hasKey_contains[K, V] (map : KList[K, V], key : K) : Boolean = {
+    require(map.hasKey(key))
+    map.contains(map.get(key).get)
+  } holds
+
   def permutation_hasKey_lemma[K, V] (map1 : KList[K, V], map2 : KList[K, V], key : K) : Boolean = {
     require(permutation(map1, map2))
-    map1.hasKey(key) iff map2.hasKey(key) because {
-      permutation_hasKey_lemma2(map1, map2, key) &&
-        permutation_hasKey_lemma2(map2, map1, key)
-    }
-  } holds /* verified by Leon */
-
-  /* This lemma is only used in permutation_hasKey_lemma */
-  @induct
-  def permutation_hasKey_lemma2[K, V] (map1 : KList[K, V], map2 : KList[K, V], key : K) : Boolean = {
-    require(permutation(map1, map2))
-    map1.hasKey(key) implies map2.hasKey(key) because {
-      !map1.hasKey(key) || map2.contains(map1.get(key).get)
-    }
+    (map1.hasKey(key) ==> (map2.hasKey(key) because { map2.contains(map1.get(key).get) })) &&
+    (map2.hasKey(key) ==> (map1.hasKey(key) because { map1.contains(map2.get(key).get) }))
   } holds /* verified by Leon */
 
   /**
@@ -293,8 +295,8 @@ object KListLemmas {
     permutation(l1, l2) because {
       if (l1 == KNil[K, V]())
         permutation(l1, l2) because
-          l1 == KNil[K, V]() iff !l1.hasKey(key) &&
-          l2 == KNil[K, V]() iff !l2.hasKey(key) &&
+          (l1 == KNil[K, V]()) == !l1.hasKey(key) &&
+          (l2 == KNil[K, V]()) == !l2.hasKey(key) &&
           permutation_hasKey_lemma(map1, map2, key)
       else {
         val h1 = map1.get(key).get
@@ -352,16 +354,11 @@ object KListLemmas {
         permutation_tran_lemma(ll ++ l1, l2 ++ ll, ll ++ l2)
   } holds
 
-  @induct
   def permutation_delete_cons[K, V] (list : KList[K, V], e : Item[K, V]) : Boolean = {
     require(list contains e)
     val h = list.head
-    if (h == e) {
-      permutation(list, KCons(e, list delete e)) because
-        permutation_refl(list)
-    } else {
-      permutation(list, KCons(e, list delete e)) because
-        (list delete e) == KCons(h, list.tail delete e)
+    permutation(KCons(e, list delete e), list) because {
+      permutation_refl(list.delete(e))
     }
   } holds
 

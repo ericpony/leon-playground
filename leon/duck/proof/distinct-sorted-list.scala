@@ -1,18 +1,19 @@
 package duck.spec
 
 import duck.proof.MinSpec._
+import duck.proof.MinLemmas._
 import duck.proof.DeleteOps._
 import duck.proof.DistinctOps._
 import duck.proof.DistinctSpec._
 import duck.proof.PermutationOps._
+import duck.spec.SortedListOps._
+import duck.spec.SortedListSpec._
 import duck.collection._
 
 import leon.annotation._
 import leon.lang._
 import leon.proof._
 
-import SortedListOps._
-import SortedListSpec._
 import DistinctSortedListOps._
 import DistinctSortedListLemmas._
 

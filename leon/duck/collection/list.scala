@@ -224,8 +224,6 @@ sealed abstract class List[T] {
       case Nil()      => false
       case Cons(h, t) => p(h) || t.exists(p)
     }
-  } ensuring { res =>
-    res ==> !forall(!p(_))
   }
 
   def filter (p: T => Boolean): List[T] = {
@@ -291,8 +289,6 @@ sealed abstract class List[T] {
       case Nil()      => true
       case Cons(h, t) => p(h) && t.forall(p)
     }
-  } ensuring { res =>
-    res ==> !exists(!p(_))
   }
 
   def groupBy[R] (f: T => R): Map[R, List[T]] = this match {

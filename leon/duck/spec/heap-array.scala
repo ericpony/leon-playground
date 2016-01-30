@@ -288,6 +288,7 @@ object AHeap {
 
   /* Swap */
 
+  /** This lemma may need a 6 seconds timeout to verify. */
   def well_ordered_swap[T] (array : MapArray[T], c : (T, T) => Int, r : BigInt, i : BigInt, j : BigInt) : Boolean = {
     require(array.inv && r >= 0 && r < array.size && i >= 0 && i < array.size && j >= 0 && j < array.size &&
       well_ordered(array, c, r))
@@ -340,6 +341,7 @@ object AHeap {
     }
   } holds
 
+  /** This lemma may need a 10 seconds timeout to verify. */
   def partially_ordered_swap[T] (array : MapArray[T], c : (T, T) => Int, r : BigInt, i : BigInt, j : BigInt) : Boolean = {
     require(array.inv && r >= 0 && r < array.size && i > 0 && i < array.size && j >= 0 && j < array.size &&
       partially_ordered(array, c, r, i))
@@ -369,7 +371,7 @@ object AHeap {
               partially_ordered_swap(array, c, right(r), i, j) &&
               (
                 (left(r) < array.size && left(r) != i) ==>
-                (partially_ordered_swap(array, c, right(r), i, j) && well_ordered_is_partially_ordered(swapped, c, left(r), i))
+                (partially_ordered_swap(array, c, left(r), i, j) && well_ordered_is_partially_ordered(swapped, c, left(r), i))
               )
             }
           )
@@ -447,7 +449,7 @@ object AHeap {
     res.inv && res.size == array.size
   }
 
-  /* This lemma may take more than 5 seconds to verify. */
+  /* This lemma may need a 8 seconds timeout to verify. */
   def percolatingUp_ind1[T] (array : MapArray[T], c : (T, T) => Int, r : BigInt, i : BigInt) : Boolean = {
     require(array.inv && r >= 0 && r < array.size && i >= 0 && i < array.size && hasDescendant(r, i) && r != i &&
       partially_ordered(array, c, r, i) && well_ordered(array, c, i) &&
@@ -672,7 +674,7 @@ object AHeap {
       true
   }
 
-  /* This lemma may take more than 5 seconds to verify. */
+  /* This lemma may need a 10 seconds timeout to verify. */
   def percolatingDown_ind[T] (array : MapArray[T], c : (T, T) => Int, r : BigInt) : Boolean = {
     require(array.inv && r >= 0 && r < array.size &&
       (r > 0 ==> c(array(parent(r)), array(r)) <= 0) &&
@@ -727,6 +729,7 @@ object AHeap {
     )
   } holds
 
+  /** This lemma may need a 8 seconds timeout to verify. */
   def percolatingDown_value_unchanged[T] (array : MapArray[T], c : (T, T) => Int, r : BigInt, i : BigInt) : Boolean = {
     require(array.inv && r >= 0 && r < array.size && i >= 0 && i < array.size && !hasDescendant(r, i))
     val res = percolatingDown_op(array, c, r)
@@ -748,7 +751,7 @@ object AHeap {
   } holds
 
   /* 
-   * This lemma may take more than 300 seconds to verify. All the hints can be
+   * This lemma may need a 250 seconds timeout to verify. All the hints can be
    * derived from other facts. Without the hints, this lemma will take at least
    * 4 hours to verify.
    */
@@ -836,7 +839,7 @@ object AHeap {
   } holds
 
   /* 
-   * This lemma may take more than 70 seconds to verify. All the hints can be
+   * This lemma may take more than 190 seconds to verify. All the hints can be
    * derived from other facts. Without the hints, this lemma will take at least
    * 350 seconds to verify.
    */
@@ -950,6 +953,7 @@ object AHeap {
 
   /* Delete Min */
 
+  /** This lemma may need a 80 seconds timeout to verify. */
   def acc_drop_rotate[T] (array : MapArray[T], c : (T, T) => Int, r : BigInt) : Boolean = {
     require(array.inv && r >= 0 && r < array.size - 1)
     array.drop(1).rotate(array.size - 2)(r) == (
@@ -984,7 +988,8 @@ object AHeap {
     res.size == (if (array.isEmpty) BigInt(0) else array.size - 1) && res.inv && well_ordered(res, c)
   }
 
-  /* This lemma is not finished. Always get stack overflow. */
+  /* This unused lemma is not finished. Always get stack overflow. */
+  @ignore
   def deleteMin_root[T] (array : MapArray[T], c : (T, T) => Int) : Boolean = {
     require(array.inv && well_ordered(array, c) &&
       ((1 < array.size - 1) ==> drop_rotate_well_ordered(array, c, 1)) &&
@@ -1028,7 +1033,7 @@ object AHeap {
   } ensuring { res =>
     res.size == (if (array.isEmpty) BigInt(0) else array.size - 1) && res.inv && well_ordered(res, c) &&
     permutation(res.toList, array.toList.drop(1)) because { deleteMin_perm(array, c) } &&
-    ((!array.isEmpty) ==> permutation(res.toList, delete(array.toList, array(0))) because { deleteMin_toList_perm(array, c) })
+    ((!array.isEmpty) ==> (permutation(res.toList, delete(array.toList, array(0))) because { deleteMin_toList_perm(array, c) }))
   }
 
   /* Merge */
@@ -1184,7 +1189,7 @@ object ArrayHeapListHeapBisim {
       if (ah.isEmpty) trivial
       else {
         BigIntArrayHeap.findMin_toList_min(ah) &&
-        LeftistHeapLemmas.min_permutation(ah.toList, lh.toList)
+        min_permutation(ah.toList, lh.toList)
       }
     }
   } holds

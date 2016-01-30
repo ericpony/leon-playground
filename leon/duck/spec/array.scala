@@ -855,7 +855,8 @@ object IMap {
   } holds
 
   def swap_toList_perm[T] (m : Map[BigInt, T], i : BigInt, j : BigInt, n1 : BigInt, n2 : BigInt) : Boolean = {
-    require(isDefinedBetween(m, i, j) && i <= n1 && n1 < j && i <= n2 && n2 < j && swap_defined_between(m, i, j, n1, n2))
+    require(isDefinedBetween(m, i, j) && i <= n1 && n1 < j && i <= n2 && n2 < j &&
+      defined_between_at(m, i, j, n1) && defined_between_at(m, i, j, n2) && swap_defined_between(m, i, j, n1, n2))
     permutation(toList(swap(m, n1, n2), i, j), toList(m, i, j)) because {
       if (n1 == n2) swap_toList_eq(m, i, j, n1, n2) && permutation_refl(toList(m, i, j))
       else if (n1 <= n2) {

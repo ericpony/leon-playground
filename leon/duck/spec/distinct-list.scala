@@ -4,7 +4,6 @@ import duck.proof.PermutationSpec._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.DeleteOps._
-import duck.proof.sugar._
 import duck.collection._
 import leon.annotation._
 import leon.lang._
@@ -56,14 +55,14 @@ object DistinctListOps {
         res.size == set.size
       else
         res.size == set.size + 1) &&
-      (distinct(set) implies distinct(res))
+      (distinct(set) ==> distinct(res))
   }
 
   @induct // we need this form of remove to do reduction
   def remove[V] (list : List[V], e : V) : List[V] = {
     delete(list, e)
   } ensuring {
-    distinct(list) implies distinct(_)
+    distinct(list) ==> distinct(_)
   }
 
   @induct
@@ -82,7 +81,7 @@ object DistinctListOps {
       res.content == s.content ++ t.content &&
         // res.size == s.size + t.size - (s & t).size &&
         res.size <= s.size + t.size &&
-        ((distinct(s) && distinct(t)) implies distinct(res))
+        ((distinct(s) && distinct(t)) ==> distinct(res))
   }
 }
 

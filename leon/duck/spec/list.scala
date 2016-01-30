@@ -458,5 +458,17 @@ object ListLemmas {
     (l1 ++ l2).contains(e) == l1.contains(e) || l2.contains(e)
   } holds
 
+  @induct
+  def forall_exists[T] (l : List[T], p : T => Boolean) : Boolean = {
+    require(l.forall(p))
+    !l.exists(!p(_))
+  } holds
+
+  @induct
+  def exists_forall[T] (l : List[T], p : T => Boolean) : Boolean = {
+    require(l.exists(p))
+    !l.forall(!p(_))
+  } holds
+
 }
 

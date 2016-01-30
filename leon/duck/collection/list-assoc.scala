@@ -1,6 +1,5 @@
 package duck.collection
 
-import duck.proof.sugar._
 import duck.proof.KListLemmas._
 import leon.proof._
 import leon.lang._
@@ -35,8 +34,8 @@ package object KList {
       case KCons(h, t) if h == v => true
       case KCons(_, t) => t.contains(v)
       case KNil() => false
-    }) ensuring {
-      _ == (content contains v) && hasKey(v.key)
+    }) ensuring { res =>
+      res == (content contains v) && (res ==> hasKey(v.key))
     }
 
     def ++ (that : KList[K, V]) : KList[K, V] = (this match {
@@ -184,18 +183,17 @@ package object KList {
         case KNil() => false
         case KCons(Item(k, v), t) => k == key || t.hasKey(key)
       }
-    } ensuring {
-      res => {
-        res implies
-          get(key).isDefined &&
-            // Adding the following line will lead to unsoundness
-            // contains(get(key).get) &&
-            getAll(key) != KNil[K, V]()
-      } and {
-        !res implies
-          !get(key).isDefined &&
-            getAll(key) == KNil[K, V]()
-      }
+    } ensuring { res =>
+      (res ==> (
+        get(key).isDefined &&
+          // Adding the following line will lead to unsoundness
+          // contains(get(key).get) &&
+          getAll(key) != KNil[K, V]()
+      )) &&
+      ((!res) ==> (
+        !get(key).isDefined &&
+          getAll(key) == KNil[K, V]()
+      ))
     }
 
     /**
@@ -207,9 +205,9 @@ package object KList {
         case KCons(h, t) => if (h.key == key) Some[Item[K, V]](h) else t.getFirst(key)
       }
     } ensuring { res =>
-      res.isDefined implies
-        res.get.key == key &&
-          res.get == getAll(key).head
+      res.isDefined ==>
+        (res.get.key == key &&
+          res.get == getAll(key).head)
     }
 
     /**
@@ -231,10 +229,10 @@ package object KList {
         case KCons(h, t) => if (h.key == key) KCons(h, t.getAll(key)) else t.getAll(key)
       }
     } ensuring { res =>
-      res.size <= size and
-        res.content.subsetOf(content) and
-        res.forall(item => item.key == key) and
-        (res != KNil[K, V]() implies hasKey(key))
+      res.size <= size &&
+        res.content.subsetOf(content) &&
+        res.forall(item => item.key == key) &&
+        (res != KNil[K, V]() ==> hasKey(key))
     }
 
     /**
@@ -296,8 +294,8 @@ package object KList {
         case KCons(h, t) => if (h.key == key) t.deleteAll(key) else KCons(h, t.deleteAll(key))
       }
     } ensuring { res =>
-      res.size <= this.size and
-        res.content.subsetOf(this.content) and
+      res.size <= this.size &&
+        res.content.subsetOf(this.content) &&
         res.forall(item => item.key != key)
     }
 
@@ -510,13 +508,9 @@ package object KList {
       l2.contains(h1) && permutation(l1.tail, delete(l2, h1))
     }
   } ensuring { res =>
-    if (res) {
-      l1.size == l2.size &&
-        l1.content == l2.content
-    } else {
-      l1.size != l2.size &&
-        l1.content != l2.content
-    }
+    res ==>
+      (l1.size == l2.size &&
+        l1.content == l2.content)
   }
 
   @ignore
