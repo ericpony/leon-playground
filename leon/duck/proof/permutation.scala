@@ -209,12 +209,9 @@ object PermutationLemmas {
     }
   } holds
 
-  @induct
   def permutation_cons_delete[V] (l : List[V], e : V) : Boolean = {
     require(l contains e)
-    permutation(Cons(e, delete(l, e)), l) ||
-      permutation(l, Cons(e, delete(l, e))) because
-      permutation_refl(l)
+    permutation(Cons(e, delete(l, e)), l) because { permutation_refl(delete(l, e)) }
   } holds
 
   def permutation_comm_lemma[V] (l1 : List[V], l2 : List[V]) : Boolean = {
