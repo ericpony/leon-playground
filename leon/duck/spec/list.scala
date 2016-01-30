@@ -453,5 +453,10 @@ object ListLemmas {
     }
   } holds
 
+  @induct
+  def concat_contains[T] (l1 : List[T], l2 : List[T], e : T) : Boolean = {
+    (l1 ++ l2).contains(e) == l1.contains(e) || l2.contains(e)
+  } holds
+
 }
 

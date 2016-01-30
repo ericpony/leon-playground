@@ -3,6 +3,7 @@ import duck.proof.DeleteOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationSpec._
+import duck.spec.ListLemmas._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
@@ -55,51 +56,11 @@ object SetAggregationProof {
     }
   } holds
 
-  /* REMARK: Need ~20 seconds to verify. */
   def union_assoc[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
-    require(distinct(l1) && distinct(l2) && distinct(l3))
+    //require(distinct(l1) && distinct(l2) && distinct(l3))
     union(l1, union(l2, l3)) ~ union(union(l1, l2), l3) because {
-      if (l1.isEmpty) {
-        l1 ++ union(l2, l3) == union(l2, l3) &&
-          union(l1, l2) ++ l3 == l2 ++ l3 because union_identity(l2) &&
-          union(l1, union(l2, l3)) == union(l2, l3) because union_identity(union(l2, l3))
-      } else {
-        val h = l1.head
-        val tl = l1.tail
-        union(tl, union(l2, l3)) ~ union(union(tl, l2), l3) because {
-          union_assoc(tl, l2, l3)
-        } && {
-          if (l2.contains(h)) {
-            union(l1, union(l2, l3)) == union(tl, union(l2, l3)) because {
-              uniquate_contains(l2 ++ l3, h) &&
-                delete_contains_uniquate(l1 ++ union(l2, l3), h)
-            } &&
-              union(union(tl, l2), l3) ~ union(union(l1, l2), l3) because {
-              //union(tl, l2) == union(l1, l2) because
-              delete_contains_uniquate(l1 ++ l2, h) &&
-                permutation_eq(union(tl, l2), union(l1, l2)) &&
-                permutation_append(union(tl, l2), union(l1, l2), l3) &&
-                uniquate_perm(union(tl, l2) ++ l3, union(l1, l2) ++ l3)
-            }
-          } else if (l3.contains(h)) {
-            /// !l2.contains(h) && l3.contains(h)
-            union(l1, union(l2, l3)) == union(tl, union(l2, l3)) because {
-              uniquate_contains(l2 ++ l3, h) &&
-                delete_contains_uniquate(l1 ++ union(l2, l3), h)
-            } &&
-              union(union(tl, l2), l3) ~ union(union(l1, l2), l3) because {
-              delete_contains_uniquate(union(l1, l2) ++ l3, h) &&
-                permutation_eq(union(union(tl, l2), l3), union(union(l1, l2), l3))
-            }
-          } else {
-            /// !(l2 ++ l3).contains(h)
-            union(l1, union(l2, l3)) == Cons(h, union(tl, union(l2, l3))) because {
-              delete_uniquate_assoc(l1 ++ union(l2, l3), h)
-            } &&
-              union(union(l1, l2), l3) == Cons(h, union(union(tl, l2), l3))
-          }
-        }
-      }
+      uniquate_concat_assoc_perm(l1, l2, l3) &&
+      permutation_comm(union(union(l1, l2), l3), union(l1, union(l2, l3)))
     }
   } holds
 
@@ -253,4 +214,55 @@ object ListSetLemmas {
       }
     }
   } holds
+
+  @induct
+  def uniquate_idempotent[T] (l : List[T]) : Boolean = {
+    l.distinct.distinct == l.distinct
+  } holds
+
+  def uniquate_concat_comm_perm[T] (l1 : List[T], l2 : List[T]) : Boolean = {
+    permutation((l1 ++ l2).distinct, (l2 ++ l1).distinct) because {
+      permutation_concat_comm(l1, l2) && uniquate_perm(l1 ++ l2, l2 ++ l1)
+    }
+  } holds
+
+  def uniquate_concat_perm_r[T] (l1 : List[T], l2 : List[T]) : Boolean = {
+    permutation((l1 ++ l2.distinct).distinct, (l1 ++ l2).distinct) because {
+      l1 match {
+        case Nil() => uniquate_idempotent(l2) && permutation_refl(l2.distinct)
+        case Cons(hd, tl) =>
+          concat_contains(tl, l2.distinct, hd) && (
+            if ((tl ++ l2.distinct).contains(hd)) {
+              uniquate_contains(l2, hd) && uniquate_concat_perm_r(tl, l2)
+            } else {
+              uniquate_not_contains(l2, hd) && uniquate_concat_perm_r(tl, l2) &&
+              permutation_cons((tl ++ l2.distinct).distinct, (tl ++ l2).distinct, hd)
+            }
+          )
+      }
+    }
+  } holds
+
+  def uniquate_concat_perm_l[T] (l1 : List[T], l2 : List[T]) : Boolean = {
+    permutation((l1.distinct ++ l2).distinct, (l1 ++ l2).distinct) because {
+      uniquate_concat_comm_perm(l1.distinct, l2) &&
+      uniquate_concat_perm_r(l2, l1) &&
+      permutation_tran((l1.distinct ++ l2).distinct, (l2 ++ l1.distinct).distinct, (l2 ++ l1).distinct) &&
+      uniquate_concat_comm_perm(l2, l1) &&
+      permutation_tran((l1.distinct ++ l2).distinct, (l2 ++ l1).distinct, (l1 ++ l2).distinct)
+    }
+  } holds
+
+  def uniquate_concat_assoc_perm[T] (l1 : List[T], l2 : List[T], l3 : List[T]) : Boolean = {
+    permutation(((l1 ++ l2).distinct ++ l3).distinct, (l1 ++ (l2 ++ l3).distinct).distinct) because {
+      uniquate_concat_perm_l(l1 ++ l2, l3) && // permutation(((l1 ++ l2).distinct ++ l3).distinct, ((l1 ++ l2) ++ l3).distinct)}
+      permutation_concat_assoc(l1, l2, l3) && uniquate_perm((l1 ++ l2) ++ l3, l1 ++ (l2 ++ l3)) && // permutation(((l1 ++ l2) ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct)
+      permutation_tran(((l1 ++ l2).distinct ++ l3).distinct, ((l1 ++ l2) ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct) &&
+      //
+      uniquate_concat_perm_r(l1, l2 ++ l3) && // permutation((l1 ++ (l2 ++ l3).distinct).distinct, (l1 ++ (l2 ++ l3)).distinct)
+      permutation_comm((l1 ++ (l2 ++ l3).distinct).distinct, (l1 ++ (l2 ++ l3)).distinct) &&
+      permutation_tran(((l1 ++ l2).distinct ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct, (l1 ++ (l2 ++ l3).distinct).distinct)
+    }
+  } holds
+
 }
