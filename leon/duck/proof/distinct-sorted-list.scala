@@ -1,10 +1,9 @@
 package duck.spec
 
-import duck.proof.MinSpec._
 import duck.proof.MinLemmas._
 import duck.proof.DeleteOps._
 import duck.proof.DistinctOps._
-import duck.proof.DistinctSpec._
+import duck.proof.DistinctLemmas._
 import duck.proof.PermutationOps._
 import duck.spec.SortedListOps._
 import duck.spec.SortedListSpec._
@@ -21,13 +20,13 @@ import scala.language.postfixOps
 
 @library
 object DistinctSortedListSpec {
-  def merge_comm (l1: List[BigInt], l2: List[BigInt]): Boolean = {
+  def merge_comm (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require(distinct_sorted(l1) && distinct_sorted(l2))
     merge(l1, l2) == merge(l2, l1) because
       merge_comm_lemma(l1, l2)
   } holds
 
-  def merge_assoc (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt]): Boolean = {
+  def merge_assoc (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt]) : Boolean = {
     require(distinct_sorted(l1) && distinct_sorted(l2) && distinct_sorted(l3))
     merge(merge(l1, l2), l3) == merge(l1, merge(l2, l3)) because
       merge_assoc_lemma(l1, l2, l3)
@@ -36,14 +35,14 @@ object DistinctSortedListSpec {
 
 @library
 object DistinctSortedListOps {
-  def distinct_sorted (list: List[BigInt]): Boolean = {
+  def distinct_sorted (list : List[BigInt]) : Boolean = {
     distinct(list) && isSorted(list)
   }
 
-  def add (list: List[BigInt], e: BigInt): List[BigInt] = {
+  def add (list : List[BigInt], e : BigInt) : List[BigInt] = {
     require(distinct_sorted(list))
     list match {
-      case Nil()        => Cons(e, Nil())
+      case Nil() => Cons(e, Nil())
       case Cons(hd, tl) =>
         if (e < hd) e :: list
         else {
@@ -57,13 +56,13 @@ object DistinctSortedListOps {
       add_distinct(list, e)
   }
 
-  def merge (l1: List[BigInt], l2: List[BigInt]): List[BigInt] = {
+  def merge (l1 : List[BigInt], l2 : List[BigInt]) : List[BigInt] = {
     require(distinct_sorted(l1) && distinct_sorted(l2))
     l1 match {
-      case Nil()        => l2
+      case Nil() => l2
       case Cons(h1, t1) =>
         l2 match {
-          case Nil()        => l1
+          case Nil() => l1
           case Cons(h2, t2) =>
             if (h1 < h2)
               Cons(h1, merge(t1, l2))
@@ -84,19 +83,19 @@ object DistinctSortedListOps {
 @library
 object DistinctSortedListLemmas {
   @induct
-  def add_distinct (list: List[BigInt], e: BigInt): Boolean = {
+  def add_distinct (list : List[BigInt], e : BigInt) : Boolean = {
     require(distinct_sorted(list))
     distinct(add(list, e))
   } holds
 
   @induct
-  def merge_not_contains (l1: List[BigInt], l2: List[BigInt], e: BigInt): Boolean = {
+  def merge_not_contains (l1 : List[BigInt], l2 : List[BigInt], e : BigInt) : Boolean = {
     require(distinct_sorted(l1) && !l1.contains(e) &&
       distinct_sorted(l2) && !l2.contains(e))
     !merge(l1, l2).contains(e)
   } holds
 
-  def merge_comm_lemma (l1: List[BigInt], l2: List[BigInt]): Boolean = {
+  def merge_comm_lemma (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require(distinct_sorted(l1) && distinct_sorted(l2))
     if (l1 == Nil[BigInt]() || l2 == Nil[BigInt]) {
       merge(l1, l2) == merge(l2, l1)
@@ -119,7 +118,7 @@ object DistinctSortedListLemmas {
   } holds
 
   @induct
-  def distinct_content_permutation (l1: List[BigInt], l2: List[BigInt]): Boolean = {
+  def distinct_content_permutation (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require(distinct(l1) && distinct(l2) && l1.content == l2.content)
     if (l1 == Nil[BigInt]()) {
       permutation(l1, l2)
@@ -134,7 +133,7 @@ object DistinctSortedListLemmas {
   } holds
 
   @induct
-  def distinct_sorted_content (l1: List[BigInt], l2: List[BigInt]): Boolean = {
+  def distinct_sorted_content (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
     require(distinct_sorted(l1) && distinct_sorted(l2) && l1.content == l2.content)
     if (l1 == Nil[BigInt]()) {
       l1 == l2
@@ -149,7 +148,7 @@ object DistinctSortedListLemmas {
   } holds
 
   @induct
-  def merge_assoc_lemma (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt]): Boolean = {
+  def merge_assoc_lemma (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt]) : Boolean = {
     require(distinct_sorted(l1) && distinct_sorted(l2) && distinct_sorted(l3))
     val L1 = merge(merge(l1, l2), l3)
     val L2 = merge(l1, merge(l2, l3))
@@ -161,7 +160,7 @@ object DistinctSortedListLemmas {
   } holds
 
   @induct
-  def deterministic_lemma (list: List[BigInt], e: BigInt): Boolean = {
+  def deterministic_lemma (list : List[BigInt], e : BigInt) : Boolean = {
     require(distinct_sorted(list))
     val L1 = add(list, e)
     val L2 = merge(list, add(Nil(), e))
