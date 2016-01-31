@@ -1,53 +1,52 @@
 package duck.proof
 
 import duck.collection._
+import duck.proof.ListLemmas._
+import duck.proof.DeleteLemmas._
+import duck.proof.DeleteOps._
+import duck.proof.PermutationOps._
 
 import leon.annotation._
 import leon.lang._
 import leon.proof._
 
-import DeleteSpec._
-import DeleteOps._
-import PermutationSpec._
-import PermutationOps._
-import PermutationLemmas._
-import duck.spec.ListLemmas._
-
 import scala.language.postfixOps
 
 @library
-object PermutationSpec {
+object PermutationOps {
+  /**
+    * Tell whether a list is a permutation of the other
+    * @param l1, l2 are lists
+    * @return whether l1 is a permutation of l2
+    */
+  def permutation[V] (l1 : List[V], l2 : List[V]) : Boolean = {
+    if (l1 == Nil[V]) {
+      l1 == l2
+    } else {
+      val h1 = l1.head
+      l2.contains(h1) && permutation(l1.tail, delete(l2, h1))
+    }
+  } ensuring { res => res ==> (
+    l1.size == l2.size &&
+      permutation(l2, l1) && // REMOVE this line!
+      l1.content == l2.content
+    )
+  }
+}
+
+@library
+object PermutationLemmas {
+
   @induct
   def permutation_refl[V] (list : List[V]) : Boolean = {
     permutation(list, list)
   } holds
 
-  def permutation_comm[V] (l1 : List[V], l2 : List[V]) : Boolean = {
-    require(permutation(l1, l2))
-    permutation(l2, l1) because
-      permutation_comm_lemma(l1, l2)
-  } holds
-
-  def permutation_tran[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
-    require(permutation(l1, l2) && permutation(l2, l3))
-    permutation(l1, l3) because permutation_tran_lemma(l1, l2, l3)
-  } holds
-
-  def permutation_content[V] (l1 : List[V], l2 : List[V]) : Boolean = {
-    require(permutation(l1, l2))
-    l1.content == l2.content because
-      permutation_content_lemma(l1, l2)
-  } holds
-
+  /* @induct doesn't work for this simple lemma */
   def permutation_eq[V] (s : List[V], t : List[V]) : Boolean = {
     require(s == t)
     permutation(s, t) because {
-      if (s == Nil[V]())
-        trivial
-      else {
-        permutation_eq(s.tail, t.tail) &&
-          permutation_cons(s.tail, t.tail, s.head)
-      }
+      s.isEmpty || permutation_eq(s.tail, t.tail)
     }
   } holds
 
@@ -70,44 +69,9 @@ object PermutationSpec {
   def permutation_prepend[V] (ll : List[V], l1 : List[V], l2 : List[V]) = {
     require(permutation(l1, l2))
     permutation(ll ++ l1, ll ++ l2) because
-      concat_permutation_lemma(ll, l1, l2)
+      concat_permutation(ll, l1, l2)
   } holds
 
-  def permutation_concat_comm[V] (l1 : List[V], l2 : List[V]) : Boolean = {
-    permutation(l1 ++ l2, l2 ++ l1) because
-      permutation_concat_comm_lemma(l1, l2)
-  } holds
-
-  def permutation_concat_assoc[V] (l1 : List[V], l2 : List[V], l3 : List[V]) = {
-    permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because
-      permutation_concat_assoc_lemma(l1, l2, l3)
-  } holds
-}
-
-@library
-object PermutationOps {
-  /**
-   * Tell whether a list is a permutation of the other
-   * @param l1, l2 are lists
-   * @return whether l1 is a permutation of l2
-   */
-  def permutation[V] (l1 : List[V], l2 : List[V]) : Boolean = {
-    if (l1 == Nil[V]) {
-      l1 == l2
-    } else {
-      val h1 = l1.head
-      l2.contains(h1) && permutation(l1.tail, delete(l2, h1))
-    }
-  } ensuring { res => res ==> (
-    l1.size == l2.size &&
-      permutation(l2, l1) &&
-      l1.content == l2.content
-    )
-  }
-}
-
-@library
-object PermutationLemmas {
   @induct
   def permutation_car_swap[V] (list : List[V], a : V, b : V) : Boolean = {
     permutation(a :: b :: list, b :: a :: list)
@@ -125,9 +89,9 @@ object PermutationLemmas {
           permutation_cons(l1.tail ++ (e :: l2), (e :: l1.tail) ++ l2, h1) &&
           // permutation (h1 :: e :: l1.tail ++ l2, e :: h1 :: l1.tail ++ l2)
           permutation_car_swap(l1.tail ++ l2, h1, e) &&
-          permutation_tran_lemma(l1 ++ (e :: l2),
-            h1 :: e :: l1.tail ++ l2,
-            (e :: l1) ++ l2)
+          permutation_tran(l1 ++ (e :: l2),
+                            h1 :: e :: l1.tail ++ l2,
+                            (e :: l1) ++ l2)
       }
     }
   } holds
@@ -148,7 +112,7 @@ object PermutationLemmas {
     }
   } holds
 
-  def permutation_concat_comm_lemma[V] (l1 : List[V], l2 : List[V]) : Boolean = {
+  def permutation_concat_comm[V] (l1 : List[V], l2 : List[V]) : Boolean = {
     permutation(l1 ++ l2, l2 ++ l1) because {
       if (l1 == Nil[V]())
         permutation_refl(l2)
@@ -161,8 +125,8 @@ object PermutationLemmas {
           // permutation (delete (l2 ++ l1, h1), l2 ++ l1.tail)
           permutation_delete_cons(l2, l1) &&
           // permutation (l2 ++ l1.tail, delete (l2 ++ l1, h1))
-          permutation_comm_lemma(delete(l2 ++ l1, h1), l2 ++ l1.tail) &&
-          permutation_tran_lemma(l1.tail ++ l2, l2 ++ l1.tail, delete(l2 ++ l1, h1))
+          permutation_comm(delete(l2 ++ l1, h1), l2 ++ l1.tail) &&
+          permutation_tran(l1.tail ++ l2, l2 ++ l1.tail, delete(l2 ++ l1, h1))
       }
     }
   } holds
@@ -214,7 +178,7 @@ object PermutationLemmas {
     permutation(Cons(e, delete(l, e)), l) because { permutation_refl(delete(l, e)) }
   } holds
 
-  def permutation_comm_lemma[V] (l1 : List[V], l2 : List[V]) : Boolean = {
+  def permutation_comm[V] (l1 : List[V], l2 : List[V]) : Boolean = {
     require(permutation(l1, l2))
     permutation(l2, l1) because {
       if (l1 == Nil[V]())
@@ -229,7 +193,7 @@ object PermutationLemmas {
     }
   } holds
 
-  def permutation_tran_lemma[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
+  def permutation_tran[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
     require(permutation(l1, l2) && permutation(l2, l3))
     permutation(l1, l3) because {
       if (l1 == Nil[V]())
@@ -239,7 +203,7 @@ object PermutationLemmas {
         // permutation (delete (l2, h1), delete (l3, h1))
         permutation_delete(l2, l3, h1) &&
           // permutation (l1.tail, delete (l3, h1))
-          permutation_tran_lemma(l1.tail, delete(l2, h1), delete(l3, h1))
+          permutation_tran(l1.tail, delete(l2, h1), delete(l3, h1))
       }
     }
   } holds
@@ -247,8 +211,8 @@ object PermutationLemmas {
   def permutation_tran_lemma2[V] (l1 : List[V], l2 : List[V], l3 : List[V], l4 : List[V]) : Boolean = {
     require(permutation(l1, l2) && permutation(l2, l3) && permutation(l3, l4))
     permutation(l1, l4) because
-      permutation_tran_lemma(l1, l2, l3) &&
-        permutation_tran_lemma(l1, l3, l4)
+      permutation_tran(l1, l2, l3) &&
+        permutation_tran(l1, l3, l4)
   } holds
 
   def permutation_cons[V] (l1 : List[V], l2 : List[V], e : V) : Boolean = {
@@ -256,7 +220,7 @@ object PermutationLemmas {
     permutation(e :: l1, e :: l2)
   } holds
 
-  def permutation_content_lemma[V] (l1 : List[V], l2 : List[V]) : Boolean = {
+  def permutation_content[V] (l1 : List[V], l2 : List[V]) : Boolean = {
     require(permutation(l1, l2))
     l1.content == l2.content because {
       if (l1 == Nil[V]())
@@ -265,8 +229,8 @@ object PermutationLemmas {
         val h1 = l1.head
         l1.content == l1.tail.content ++ Set(h1) &&
           l2.content == delete(l2, h1).content ++ Set(h1) &&
-          check { delete_content(l2, h1) } &&
-          check { permutation_content_lemma(l1.tail, delete(l2, h1)) }
+          delete_content(l2, h1) &&
+          permutation_content(l1.tail, delete(l2, h1))
       }
     }
   } holds
@@ -295,17 +259,17 @@ object PermutationLemmas {
     }
   } holds
 
-  def concat_permutation_lemma[V] (ll : List[V], l1 : List[V], l2 : List[V]) : Boolean = {
+  def concat_permutation[V] (ll : List[V], l1 : List[V], l2 : List[V]) : Boolean = {
     require(permutation(l1, l2))
     permutation(ll ++ l1, ll ++ l2) because {
       // permutation (l1 ++ ll, l2 ++ ll)
       permutation_append(l1, l2, ll) &&
         // permutation (ll ++ l1, l1 ++ ll)
-        permutation_concat_comm_lemma(ll, l1) &&
+        permutation_concat_comm(ll, l1) &&
         // permutation (l2 ++ ll, ll ++ l2)
-        permutation_concat_comm_lemma(l2, ll) &&
-        permutation_tran_lemma(ll ++ l1, l1 ++ ll, l2 ++ ll) &&
-        permutation_tran_lemma(ll ++ l1, l2 ++ ll, ll ++ l2)
+        permutation_concat_comm(l2, ll) &&
+        permutation_tran(ll ++ l1, l1 ++ ll, l2 ++ ll) &&
+        permutation_tran(ll ++ l1, l2 ++ ll, ll ++ l2)
     }
   } holds
 
@@ -323,12 +287,12 @@ object PermutationLemmas {
     }
   } holds
 
-  def permutation_concat_assoc_lemma[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
+  def permutation_concat_assoc[V] (l1 : List[V], l2 : List[V], l3 : List[V]) : Boolean = {
     permutation(l1 ++ l2 ++ l3, l1 ++ (l2 ++ l3)) because {
       if (l1 == Nil[V]()) {
         permutation_refl(l2 ++ l3)
       } else {
-        permutation_concat_assoc_lemma(l1.tail, l2, l3) &&
+        permutation_concat_assoc(l1.tail, l2, l3) &&
           permutation_cons(l1.tail ++ l2 ++ l3, l1.tail ++ (l2 ++ l3), l1.head)
       }
     }
@@ -350,28 +314,28 @@ object PermutationLemmas {
   def permutation_replace[V] (x : List[V], y : List[V], a : List[V], b : List[V]) : Boolean = {
     require(permutation(x, y))
     ((permutation(x, a) && permutation(y, b)) ==> (permutation(a, b) because {
-      permutation_comm_lemma(x, a) && permutation_tran_lemma(a, x, y) && permutation_tran_lemma(a, y, b)
+      permutation_comm(x, a) && permutation_tran(a, x, y) && permutation_tran(a, y, b)
     })) &&
       ((permutation(a, x) && permutation(y, b)) ==> (permutation(a, b) because {
-        permutation_tran_lemma(a, x, y) && permutation_tran_lemma(a, y, b)
+        permutation_tran(a, x, y) && permutation_tran(a, y, b)
       })) &&
       ((permutation(x, a) && permutation(b, y)) ==> (permutation(a, b) because {
-        permutation_comm_lemma(x, a) && permutation_tran_lemma(a, x, y) && permutation_comm_lemma(b, y) && permutation_tran_lemma(a, y, b)
+        permutation_comm(x, a) && permutation_tran(a, x, y) && permutation_comm(b, y) && permutation_tran(a, y, b)
       })) &&
       ((permutation(a, x) && permutation(b, y)) ==> (permutation(a, b) because {
-        permutation_tran_lemma(a, x, y) && permutation_comm_lemma(b, y) && permutation_tran_lemma(a, y, b)
+        permutation_tran(a, x, y) && permutation_comm(b, y) && permutation_tran(a, y, b)
       })) &&
       ((permutation(y, a) && permutation(x, b)) ==> (permutation(a, b) because {
-        permutation_comm_lemma(x, y) && permutation_comm_lemma(y, a) && permutation_tran_lemma(a, y, x) && permutation_tran_lemma(a, x, b)
+        permutation_comm(x, y) && permutation_comm(y, a) && permutation_tran(a, y, x) && permutation_tran(a, x, b)
       })) &&
       ((permutation(a, y) && permutation(x, b)) ==> (permutation(a, b) because {
-        permutation_comm_lemma(x, y) && permutation_tran_lemma(a, y, x) && permutation_tran_lemma(a, x, b)
+        permutation_comm(x, y) && permutation_tran(a, y, x) && permutation_tran(a, x, b)
       })) &&
       ((permutation(y, a) && permutation(b, x)) ==> (permutation(a, b) because {
-        permutation_comm_lemma(x, y) && permutation_comm_lemma(y, a) && permutation_tran_lemma(a, y, x) && permutation_comm_lemma(b, x) && permutation_tran_lemma(a, x, b)
+        permutation_comm(x, y) && permutation_comm(y, a) && permutation_tran(a, y, x) && permutation_comm(b, x) && permutation_tran(a, x, b)
       })) &&
       ((permutation(a, y) && permutation(b, x)) ==> (permutation(a, b) because {
-        permutation_comm_lemma(x, y) && permutation_tran_lemma(a, y, x) && permutation_comm_lemma(b, x) && permutation_tran_lemma(a, x, b)
+        permutation_comm(x, y) && permutation_tran(a, y, x) && permutation_comm(b, x) && permutation_tran(a, x, b)
       }))
   } holds
 
@@ -469,9 +433,9 @@ object PermutationLemmas {
     require(l2.contains(e))
     permutation(delete(l1 ++ l2, e), l1 ++ delete(l2, e)) because {
       l1 match {
-        case Nil() => permutation_refl(delete(l2, e))
+        case Nil()                   => permutation_refl(delete(l2, e))
         case Cons(hd, tl) if hd == e => delete_concat_perm2(tl, l2, e)
-        case Cons(hd, tl) => delete_concat_perm2(tl, l2, e)
+        case Cons(hd, tl)            => delete_concat_perm2(tl, l2, e)
       }
     }
   } holds

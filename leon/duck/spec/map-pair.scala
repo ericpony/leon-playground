@@ -20,7 +20,7 @@ object PairMapSpec {
   // def ~[K, V] (m1 : PList[K, V], m2 : PList[K, V]) = permutation(m1, m2)
 
   @ignore
-  def update_invariant[K, V] (m1 : PList[K, V], m2 : PList[K, V], e : Item[K, V]) : Boolean = {
+  def update_invariant[K, V] (m1 : PList[K, V], m2 : PList[K, V], e : Pair[K, V]) : Boolean = {
     require(m1 ~ m2 && distinct(m1.keys) && distinct(m2.keys))
     m1.update(e) ~ m2.update(e) because {
       if (!m1.hasKey(e.key) || !m2.hasKey(e.key))
@@ -36,7 +36,7 @@ object PairMapSpec {
   } holds /* verified by Leon */
 
   @induct
-  def insert_commu_lemma[K, V] (m : PList[K, V], p1 : Item[K, V], p2 : Item[K, V]) = {
+  def insert_commu_lemma[K, V] (m : PList[K, V], p1 : Pair[K, V], p2 : Pair[K, V]) = {
     require(p1.key != p2.key)
     m.update(p1).update(p2) ~ m.update(p2).update(p1)
   } holds /* verified by Leon */
@@ -62,7 +62,7 @@ object PairMapSpec {
   @induct
   def merge[K, V] (m1 : PList[K, V], m2 : PList[K, V]) : PList[K, V] = {
     m1 match {
-      case PNil() => m2
+      case PNil()        => m2
       case PCons(hd, tl) => merge(tl, m2.update(hd))
     }
   }

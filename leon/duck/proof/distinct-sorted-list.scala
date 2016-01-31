@@ -5,8 +5,8 @@ import duck.proof.DeleteOps._
 import duck.proof.DistinctOps._
 import duck.proof.DistinctLemmas._
 import duck.proof.PermutationOps._
-import duck.spec.SortedListOps._
-import duck.spec.SortedListSpec._
+import duck.proof.SortedListOps._
+import duck.proof.SortedListSpec._
 import duck.collection._
 
 import leon.annotation._
@@ -42,7 +42,7 @@ object DistinctSortedListOps {
   def add (list : List[BigInt], e : BigInt) : List[BigInt] = {
     require(distinct_sorted(list))
     list match {
-      case Nil() => Cons(e, Nil())
+      case Nil()        => Cons(e, Nil())
       case Cons(hd, tl) =>
         if (e < hd) e :: list
         else {
@@ -59,10 +59,10 @@ object DistinctSortedListOps {
   def merge (l1 : List[BigInt], l2 : List[BigInt]) : List[BigInt] = {
     require(distinct_sorted(l1) && distinct_sorted(l2))
     l1 match {
-      case Nil() => l2
+      case Nil()        => l2
       case Cons(h1, t1) =>
         l2 match {
-          case Nil() => l1
+          case Nil()        => l1
           case Cons(h2, t2) =>
             if (h1 < h2)
               Cons(h1, merge(t1, l2))

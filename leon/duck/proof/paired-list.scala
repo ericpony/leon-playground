@@ -61,8 +61,8 @@ object PairListLemmas {
             // permutation (h1 :: e :: l1.tail ++ l2, e :: h1 :: l1.tail ++ l2)
             permutation_car_swap(l1.tail ++ l2, h1, e) &&
             permutation_tran_lemma(l1 ++ (e :: l2),
-              h1 :: e :: l1.tail ++ l2,
-              (e :: l1) ++ l2)
+                                    h1 :: e :: l1.tail ++ l2,
+                                    (e :: l1) ++ l2)
         }
     }
   } holds
@@ -70,12 +70,7 @@ object PairListLemmas {
   def permutation_eq[K, V] (s : PList[K, V], t : PList[K, V]) : Boolean = {
     require(s == t)
     permutation(s, t) because {
-      if (s == PNil[K, V]())
-        trivial
-      else {
-        permutation_eq(s.tail, t.tail) &&
-          permutation_cons(s.tail, t.tail, s.head)
-      }
+      s.isEmpty || permutation_eq(s.tail, t.tail)
     }
   } holds
 
@@ -455,9 +450,9 @@ object PairListLemmas {
   def filter_union_perm[K, V] (list : PList[K, V], p : Pair[K, V] => Boolean) : Boolean = {
     permutation(list.filter(p) ++ list.filterNot(p), list) because {
       list match {
-        case PNil() => trivial
+        case PNil()              => trivial
         case PCons(h, t) if p(h) => filter_union_perm(t, p) && filter_union_perm1(h, t, list.filter(p), list.filterNot(p))
-        case PCons(h, t) => filter_union_perm(t, p) && filter_union_perm2(h, t, list.filter(p), list.filterNot(p))
+        case PCons(h, t)         => filter_union_perm(t, p) && filter_union_perm2(h, t, list.filter(p), list.filterNot(p))
       }
     }
   } holds /* proven by Leon */
@@ -496,7 +491,7 @@ object PairListLemmas {
     require(pos.forall(p) && neg.forall(!p(_)))
     (pos & neg) == PNil[K, V]() because {
       pos match {
-        case PNil() => trivial
+        case PNil()      => trivial
         case PCons(h, t) => check {
           !neg.contains(h) because forall_p_not_in(neg, (x : Pair[K, V]) => !p(x), h)
         } && disjoint_by_pred(t, neg, p)

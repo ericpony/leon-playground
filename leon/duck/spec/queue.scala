@@ -55,7 +55,7 @@ object ListQueue {
       q
     else {
       val dq : ListQueue[T] = q.dequeue
-      dequeue (dq, n - 1)
+      dequeue(dq, n - 1)
     }
   } ensuring {
     res => res.size == q.size - n
@@ -69,7 +69,7 @@ object ListQueueLemmas {
     val eq : ListQueue[T] = q.enqueue(e)
     ListQueue.dequeue(eq, q.size).first == e because {
       q.list match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           enqueue_dequeue(ListQueue(tl), e)
       }
@@ -113,7 +113,7 @@ sealed case class ArrayQueue[T] (array : ListArray[T]) /*extends Queue[T]*/ {
 object ArrayQueue {
 
   def empty[T] : ArrayQueue[T] = {
-    ArrayQueue(ListArray.empty)
+    ArrayQueue(ListArray.empty[T])
   } ensuring {
     res => res.size == 0
   }
@@ -141,7 +141,7 @@ object ArrayQueueLemmas {
         trivial
       else
         enqueue_dequeue(ArrayQueue(q.array.drop(1)), e)
-      )
+        )
     }
   } holds
 

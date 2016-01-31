@@ -3,18 +3,16 @@ package duck.proof
 import duck.collection._
 import duck.proof.DeleteLemmas._
 import duck.proof.DeleteOps._
-import duck.proof.DeleteSpec._
 import duck.proof.ListLemmas._
 import duck.proof.MinLemmas._
 import duck.proof.MinOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationOps._
-import duck.proof.PermutationSpec._
 import duck.proof.SortedListTakeLemmas._
 import duck.proof.SortedListTakeOps._
-import duck.spec.SortedListLemmas._
-import duck.spec.SortedListOps.{isSorted, sort}
-import duck.spec.SortedListSpec._
+import duck.proof.SortedListLemmas._
+import duck.proof.SortedListOps.{isSorted, sort}
+import duck.proof.SortedListSpec._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
@@ -23,23 +21,23 @@ import scala.language.postfixOps
 
 object SortedListTakeSpec {
 
-  def insert_commutative_prop (list: List[BigInt], e1: BigInt, e2: BigInt, n: BigInt) = {
+  def insert_commutative_prop (list : List[BigInt], e1 : BigInt, e2 : BigInt, n : BigInt) = {
     require(isSorted(list))
     insert(insert(list, e1, n), e2, n) == insert(insert(list, e2, n), e1, n) because
       insert_comm_lemma(list, e1, e2, n)
   } holds /* verified by Leon */
 
-  def merge_commutative_prop (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
+  def merge_commutative_prop (l1 : List[BigInt], l2 : List[BigInt], n : BigInt) = {
     merge(l1, l2, n) == merge(l2, l1, n) because
       merge_comm_lemma(l1, l2, n)
   } holds /* verified by Leon */
 
-  def merge_associative_prop (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt], n: BigInt) = {
+  def merge_associative_prop (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt], n : BigInt) = {
     merge(merge(l1, l2, n), l3, n) == merge(l1, merge(l2, l3, n), n) because
       merge_assoc_lemma(l1, l2, l3, n)
   } holds /* verified by Leon */
 
-  def composition_prop (l1: List[BigInt], l2: List[BigInt], n: BigInt): Boolean = {
+  def composition_prop (l1 : List[BigInt], l2 : List[BigInt], n : BigInt) : Boolean = {
     val z = Nil[BigInt]()
     val L = foldl_insert(z, l1 ++ l2, n)
     val L1 = foldl_insert(z, l1, n)
@@ -58,7 +56,7 @@ object SortedListTakeSpec {
 
 object SortedListTakeOps {
 
-  def sorted_take (list: List[BigInt], n: BigInt): List[BigInt] = {
+  def sorted_take (list : List[BigInt], n : BigInt) : List[BigInt] = {
     require(isSorted(list))
     //list.take(n)
     (list, n) match {
@@ -74,7 +72,7 @@ object SortedListTakeOps {
     res => res == list.take(n) && isSorted(res)
   }
 
-  def sort_take (list: List[BigInt], n: BigInt): List[BigInt] = {
+  def sort_take (list : List[BigInt], n : BigInt) : List[BigInt] = {
     sorted_take(sort(list), n)
   } ensuring { res =>
     res == sort(list).take(n) &&
@@ -86,26 +84,26 @@ object SortedListTakeOps {
       )
   }
 
-  def insert (list: List[BigInt], e: BigInt, n: BigInt) = {
+  def insert (list : List[BigInt], e : BigInt, n : BigInt) = {
     sort_take(e :: list, n)
   }
 
-  def merge (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
+  def merge (l1 : List[BigInt], l2 : List[BigInt], n : BigInt) = {
     sort_take(l1 ++ l2, n)
   }
 
-  def foldl_insert (list0: List[BigInt], list: List[BigInt], n: BigInt): List[BigInt] = {
+  def foldl_insert (list0 : List[BigInt], list : List[BigInt], n : BigInt) : List[BigInt] = {
     require(isSorted(list0))
     if (list == Nil[BigInt]()) sort_take(list0, n)
     else foldl_insert(insert(list0, list.head, n), list.tail, n)
   } ensuring { isSorted(_) }
 
-  def L (e: BigInt) = Cons(e, Nil[BigInt]())
+  def L (e : BigInt) = Cons(e, Nil[BigInt]())
 }
 
 object SortedListTakeLemmas {
 
-  def take_all (l: List[BigInt], n: BigInt): Boolean = {
+  def take_all (l : List[BigInt], n : BigInt) : Boolean = {
     require(n >= l.size)
     l.take(n) == l because {
       l match {
@@ -120,7 +118,7 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def take_n_m (l: List[BigInt], n: BigInt, m: BigInt): Boolean = {
+  def take_n_m (l : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
     l.take(n).take(m) == l.take(min(n, m)) because {
       l match {
         case Nil()      => trivial
@@ -136,41 +134,41 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def take_idempotent (l: List[BigInt], n: BigInt): Boolean = {
+  def take_idempotent (l : List[BigInt], n : BigInt) : Boolean = {
     l.take(n).take(n) == l.take(n) because { take_n_m(l, n, n) }
   } holds
 
-  def sort_take_idempotent (l: List[BigInt], n: BigInt): Boolean = {
+  def sort_take_idempotent (l : List[BigInt], n : BigInt) : Boolean = {
     sort_take(sort_take(l, n), n) == sort_take(l, n) because {
       sort_sorted(sorted_take(sort(l), n)) && take_idempotent(sort(l), n)
     }
   } holds
 
-  def sort_tail (l: List[BigInt]): Boolean = {
+  def sort_tail (l : List[BigInt]) : Boolean = {
     require(!l.isEmpty)
     sort(l).tail == sort(delete(l, min(l))) because {
       min_head_lemma(l) && sort_delete_lemma(l, min(l))
     }
   } holds
 
-  def sort_take_decomp (l: List[BigInt], n: BigInt): Boolean = {
+  def sort_take_decomp (l : List[BigInt], n : BigInt) : Boolean = {
     require(!l.isEmpty && n > 0)
     sort(l).take(n) == min(l) :: sort(delete(l, min(l))).take(n - 1) because {
       sort_tail(l)
     }
   } holds
 
-  def sort_take_sorted (l: List[BigInt], n: BigInt): Boolean = {
+  def sort_take_sorted (l : List[BigInt], n : BigInt) : Boolean = {
     isSorted(sort(l).take(n)) because { sort(l).take(n) == sort_take(l, n) }
   } holds
 
   @induct
-  def min_delete (l: List[BigInt]): Boolean = {
+  def min_delete (l : List[BigInt]) : Boolean = {
     require(l.size > 1)
     min(l) <= min(delete(l, min(l)))
   } holds
 
-  def take_delete (l: List[BigInt], n: BigInt, x: BigInt): Boolean = {
+  def take_delete (l : List[BigInt], n : BigInt, x : BigInt) : Boolean = {
     require(l.take(n).contains(x))
     delete(l.take(n), x) == delete(l, x).take(n - 1) because {
       l match {
@@ -181,7 +179,7 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def sort_take_min (l: List[BigInt], n: BigInt): Boolean = {
+  def sort_take_min (l : List[BigInt], n : BigInt) : Boolean = {
     require(!l.isEmpty && n > 0)
     min(sort(l).take(n)) == min(l) because {
       l match {
@@ -200,7 +198,7 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def sort_take_concat_decomp_l (l1: List[BigInt], l2: List[BigInt], n: BigInt, m: BigInt): Boolean = {
+  def sort_take_concat_decomp_l (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
     require(!l1.isEmpty && n >= m && m > 0 && (l2.isEmpty || min(l1) <= min(l2)))
     sort(sort(l1).take(n) ++ l2).take(m) == min(l1) :: sort(sort(delete(l1, min(l1))).take(n - 1) ++ l2).take(m - 1) because {
       val min12 = min(sort(l1).take(n) ++ l2)
@@ -219,7 +217,7 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def sort_take_concat_decomp_r (l1: List[BigInt], l2: List[BigInt], n: BigInt, m: BigInt): Boolean = {
+  def sort_take_concat_decomp_r (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
     require(!l2.isEmpty && m > 0 && (l1.isEmpty || n <= 0 || min(l2) < min(l1)))
     sort(sort(l1).take(n) ++ l2).take(m) == min(l2) :: sort(sort(l1).take(n) ++ delete(l2, min(l2))).take(m - 1) because {
       val min12 = min(sort(l1).take(n) ++ l2)
@@ -232,32 +230,32 @@ object SortedListTakeLemmas {
           if (l1.isEmpty || n <= 0)
             leftUnitAppend(l2) && leftUnitAppend(delete(l2, min(l2)))
           else
-            min_not_contains(sort(l1).take(n), min(l2)) && delete_concat_lemma1(sort(l1).take(n), l2, min(l2))
+            min_not_contains(sort(l1).take(n), min(l2)) && delete_concat_right(sort(l1).take(n), l2, min(l2))
           )
       // == min(l2)::sort(sort(l1).take(n) ++ delete(l2, min(l2))).take(m - 1)
     }
   } holds
 
-  def sort_take_concat_more (l1: List[BigInt], l2: List[BigInt], n: BigInt, m: BigInt, r: BigInt, i: BigInt, j: BigInt): Boolean = {
+  def sort_take_concat_more (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt, i : BigInt, j : BigInt) : Boolean = {
     require(n >= r && m >= r && i >= 0 && j >= 0)
     sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r) == sort(sort(l1).take(n + i) ++ sort(l2).take(m + j)).take(r) because {
       sort_take_concat_sort_take(l1, l2, n, m, r) && sort_take_concat_sort_take(l1, l2, n + i, m + j, r)
     }
   } holds
 
-  def sort_take_concat_norm (l1: List[BigInt], l2: List[BigInt], n: BigInt, m: BigInt, r: BigInt): Boolean = {
+  def sort_take_concat_norm (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt) : Boolean = {
     require(n >= r && m >= r)
     sort(sort(l1).take(n) ++ sort(l2).take(m)).take(r) == sort(sort(l1).take(r) ++ sort(l2).take(r)).take(r) because {
       sort_take_concat_more(l1, l2, r, r, r, n - r, m - r)
     }
   } holds
 
-  def sort_take_perm_eq (l1: List[BigInt], l2: List[BigInt], n: BigInt): Boolean = {
+  def sort_take_perm_eq (l1 : List[BigInt], l2 : List[BigInt], n : BigInt) : Boolean = {
     require(permutation(l1, l2))
     sort_take(l1, n) == sort_take(l2, n) because { sort_permutation_prop(l1, l2) }
   } holds
 
-  def sort_take_concat (l1: List[BigInt], l2: List[BigInt], n: BigInt, m: BigInt): Boolean = {
+  def sort_take_concat (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt) : Boolean = {
     require(n >= m)
     sort_take(sort_take(l1, n) ++ l2, m) == sort_take(l1 ++ l2, m) because {
       if (n <= 0 || m <= 0 || l1.isEmpty) {
@@ -281,7 +279,7 @@ object SortedListTakeLemmas {
           // == min(l2)::sort(sort(l1).take(n) ++ delete(l2, min(l2))).take(m - 1)
           sort_take_concat(l1, delete(l2, min(l2)), n, m - 1) &&
           // == min(l2)::sort(l1 ++ delete(l2, min(l2))).take(m - 1)
-          min_not_contains(l1, min(l2)) && !l1.contains(min(l2)) && delete_concat_lemma1(l1, l2, min(l2)) &&
+          min_not_contains(l1, min(l2)) && !l1.contains(min(l2)) && delete_concat_right(l1, l2, min(l2)) &&
           // == min(l2)::sort(delete(l1 ++ l2, min(l2))).take(m - 1)
           min_concat_lemma(l1, l2) && min(l1 ++ l2) == min(l2) && sort_take_decomp(l1 ++ l2, m)
         // == sort_take(l1 ++ l2, m)
@@ -289,7 +287,7 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def sort_take_concat_sort_take (l1: List[BigInt], l2: List[BigInt], n: BigInt, m: BigInt, r: BigInt): Boolean = {
+  def sort_take_concat_sort_take (l1 : List[BigInt], l2 : List[BigInt], n : BigInt, m : BigInt, r : BigInt) : Boolean = {
     require(n >= r && m >= r)
     sort_take(sort_take(l1, n) ++ sort_take(l2, m), r) == sort_take(l1 ++ l2, r) because {
       // sort_take(sort_take(l1, n) ++ sort_take(l2, m), r)
@@ -304,13 +302,13 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def merge_comm_lemma (l1: List[BigInt], l2: List[BigInt], n: BigInt) = {
+  def merge_comm_lemma (l1 : List[BigInt], l2 : List[BigInt], n : BigInt) = {
     merge(l1, l2, n) == merge(l2, l1, n) because {
       sort_commutative_prop(l1, l2)
     }
   } holds
 
-  def merge_assoc_lemma (l1: List[BigInt], l2: List[BigInt], l3: List[BigInt], n: BigInt) = {
+  def merge_assoc_lemma (l1 : List[BigInt], l2 : List[BigInt], l3 : List[BigInt], n : BigInt) = {
     merge(merge(l1, l2, n), l3, n) == merge(l1, merge(l2, l3, n), n) because {
       // sort_take(sort_take(l1 ++ l2, n) ++ l3, n)
       sort_take_concat_sort_take(sort_take(l1 ++ l2, n), l3, n, n, n) &&
@@ -331,18 +329,18 @@ object SortedListTakeLemmas {
     }
   } holds
 
-  def insert_merge (list: List[BigInt], e: BigInt, n: BigInt) = {
+  def insert_merge (list : List[BigInt], e : BigInt, n : BigInt) = {
     insert(list, e, n) == merge(list, L(e), n) because
       insert_merge_perm(list, e) &&
         sort_take_perm_eq(e :: list, list ++ L(e), n)
   } holds
 
   @induct
-  def insert_merge_perm (list: List[BigInt], e: BigInt) = {
+  def insert_merge_perm (list : List[BigInt], e : BigInt) = {
     permutation(e :: list, list ++ L(e))
   } holds
 
-  def insert_comm_lemma (list: List[BigInt], e1: BigInt, e2: BigInt, n: BigInt) = {
+  def insert_comm_lemma (list : List[BigInt], e1 : BigInt, e2 : BigInt, n : BigInt) = {
     require(isSorted(list))
     insert(insert(list, e1, n), e2, n) == insert(insert(list, e2, n), e1, n) because {
       // insert(list, e1, n) == merge(list, L(e1), n)
@@ -364,7 +362,7 @@ object SortedListTakeLemmas {
     }
   }
 
-  def foldl_insert_lemma (list0: List[BigInt], list: List[BigInt], n: BigInt): Boolean = {
+  def foldl_insert_lemma (list0 : List[BigInt], list : List[BigInt], n : BigInt) : Boolean = {
     require(isSorted(list0))
     foldl_insert(list0, list, n) == sort_take(list0 ++ list, n) because {
       if (list == Nil[BigInt]()) trivial
@@ -383,7 +381,7 @@ object SortedListTakeLemmas {
     }
   } holds /* verified by Leon */
 
-  def foldl_insert_2 (list0: List[BigInt], list: List[BigInt]): Boolean = {
+  def foldl_insert_2 (list0 : List[BigInt], list : List[BigInt]) : Boolean = {
     require(list != Nil[BigInt]())
     permutation(sort(list0 ++ L(list.head)) ++ list.tail, list0 ++ list) because {
       val l1 = list0 ++ L(list.head)
@@ -397,11 +395,11 @@ object SortedListTakeLemmas {
   } holds /* verified by Leon */
 
   /**
-   * WARNING: Leon takes 10+ seconds to verify this lemma on my desktop.
-   */
-  def foldl_insert_3 (list0: List[BigInt], list: List[BigInt], n: BigInt): Boolean = {
+    * WARNING: Leon takes 10+ seconds to verify this lemma on my desktop.
+    */
+  def foldl_insert_3 (list0 : List[BigInt], list : List[BigInt], n : BigInt) : Boolean = {
     require(isSorted(list0))
-    if (list == Nil[BigInt] ()) true /* never happens in the context of application */
+    if (list == Nil[BigInt]()) true /* never happens in the context of application */
     else {
       foldl_insert(sort(list0 ++ L(list.head)), list.tail, n) == foldl_insert(list0, list, n) because {
         // foldl_insert(sort(list0 ++ L(list.head)), list.tail, n) == foldl_insert(sort(list.head :: list0), list.tail, n) because
@@ -426,7 +424,7 @@ object SortedListTakeLemmas {
     }
   } holds /* verified by Leon */
 
-  def sort_take_cons_sort_take (list: List[BigInt], e: BigInt, n: BigInt) = {
+  def sort_take_cons_sort_take (list : List[BigInt], e : BigInt, n : BigInt) = {
     sort_take(e :: sort(list), n) == sort_take(e :: sort_take(list, n), n) because {
       if (n <= 0) trivial
       else {
@@ -451,11 +449,11 @@ object SortedListTakeLemmas {
   } holds /* verified by Leon */
 
   @induct
-  def permutation_first_last_swap (list: List[BigInt], e: BigInt) = {
+  def permutation_first_last_swap (list : List[BigInt], e : BigInt) = {
     permutation(list ++ L(e), e :: list)
   } holds /* verified by Leon */
 
-  def sort_cons_sort (list: List[BigInt], e: BigInt) = {
+  def sort_cons_sort (list : List[BigInt], e : BigInt) = {
     sort(e :: sort(list)) == sort(e :: list) because {
       sort_permutation(list) &&
         permutation_cons(sort(list), list, e) &&
@@ -464,7 +462,7 @@ object SortedListTakeLemmas {
   } holds /* verified by Leon */
 
   @induct
-  def list_decomp (list0: List[BigInt], list: List[BigInt]): Boolean = {
+  def list_decomp (list0 : List[BigInt], list : List[BigInt]) : Boolean = {
     require(list != Nil[BigInt]())
     list0 ++ list == (list0 ++ L(list.head)) ++ list.tail
   } holds /* verified by Leon */

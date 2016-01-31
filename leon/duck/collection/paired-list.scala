@@ -21,25 +21,25 @@ package object PairList {
   sealed abstract class PList[K, V] {
 
     def size : BigInt = (this match {
-      case PNil() => BigInt(0)
+      case PNil()      => BigInt(0)
       case PCons(h, t) => 1 + t.size
     }) ensuring (_ >= 0)
 
     def content : Set[Pair[K, V]] = this match {
-      case PNil() => Set[Pair[K, V]]()
+      case PNil()      => Set[Pair[K, V]]()
       case PCons(h, t) => Set(h) ++ t.content
     }
 
     def contains (v : Pair[K, V]) : Boolean = (this match {
       case PCons(h, t) if h == v => true
-      case PCons(_, t) => t.contains(v)
-      case PNil() => false
+      case PCons(_, t)           => t.contains(v)
+      case PNil()                => false
     }) ensuring { res =>
       res == (content contains v) && (res ==> hasKey(v.key))
     }
 
     def ++ (that : PList[K, V]) : PList[K, V] = (this match {
-      case PNil() => that
+      case PNil()       => that
       case PCons(x, xs) => PCons[K, V](x, xs ++ that)
     }) ensuring { res =>
       (res.content == this.content ++ that.content) &&
@@ -63,14 +63,14 @@ package object PairList {
 
     def :+ (t : Pair[K, V]) : PList[K, V] = {
       this match {
-        case PNil() => PCons(t, this)
+        case PNil()       => PCons(t, this)
         case PCons(x, xs) => PCons(x, xs :+ (t))
       }
     } ensuring (res => (res.size == size + 1) && (res.content == content ++ Set(t)))
 
     def reverse : PList[K, V] = {
       this match {
-        case PNil() => this
+        case PNil()       => this
         case PCons(x, xs) => xs.reverse :+ x
       }
     } ensuring (res => (res.size == size) && (res.content == content))
@@ -81,7 +81,7 @@ package object PairList {
 
     def take (i : BigInt) : PList[K, V] = {
       (this, i) match {
-        case (PNil(), _) => PNil[K, V]()
+        case (PNil(), _)      => PNil[K, V]()
         case (PCons(h, t), i) => if (i <= BigInt(0)) PNil[K, V]() else PCons(h, t.take(i - 1))
       }
     } ensuring { res =>
@@ -94,7 +94,7 @@ package object PairList {
 
     def drop (i : BigInt) : PList[K, V] = {
       (this, i) match {
-        case (PNil(), _) => PNil[K, V]()
+        case (PNil(), _)      => PNil[K, V]()
         case (PCons(h, t), i) => if (i <= BigInt(0)) PCons[K, V](h, t) else t.drop(i - 1)
       }
     } ensuring { res =>
@@ -112,7 +112,7 @@ package object PairList {
 
     def replace (from : Pair[K, V], to : Pair[K, V]) : PList[K, V] = {
       this match {
-        case PNil() => PNil[K, V]()
+        case PNil()      => PNil[K, V]()
         case PCons(h, t) =>
           val r = t.replace(from, to)
           if (h == from) PCons(to, r) else PCons(h, r)
@@ -131,7 +131,7 @@ package object PairList {
     def - (e : Pair[K, V]) : PList[K, V] = {
       this match {
         case PCons(h, t) => if (e == h) t - e else PCons(h, t - e)
-        case PNil() => PNil[K, V]()
+        case PNil()      => PNil[K, V]()
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -141,7 +141,7 @@ package object PairList {
     def -- (that : PList[K, V]) : PList[K, V] = {
       this match {
         case PCons(h, t) => if (that.contains(h)) t -- that else PCons(h, t -- that)
-        case PNil() => PNil[K, V]()
+        case PNil()      => PNil[K, V]()
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -151,7 +151,7 @@ package object PairList {
     def & (that : PList[K, V]) : PList[K, V] = {
       this match {
         case PCons(h, t) => if (that.contains(h)) PCons(h, t & that) else t & that
-        case PNil() => PNil[K, V]()
+        case PNil()      => PNil[K, V]()
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -167,7 +167,7 @@ package object PairList {
         data :: this
       else {
         this match {
-          case PNil() => data :: PNil[K, V]()
+          case PNil()               => data :: PNil[K, V]()
           case PCons(Pair(k, v), t) =>
             if (k == data.key) Pair(k, data.value) :: t
             else Pair(k, v) :: t.update(data)
@@ -180,7 +180,7 @@ package object PairList {
 
     def hasKey (key : K) : Boolean = {
       this match {
-        case PNil() => false
+        case PNil()               => false
         case PCons(Pair(k, v), t) => k == key || t.hasKey(key)
       }
     } ensuring { res =>
@@ -201,7 +201,7 @@ package object PairList {
       */
     def getFirst (key : K) : Option[Pair[K, V]] = {
       this match {
-        case PNil() => None[Pair[K, V]]()
+        case PNil()      => None[Pair[K, V]]()
         case PCons(h, t) => if (h.key == key) Some[Pair[K, V]](h) else t.getFirst(key)
       }
     } ensuring { res =>
@@ -225,7 +225,7 @@ package object PairList {
       */
     def getAll (key : K) : PList[K, V] = {
       this match {
-        case PNil() => PNil[K, V]()
+        case PNil()      => PNil[K, V]()
         case PCons(h, t) => if (h.key == key) PCons(h, t.getAll(key)) else t.getAll(key)
       }
     } ensuring { res =>
@@ -264,7 +264,7 @@ package object PairList {
       */
     def deleteFirst (key : K) : PList[K, V] = {
       this match {
-        case PNil() => this
+        case PNil()      => this
         case PCons(h, t) => if (h.key == key) t else PCons(h, t.deleteFirst(key))
       }
     } ensuring { res =>
@@ -290,7 +290,7 @@ package object PairList {
       */
     def deleteAll (key : K) : PList[K, V] = {
       this match {
-        case PNil() => this
+        case PNil()      => this
         case PCons(h, t) => if (h.key == key) t.deleteAll(key) else PCons(h, t.deleteAll(key))
       }
     } ensuring { res =>
@@ -310,7 +310,7 @@ package object PairList {
       ((this : @unchecked) match {
         case PCons(h, PNil()) =>
           PNil[K, V]()
-        case PCons(h, t) =>
+        case PCons(h, t)      =>
           PCons[K, V](h, t.init)
       })
     } ensuring { (r : PList[K, V]) =>
@@ -322,26 +322,26 @@ package object PairList {
       require(!isEmpty)
       (this : @unchecked) match {
         case PCons(h, PNil()) => h
-        case PCons(_, t) => t.last
+        case PCons(_, t)      => t.last
       }
     } ensuring { this.contains _ }
 
     def lastOption : Option[Pair[K, V]] = {
       this match {
         case PCons(h, t) => t.lastOption.orElse(Some(h))
-        case PNil() => None[Pair[K, V]]()
+        case PNil()      => None[Pair[K, V]]()
       }
     } ensuring { _.isDefined != this.isEmpty }
 
     def headOption : Option[Pair[K, V]] = {
       this match {
         case PCons(h, t) => Some(h)
-        case PNil() => None[Pair[K, V]]()
+        case PNil()      => None[Pair[K, V]]()
       }
     } ensuring { _.isDefined != this.isEmpty }
 
     def unique : PList[K, V] = this match {
-      case PNil() => PNil()
+      case PNil()      => PNil()
       case PCons(h, t) => PCons(h, t.unique - h)
     }
 
@@ -354,44 +354,44 @@ package object PairList {
 
     def isEmpty = this match {
       case PNil() => true
-      case _ => false
+      case _      => false
     }
 
     // Higher-order API
     def map[K2, V2] (f : Pair[K, V] => Pair[K2, V2]) : PList[K2, V2] = {
       this match {
-        case PNil() => PNil[K2, V2]()
+        case PNil()      => PNil[K2, V2]()
         case PCons(h, t) => f(h) :: t.map(f)
       }
     } ensuring { _.size == this.size }
 
     def mapList[V2] (f : Pair[K, V] => V2) : List[V2] = {
       this match {
-        case PNil() => Nil[V2]()
+        case PNil()      => Nil[V2]()
         case PCons(h, t) => f(h) :: t.mapList(f)
       }
     } ensuring { _.size == this.size }
 
     def foldLeft[V2] (z : V2)(f : (V2, Pair[K, V]) => V2) : V2 = this match {
-      case PNil() => z
+      case PNil()      => z
       case PCons(h, t) => t.foldLeft(f(z, h))(f)
     }
 
     def foldRight[V2] (z : V2)(f : (Pair[K, V], V2) => V2) : V2 = this match {
-      case PNil() => z
+      case PNil()      => z
       case PCons(h, t) => f(h, t.foldRight(z)(f))
     }
 
     def scanLeft[K2, V2] (z : Pair[K2, V2])(f : (Pair[K2, V2], Pair[K, V]) => Pair[K2, V2]) : PList[K2, V2] = {
       this match {
-        case PNil() => z :: PNil[K2, V2]()
+        case PNil()      => z :: PNil[K2, V2]()
         case PCons(h, t) => z :: t.scanLeft(f(z, h))(f)
       }
     } ensuring { !_.isEmpty }
 
     def scanRight[K2, V2] (z : Pair[K2, V2])(f : (Pair[K, V], Pair[K2, V2]) => Pair[K2, V2]) : PList[K2, V2] = {
       this match {
-        case PNil() => z :: PNil[K2, V2]()
+        case PNil()      => z :: PNil[K2, V2]()
         case PCons(h, t) =>
           val rest@PCons(h1, _) = t.scanRight(z)(f)
           f(h, h1) :: rest
@@ -400,9 +400,9 @@ package object PairList {
 
     def filter (p : Pair[K, V] => Boolean) : PList[K, V] = {
       this match {
-        case PNil() => PNil[K, V]()
+        case PNil()              => PNil[K, V]()
         case PCons(h, t) if p(h) => PCons(h, t.filter(p))
-        case PCons(_, t) => t.filter(p)
+        case PCons(_, t)         => t.filter(p)
       }
     } ensuring { res =>
       res.size <= this.size &&
@@ -419,7 +419,7 @@ package object PairList {
 
     def partition (p : Pair[K, V] => Boolean) : (PList[K, V], PList[K, V]) = {
       this match {
-        case PNil() => (PNil[K, V](), PNil[K, V]())
+        case PNil()      => (PNil[K, V](), PNil[K, V]())
         case PCons(h, t) =>
           val (l1, l2) = t.partition(p)
           if (p(h)) (h :: l1, l2)
@@ -434,7 +434,7 @@ package object PairList {
     def withFilter (p : Pair[K, V] => Boolean) = filter(p)
 
     def forall (p : Pair[K, V] => Boolean) : Boolean = this match {
-      case PNil() => true
+      case PNil()      => true
       case PCons(h, t) => p(h) && t.forall(p)
     }
 
@@ -442,19 +442,19 @@ package object PairList {
 
     def find (p : Pair[K, V] => Boolean) : Option[Pair[K, V]] = {
       this match {
-        case PNil() => None[Pair[K, V]]()
+        case PNil()              => None[Pair[K, V]]()
         case PCons(h, t) if p(h) => Some(h)
-        case PCons(_, t) => t.find(p)
+        case PCons(_, t)         => t.find(p)
       }
     } ensuring { res =>
       res match {
         case Some(r) => (content contains r) && p(r)
-        case None() => true
+        case None()  => true
       }
     }
 
     def groupBy[K2] (f : Pair[K, V] => K2) : Map[K2, PList[K, V]] = this match {
-      case PNil() => Map.empty[K2, PList[K, V]]
+      case PNil()      => Map.empty[K2, PList[K, V]]
       case PCons(h, t) =>
         val key : K2 = f(h)
         val rest : Map[K2, PList[K, V]] = t.groupBy(f)
@@ -465,7 +465,7 @@ package object PairList {
     def takeWhile (p : Pair[K, V] => Boolean) : PList[K, V] = {
       this match {
         case PCons(h, t) if p(h) => PCons(h, t.takeWhile(p))
-        case _ => PNil[K, V]()
+        case _                   => PNil[K, V]()
       }
     } ensuring { res =>
       (res forall p) &&
@@ -476,7 +476,7 @@ package object PairList {
     def dropWhile (p : Pair[K, V] => Boolean) : PList[K, V] = {
       this match {
         case PCons(h, t) if p(h) => t.dropWhile(p)
-        case _ => this
+        case _                   => this
       }
     } ensuring { res =>
       (res.size <= this.size) &&
@@ -486,7 +486,7 @@ package object PairList {
 
     def count (p : Pair[K, V] => Boolean) : BigInt = {
       this match {
-        case PNil() => BigInt(0)
+        case PNil()      => BigInt(0)
         case PCons(h, t) =>
           (if (p(h)) BigInt(1) else BigInt(0)) + t.count(p)
       }

@@ -4,7 +4,7 @@ import duck.collection._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.DeleteOps._
-import duck.spec.ListLemmas._
+import duck.proof.ListLemmas._
 
 import leon.annotation._
 import leon.lang._
@@ -104,10 +104,10 @@ object MinLemmas {
     require(l.contains(n) && l.forall(n <= _))
     min(l) == n because {
       l match {
-        case Nil() => trivial
-        case Cons(hd, Nil()) => trivial
+        case Nil()                   => trivial
+        case Cons(hd, Nil())         => trivial
         case Cons(hd, tl) if hd == n => min_lemma2(tl) && apply_forall(tl, n <= (_ : BigInt), min(tl))
-        case Cons(hd, tl) => is_min(tl, n)
+        case Cons(hd, tl)            => is_min(tl, n)
       }
     }
   } holds
@@ -139,4 +139,3 @@ object MinLemmas {
     m == min(l)
   } holds /* verified by Leon */
 }
-object MinSpec

@@ -1,14 +1,13 @@
 package duck.proof
 
 import duck.collection._
+import duck.proof.DeleteLemmas._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
-import duck.proof.PermutationSpec._
 import duck.proof.ListLemmas._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
-import DeleteSpec._
 import DeleteOps._
 import DistinctOps._
 
@@ -63,7 +62,7 @@ object DistinctOps {
 
   def distinct[T] (list : List[T]) : Boolean =
     list match {
-      case Nil() => true
+      case Nil()        => true
       case Cons(hd, tl) => !tl.contains(hd) && distinct(tl)
     }
 }
@@ -145,7 +144,7 @@ object DistinctLemmas {
     require(!delete(list, e).contains(e))
     delete(list, e).distinct == delete(list.distinct, e) because {
       list match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           if (hd == e) {
             distinct_not_contains(tl, hd)
@@ -167,7 +166,7 @@ object DistinctLemmas {
     require(delete(list, e).contains(e))
     list.distinct == delete(list, e).distinct because {
       list match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           if (hd == e) distinct_contains(tl, hd)
           else delete_contains_distinct(tl, e)
@@ -208,7 +207,7 @@ object DistinctLemmas {
     require(permutation(l1, l2))
     permutation(l1.distinct, l2.distinct) because {
       l1 match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           if (tl.contains(hd)) {
             permutation_delete(l1, l2, hd) &&
@@ -244,7 +243,7 @@ object DistinctLemmas {
   def distinct_concat_perm_r[T] (l1 : List[T], l2 : List[T]) : Boolean = {
     permutation((l1 ++ l2.distinct).distinct, (l1 ++ l2).distinct) because {
       l1 match {
-        case Nil() => distinct_idempotent(l2) && permutation_refl(l2.distinct)
+        case Nil()        => distinct_idempotent(l2) && permutation_refl(l2.distinct)
         case Cons(hd, tl) =>
           concat_contains(tl, l2.distinct, hd) && (
             if ((tl ++ l2.distinct).contains(hd)) {

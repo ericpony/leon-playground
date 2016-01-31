@@ -2,8 +2,7 @@ import duck.collection._
 import duck.proof.DeleteOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.PermutationOps._
-import duck.proof.PermutationSpec._
-import duck.spec.ListLemmas._
+import duck.proof.ListLemmas._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
@@ -60,7 +59,7 @@ object SetAggregationProof {
     //require(distinct(l1) && distinct(l2) && distinct(l3))
     union(l1, union(l2, l3)) ~ union(union(l1, l2), l3) because {
       uniquate_concat_assoc_perm(l1, l2, l3) &&
-      permutation_comm(union(union(l1, l2), l3), union(l1, union(l2, l3)))
+        permutation_comm(union(union(l1, l2), l3), union(l1, union(l2, l3)))
     }
   } holds
 
@@ -92,7 +91,7 @@ object ListSetLemmas {
 
   def distinct[T] (list : List[T]) : Boolean = {
     list match {
-      case Nil() => true
+      case Nil()        => true
       case Cons(hd, tl) => !tl.contains(hd) && distinct(tl)
     }
   }
@@ -130,7 +129,7 @@ object ListSetLemmas {
     require(!delete(list, e).contains(e))
     delete(list, e).distinct == delete(list.distinct, e) because {
       list match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           if (hd == e) {
             uniquate_not_contains(tl, hd)
@@ -152,7 +151,7 @@ object ListSetLemmas {
     require(delete(list, e).contains(e))
     list.distinct == delete(list, e).distinct because {
       list match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           if (hd == e) uniquate_contains(tl, hd)
           else delete_contains_uniquate(tl, e)
@@ -193,7 +192,7 @@ object ListSetLemmas {
     require(permutation(l1, l2))
     permutation(l1.distinct, l2.distinct) because {
       l1 match {
-        case Nil() => trivial
+        case Nil()        => trivial
         case Cons(hd, tl) =>
           if (tl.contains(hd)) {
             permutation_delete(l1, l2, hd) &&
@@ -229,16 +228,16 @@ object ListSetLemmas {
   def uniquate_concat_perm_r[T] (l1 : List[T], l2 : List[T]) : Boolean = {
     permutation((l1 ++ l2.distinct).distinct, (l1 ++ l2).distinct) because {
       l1 match {
-        case Nil() => uniquate_idempotent(l2) && permutation_refl(l2.distinct)
+        case Nil()        => uniquate_idempotent(l2) && permutation_refl(l2.distinct)
         case Cons(hd, tl) =>
           concat_contains(tl, l2.distinct, hd) && (
             if ((tl ++ l2.distinct).contains(hd)) {
               uniquate_contains(l2, hd) && uniquate_concat_perm_r(tl, l2)
             } else {
               uniquate_not_contains(l2, hd) && uniquate_concat_perm_r(tl, l2) &&
-              permutation_cons((tl ++ l2.distinct).distinct, (tl ++ l2).distinct, hd)
+                permutation_cons((tl ++ l2.distinct).distinct, (tl ++ l2).distinct, hd)
             }
-          )
+            )
       }
     }
   } holds
@@ -246,22 +245,22 @@ object ListSetLemmas {
   def uniquate_concat_perm_l[T] (l1 : List[T], l2 : List[T]) : Boolean = {
     permutation((l1.distinct ++ l2).distinct, (l1 ++ l2).distinct) because {
       uniquate_concat_comm_perm(l1.distinct, l2) &&
-      uniquate_concat_perm_r(l2, l1) &&
-      permutation_tran((l1.distinct ++ l2).distinct, (l2 ++ l1.distinct).distinct, (l2 ++ l1).distinct) &&
-      uniquate_concat_comm_perm(l2, l1) &&
-      permutation_tran((l1.distinct ++ l2).distinct, (l2 ++ l1).distinct, (l1 ++ l2).distinct)
+        uniquate_concat_perm_r(l2, l1) &&
+        permutation_tran((l1.distinct ++ l2).distinct, (l2 ++ l1.distinct).distinct, (l2 ++ l1).distinct) &&
+        uniquate_concat_comm_perm(l2, l1) &&
+        permutation_tran((l1.distinct ++ l2).distinct, (l2 ++ l1).distinct, (l1 ++ l2).distinct)
     }
   } holds
 
   def uniquate_concat_assoc_perm[T] (l1 : List[T], l2 : List[T], l3 : List[T]) : Boolean = {
     permutation(((l1 ++ l2).distinct ++ l3).distinct, (l1 ++ (l2 ++ l3).distinct).distinct) because {
       uniquate_concat_perm_l(l1 ++ l2, l3) && // permutation(((l1 ++ l2).distinct ++ l3).distinct, ((l1 ++ l2) ++ l3).distinct)}
-      permutation_concat_assoc(l1, l2, l3) && uniquate_perm((l1 ++ l2) ++ l3, l1 ++ (l2 ++ l3)) && // permutation(((l1 ++ l2) ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct)
-      permutation_tran(((l1 ++ l2).distinct ++ l3).distinct, ((l1 ++ l2) ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct) &&
-      //
-      uniquate_concat_perm_r(l1, l2 ++ l3) && // permutation((l1 ++ (l2 ++ l3).distinct).distinct, (l1 ++ (l2 ++ l3)).distinct)
-      permutation_comm((l1 ++ (l2 ++ l3).distinct).distinct, (l1 ++ (l2 ++ l3)).distinct) &&
-      permutation_tran(((l1 ++ l2).distinct ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct, (l1 ++ (l2 ++ l3).distinct).distinct)
+        permutation_concat_assoc(l1, l2, l3) && uniquate_perm((l1 ++ l2) ++ l3, l1 ++ (l2 ++ l3)) && // permutation(((l1 ++ l2) ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct)
+        permutation_tran(((l1 ++ l2).distinct ++ l3).distinct, ((l1 ++ l2) ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct) &&
+        //
+        uniquate_concat_perm_r(l1, l2 ++ l3) && // permutation((l1 ++ (l2 ++ l3).distinct).distinct, (l1 ++ (l2 ++ l3)).distinct)
+        permutation_comm((l1 ++ (l2 ++ l3).distinct).distinct, (l1 ++ (l2 ++ l3)).distinct) &&
+        permutation_tran(((l1 ++ l2).distinct ++ l3).distinct, (l1 ++ (l2 ++ l3)).distinct, (l1 ++ (l2 ++ l3).distinct).distinct)
     }
   } holds
 

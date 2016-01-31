@@ -3,7 +3,6 @@ package duck.spec
 import duck.collection._
 import duck.proof.ListLemmas
 import duck.proof.PermutationOps._
-import duck.proof.PermutationSpec._
 import duck.proof.PermutationLemmas._
 import leon.lang._
 import leon.annotation._

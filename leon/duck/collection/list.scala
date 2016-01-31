@@ -1,10 +1,10 @@
 package duck.collection
 
 import duck.proof.DistinctOps
+import duck.proof.PermutationOps.permutation
 import leon.lang._
 import leon.annotation._
 import scala.language.implicitConversions
-import duck.proof.PermutationOps.permutation
 
 case class Cons[T] (h : T, t : List[T]) extends List[T]
 
@@ -15,7 +15,7 @@ sealed abstract class List[T] {
 
   def ++ (that : List[T]) : List[T] = {
     this match {
-      case Nil() => that
+      case Nil()       => that
       case Cons(x, xs) => Cons(x, xs ++ that)
     }
   } ensuring { res =>
@@ -30,7 +30,7 @@ sealed abstract class List[T] {
 
   def :+ (t : T) : List[T] = {
     this match {
-      case Nil() => Cons(t, this)
+      case Nil()       => Cons(t, this)
       case Cons(x, xs) => Cons(x, xs :+ (t))
     }
   } ensuring (res => (res.size == size + 1) && (res.content == content ++ Set(t)))
@@ -49,7 +49,7 @@ sealed abstract class List[T] {
         } else {
           Cons(h, t - e)
         }
-      case Nil() =>
+      case Nil()      =>
         Nil[T]()
     }
   } ensuring { res =>
@@ -66,7 +66,7 @@ sealed abstract class List[T] {
         } else {
           Cons(h, t -- that)
         }
-      case Nil() =>
+      case Nil()      =>
         Nil[T]()
     }
   } ensuring { res =>
@@ -83,7 +83,7 @@ sealed abstract class List[T] {
         } else {
           t & that
         }
-      case Nil() =>
+      case Nil()      =>
         Nil[T]()
     }
   } ensuring { res =>
@@ -103,7 +103,7 @@ sealed abstract class List[T] {
   private def chunk0 (s : BigInt, l : List[T], acc : List[T], res : List[List[T]], s0 : BigInt) : List[List[T]] = {
     require(s > 0 && s0 >= 0)
     l match {
-      case Nil() =>
+      case Nil()      =>
         if (acc.size > 0) {
           res :+ acc
         } else {
@@ -128,8 +128,8 @@ sealed abstract class List[T] {
   def contains (v : T) : Boolean = {
     this match {
       case Cons(h, t) if h == v => true
-      case Cons(_, t) => t.contains(v)
-      case Nil() => false
+      case Cons(_, t)           => t.contains(v)
+      case Nil()                => false
     }
   } ensuring { res =>
     res == content.contains(v)
@@ -137,13 +137,13 @@ sealed abstract class List[T] {
 
   // not in Scala List
   def content : Set[T] = this match {
-    case Nil() => Set()
+    case Nil()      => Set()
     case Cons(h, t) => Set(h) ++ t.content
   }
 
   def count (p : T => Boolean) : BigInt = {
     this match {
-      case Nil() => BigInt(0)
+      case Nil()      => BigInt(0)
       case Cons(h, t) =>
         (if (p(h)) BigInt(1) else BigInt(0)) + t.count(p)
     }
@@ -158,9 +158,9 @@ sealed abstract class List[T] {
 
   def diff (that : List[T]) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()                             => Nil[T]()
       case Cons(hd, tl) if that.contains(hd) => tl.diff(that.removeFirst(hd))
-      case Cons(hd, tl) => Cons(hd, tl.diff(that))
+      case Cons(hd, tl)                      => Cons(hd, tl.diff(that))
     }
   } ensuring { res =>
     res.size <= size && res.content.subsetOf(content)
@@ -168,9 +168,9 @@ sealed abstract class List[T] {
 
   def distinct : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()                                    => Nil[T]()
       case Cons(hd, tl) if tl.distinct.contains(hd) => tl.distinct
-      case Cons(hd, tl) => Cons(hd, tl.distinct)
+      case Cons(hd, tl)                             => Cons(hd, tl.distinct)
     }
   } ensuring { res =>
     res.size <= size && res.content == content && DistinctOps.distinct(res)
@@ -178,7 +178,7 @@ sealed abstract class List[T] {
 
   def drop (i : BigInt) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()      => Nil[T]()
       case Cons(h, t) =>
         if (i <= BigInt(0)) Cons[T](h, t)
         else t.drop(i - 1)
@@ -205,7 +205,7 @@ sealed abstract class List[T] {
   def dropWhile (p : T => Boolean) : List[T] = {
     this match {
       case Cons(h, t) if p(h) => t.dropWhile(p)
-      case _ => this
+      case _                  => this
     }
   } ensuring { res =>
     (res.size <= size) &&
@@ -221,16 +221,16 @@ sealed abstract class List[T] {
 
   def exists (p : T => Boolean) : Boolean = {
     this match {
-      case Nil() => false
+      case Nil()      => false
       case Cons(h, t) => p(h) || t.exists(p)
     }
   }
 
   def filter (p : T => Boolean) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()              => Nil[T]()
       case Cons(h, t) if p(h) => Cons(h, t.filter(p))
-      case Cons(_, t) => t.filter(p)
+      case Cons(_, t)         => t.filter(p)
     }
   } ensuring { res =>
     res.size <= size &&
@@ -248,9 +248,9 @@ sealed abstract class List[T] {
 
   def find (p : T => Boolean) : Option[T] = {
     this match {
-      case Nil() => None[T]()
+      case Nil()              => None[T]()
       case Cons(h, t) if p(h) => Some(h)
-      case Cons(_, t) => t.find(p)
+      case Cons(_, t)         => t.find(p)
     }
   } ensuring { res =>
     res.isDefined ==> (content.contains(res.get) && p(res.get))
@@ -259,13 +259,13 @@ sealed abstract class List[T] {
   // not in Scala List
   def find (e : T) : Option[BigInt] = {
     this match {
-      case Nil() => None[BigInt]()
+      case Nil()      => None[BigInt]()
       case Cons(h, t) =>
         if (h == e) {
           Some[BigInt](0)
         } else {
           t.find(e) match {
-            case None() => None[BigInt]()
+            case None()  => None[BigInt]()
             case Some(i) => Some(i + 1)
           }
         }
@@ -275,24 +275,24 @@ sealed abstract class List[T] {
   def flatMap[R] (f : T => List[R]) : List[R] = ListOps.flatten(this map f)
 
   def foldLeft[R] (z : R)(f : (R, T) => R) : R = this match {
-    case Nil() => z
+    case Nil()      => z
     case Cons(h, t) => t.foldLeft(f(z, h))(f)
   }
 
   def foldRight[R] (z : R)(f : (T, R) => R) : R = this match {
-    case Nil() => z
+    case Nil()      => z
     case Cons(h, t) => f(h, t.foldRight(z)(f))
   }
 
   def forall (p : T => Boolean) : Boolean = {
     this match {
-      case Nil() => true
+      case Nil()      => true
       case Cons(h, t) => p(h) && t.forall(p)
     }
   }
 
   def groupBy[R] (f : T => R) : Map[R, List[T]] = this match {
-    case Nil() => Map.empty[R, List[T]]
+    case Nil()      => Map.empty[R, List[T]]
     case Cons(h, t) =>
       val key : R = f(h)
       val rest : Map[R, List[T]] = t.groupBy(f)
@@ -309,7 +309,7 @@ sealed abstract class List[T] {
   def headOption : Option[T] = {
     this match {
       case Cons(h, t) => Some(h)
-      case Nil() => None[T]()
+      case Nil()      => None[T]()
     }
   } ensuring { res =>
     res.isDefined != isEmpty
@@ -328,10 +328,10 @@ sealed abstract class List[T] {
 
   def indexOf (elem : T) : BigInt = {
     this match {
-      case Nil() => BigInt(-1)
-      case Cons(hd, tl) if hd == elem => BigInt(0)
+      case Nil()                                          => BigInt(-1)
+      case Cons(hd, tl) if hd == elem                     => BigInt(0)
       case Cons(hd, tl) if tl.indexOf(elem) == BigInt(-1) => BigInt(-1)
-      case Cons(hd, tl) => tl.indexOf(elem) + BigInt(1)
+      case Cons(hd, tl)                                   => tl.indexOf(elem) + BigInt(1)
     }
   } ensuring { res =>
     (res == -1 || res >= 0 && res < size) && (
@@ -352,10 +352,10 @@ sealed abstract class List[T] {
 
   def indexWhere (p : T => Boolean) : BigInt = {
     this match {
-      case Nil() => BigInt(-1)
-      case Cons(hd, tl) if p(hd) => BigInt(0)
+      case Nil()                                          => BigInt(-1)
+      case Cons(hd, tl) if p(hd)                          => BigInt(0)
       case Cons(hd, tl) if tl.indexWhere(p) == BigInt(-1) => BigInt(-1)
-      case Cons(hd, tl) => tl.indexWhere(p) + BigInt(1)
+      case Cons(hd, tl)                                   => tl.indexWhere(p) + BigInt(1)
     }
   } ensuring { res =>
     (res == -1 || res >= 0 && res < size) && (
@@ -367,7 +367,7 @@ sealed abstract class List[T] {
     require(!isEmpty)
     ((this : @unchecked) match {
       case Cons(h, Nil()) => Nil[T]()
-      case Cons(h, t) => Cons[T](h, t.init)
+      case Cons(h, t)     => Cons[T](h, t.init)
     })
   } ensuring { res =>
     res.size == size - 1 &&
@@ -384,7 +384,7 @@ sealed abstract class List[T] {
       this match {
         case Cons(h, t) =>
           Cons(h, t.insertAtImpl(pos - 1, l))
-        case Nil() =>
+        case Nil()      =>
           l
       }
     }
@@ -417,9 +417,9 @@ sealed abstract class List[T] {
 
   def intersect (that : List[T]) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()                             => Nil[T]()
       case Cons(hd, tl) if that.contains(hd) => Cons(hd, tl.intersect(that.removeFirst(hd)))
-      case Cons(hd, tl) => tl.intersect(that)
+      case Cons(hd, tl)                      => tl.intersect(that)
     }
   } ensuring { res =>
     res.size <= size /*&& res.size <= that.size &&
@@ -431,15 +431,15 @@ sealed abstract class List[T] {
 
   def isEmpty = this match {
     case Nil() => true
-    case _ => false
+    case _     => false
   }
 
   // not in Scala List
   def isPrefixOf (l : List[T]) : Boolean = {
     (this, l) match {
-      case (Nil(), _) => true
+      case (Nil(), _)                       => true
       case (Cons(hd1, tl1), Cons(hd2, tl2)) => hd1 == hd2 && tl1.isPrefixOf(tl2)
-      case (_, _) => false
+      case (_, _)                           => false
     }
   } ensuring { res =>
     res ==> (size <= l.size)
@@ -456,7 +456,7 @@ sealed abstract class List[T] {
     require(!isEmpty)
     (this : @unchecked) match {
       case Cons(h, Nil()) => h
-      case Cons(_, t) => t.last
+      case Cons(_, t)     => t.last
     }
   } ensuring { res =>
     contains(res)
@@ -498,7 +498,7 @@ sealed abstract class List[T] {
     this match {
       case Cons(h, t) =>
         t.lastOption.orElse(Some(h))
-      case Nil() =>
+      case Nil()      =>
         None[T]()
     }
   } ensuring { res =>
@@ -515,7 +515,7 @@ sealed abstract class List[T] {
 
   def map[R] (f : T => R) : List[R] = {
     this match {
-      case Nil() => Nil[R]()
+      case Nil()      => Nil[R]()
       case Cons(h, t) => f(h) :: t.map(f)
     }
   } ensuring { res =>
@@ -528,9 +528,9 @@ sealed abstract class List[T] {
     (this, s) match {
       case (_, s) if s <= 0 =>
         this
-      case (Nil(), s) =>
+      case (Nil(), s)       =>
         Cons(e, Nil().padTo(s - 1, e))
-      case (Cons(h, t), s) =>
+      case (Cons(h, t), s)  =>
         Cons(h, t.padTo(s - 1, e))
     }
   } ensuring { res =>
@@ -543,7 +543,7 @@ sealed abstract class List[T] {
 
   def partition (p : T => Boolean) : (List[T], List[T]) = {
     this match {
-      case Nil() => (Nil[T](), Nil[T]())
+      case Nil()      => (Nil[T](), Nil[T]())
       case Cons(h, t) =>
         val (l1, l2) = t.partition(p)
         if (p(h)) (h :: l1, l2)
@@ -556,9 +556,9 @@ sealed abstract class List[T] {
 
   def prefixLength (p : T => Boolean) : BigInt = {
     this match {
-      case Nil() => BigInt(0)
+      case Nil()                 => BigInt(0)
       case Cons(hd, tl) if p(hd) => BigInt(1) + tl.prefixLength(p)
-      case Cons(hd, tl) => BigInt(0)
+      case Cons(hd, tl)          => BigInt(0)
     }
   } ensuring { res =>
     res <= size && take(res).forall(p) /*&& (res == size || !p(apply(res + 1)))*/
@@ -568,16 +568,16 @@ sealed abstract class List[T] {
   // not in Scala List
   def removeFirst (e : T) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()                   => Nil[T]()
       case Cons(hd, tl) if hd == e => tl
-      case Cons(hd, tl) => Cons(hd, tl.removeFirst(e))
+      case Cons(hd, tl)            => Cons(hd, tl.removeFirst(e))
     }
   }
 
   // not in Scala List
   def replace (from : T, to : T) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()      => Nil[T]()
       case Cons(h, t) =>
         val r = t.replace(from, to)
         if (h == from) Cons(to, r)
@@ -612,7 +612,7 @@ sealed abstract class List[T] {
       this match {
         case Cons(h, t) =>
           Cons(h, t.replaceAtImpl(pos - 1, l))
-        case Nil() =>
+        case Nil()      =>
           l
       }
     }
@@ -622,7 +622,7 @@ sealed abstract class List[T] {
 
   def reverse : List[T] = {
     this match {
-      case Nil() => this
+      case Nil()       => this
       case Cons(x, xs) => xs.reverse :+ x
     }
   } ensuring { res =>
@@ -644,14 +644,14 @@ sealed abstract class List[T] {
 
   def scanLeft[R] (z : R)(f : (R, T) => R) : List[R] = {
     this match {
-      case Nil() => z :: Nil()
+      case Nil()      => z :: Nil()
       case Cons(h, t) => z :: t.scanLeft(f(z, h))(f)
     }
   } ensuring { !_.isEmpty }
 
   def scanRight[R] (z : R)(f : (T, R) => R) : List[R] = {
     this match {
-      case Nil() => z :: Nil[R]()
+      case Nil()      => z :: Nil[R]()
       case Cons(h, t) =>
         val rest@Cons(h1, _) = t.scanRight(z)(f)
         f(h, h1) :: rest
@@ -660,7 +660,7 @@ sealed abstract class List[T] {
 
   def size : BigInt = {
     this match {
-      case Nil() => BigInt(0)
+      case Nil()      => BigInt(0)
       case Cons(h, t) => 1 + t.size
     }
   } ensuring (_ >= 0)
@@ -677,9 +677,9 @@ sealed abstract class List[T] {
 
   def span (p : T => Boolean) : (List[T], List[T]) = {
     this match {
-      case Nil() => (Nil[T](), Nil[T]())
+      case Nil()                 => (Nil[T](), Nil[T]())
       case Cons(hd, tl) if p(hd) => (Cons(hd, tl.span(p)._1), tl.span(p)._2)
-      case Cons(hd, tl) => (Nil[T](), this)
+      case Cons(hd, tl)          => (Nil[T](), this)
     }
   } ensuring { res =>
     res._1 == takeWhile(p) && res._2 == dropWhile(p)
@@ -687,9 +687,9 @@ sealed abstract class List[T] {
 
   def splitAt (n : BigInt) : (List[T], List[T]) = {
     this match {
-      case Nil() => (Nil[T](), Nil[T]())
+      case Nil()                  => (Nil[T](), Nil[T]())
       case Cons(hd, tl) if n <= 0 => (Nil[T](), this)
-      case Cons(hd, tl) => (Cons(hd, tl.splitAt(n - 1)._1), tl.splitAt(n - 1)._2)
+      case Cons(hd, tl)           => (Cons(hd, tl.splitAt(n - 1)._1), tl.splitAt(n - 1)._2)
     }
   } ensuring { res =>
     res._1 == take(n) && res._2 == drop(n)
@@ -707,7 +707,7 @@ sealed abstract class List[T] {
         val r = t.split(seps)
         Cons(Cons(h, r.head), r.tail)
       }
-    case Nil() =>
+    case Nil()      =>
       Cons(Nil(), Nil())
   }
 
@@ -719,7 +719,7 @@ sealed abstract class List[T] {
 
   def take (i : BigInt) : List[T] = {
     this match {
-      case Nil() => Nil[T]()
+      case Nil()      => Nil[T]()
       case Cons(h, t) =>
         if (i <= BigInt(0)) Nil[T]()
         else Cons(h, t.take(i - 1))
@@ -745,7 +745,7 @@ sealed abstract class List[T] {
   def takeWhile (p : T => Boolean) : List[T] = {
     this match {
       case Cons(h, t) if p(h) => Cons(h, t.takeWhile(p))
-      case _ => Nil[T]()
+      case _                  => Nil[T]()
     }
   } ensuring { res =>
     res.forall(p) &&
@@ -757,7 +757,7 @@ sealed abstract class List[T] {
 
   // not in Scala List
   def unique : List[T] = this match {
-    case Nil() => Nil()
+    case Nil()      => Nil()
     case Cons(h, t) => Cons(h, t.unique - h)
   }
 
@@ -778,7 +778,7 @@ sealed abstract class List[T] {
     (this, that) match {
       case (Cons(h1, t1), Cons(h2, t2)) =>
         Cons((h1, h2), t1.zip(t2))
-      case _ =>
+      case _                            =>
         Nil[(T, B)]()
     }
   } ensuring { res =>
@@ -794,7 +794,7 @@ object ListOps {
 
   def flatten[T] (ls : List[List[T]]) : List[T] = ls match {
     case Cons(h, t) => h ++ flatten(t)
-    case Nil() => Nil()
+    case Nil()      => Nil()
   }
 
 }
@@ -821,7 +821,7 @@ object List {
 
   def unzip[A1, A2] (l : List[(A1, A2)]) : (List[A1], List[A2]) = {
     l match {
-      case Nil() => (Nil[A1](), Nil[A2]())
+      case Nil()                => (Nil[A1](), Nil[A2]())
       case Cons((hd1, hd2), tl) => (Cons[A1](hd1, unzip(tl)._1), Cons[A2](hd2, unzip(tl)._2))
     }
   } ensuring { res =>
@@ -830,7 +830,7 @@ object List {
 
   def unzip3[A1, A2, A3] (l : List[(A1, A2, A3)]) : (List[A1], List[A2], List[A3]) = {
     l match {
-      case Nil() => (Nil[A1](), Nil[A2](), Nil[A3]())
+      case Nil()                     => (Nil[A1](), Nil[A2](), Nil[A3]())
       case Cons((hd1, hd2, hd3), tl) => (Cons[A1](hd1, unzip3(tl)._1), Cons[A2](hd2, unzip3(tl)._2), Cons[A3](hd3, unzip3(tl)._3))
     }
   } ensuring { res =>
@@ -850,7 +850,7 @@ object List {
 @library
 object :: {
   def unapply[A] (l : List[A]) : Option[(A, List[A])] = l match {
-    case Nil() => None()
+    case Nil()       => None()
     case Cons(x, xs) => Some((x, xs))
   }
 }
