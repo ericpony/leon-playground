@@ -1,19 +1,15 @@
 package duck.spec
 
+import duck.collection._
+import duck.proof.MinOps._
+import duck.proof.MinLemmas._
+import duck.proof.DeleteOps._
+import duck.proof.PermutationOps._
+import duck.proof.PermutationLemmas._
 import leon.lang._
 import leon.annotation._
 import leon.proof._
 import scala.language.postfixOps
-import duck.spec.MapArray._
-import duck.collection._
-import duck.spec.ListLemmas._
-import duck.proof.PermutationOps._
-import duck.proof.PermutationSpec._
-import duck.proof.PermutationLemmas
-import duck.proof.MinOps._
-import duck.proof.MinLemmas._
-import duck.proof.DeleteOps._
-import duck.spec.ListHeap._
 
 object AHeap {
 
@@ -1014,7 +1010,7 @@ object AHeap {
       else {
         MapArrayLemmas.rotate_toList(array.drop(1), array.size - 2) &&
         MapArrayLemmas.drop_toList(array, 1) &&
-        PermutationLemmas.rotate_perm(array.drop(1).toList, array.size - 2) &&
+        rotate_perm(array.drop(1).toList, array.size - 2) &&
         permutation_tran(deleteMin_op(array, c).toList, array.drop(1).rotate(array.size - 2).toList, array.drop(1).toList)
       }
     }
@@ -1052,12 +1048,12 @@ object AHeap {
       if (a2.isEmpty) permutation_refl(a1.toList)
       else {
         merge_perm(insert(a1, c, a2(0)), deleteMin(a2, c), c) &&
-        PermutationLemmas.cons_snoc_perm(a1.toList, a2(0)) &&
+        cons_snoc_perm(a1.toList, a2(0)) &&
         permutation_comm(a2(0) :: a1.toList, a1.toList :+ a2(0)) &&
         permutation_tran(insert(a1, c, a2(0)).toList, a1.toList :+ a2(0), a2(0) :: a1.toList) &&
-        PermutationLemmas.permutation_concat(insert(a1, c, a2(0)).toList, deleteMin(a2, c).toList, a2(0) :: a1.toList, delete(a2.toList, a2(0))) &&
+        permutation_concat(insert(a1, c, a2(0)).toList, deleteMin(a2, c).toList, a2(0) :: a1.toList, delete(a2.toList, a2(0))) &&
         permutation_tran(merge_op(a1, a2, c).toList, insert(a1, c, a2(0)).toList ++ deleteMin(a2, c).toList, (a2(0) :: a1.toList) ++ delete(a2.toList, a2(0))) &&
-        PermutationLemmas.permutation_concat_move(a1.toList, a2.toList, a2(0)) &&
+        permutation_concat_move(a1.toList, a2.toList, a2(0)) &&
         permutation_tran(merge_op(a1, a2, c).toList, (a2(0) :: a1.toList) ++ delete(a2.toList, a2(0)), a1.toList ++ a2.toList)
       }
     }
@@ -1200,7 +1196,7 @@ object ArrayHeapListHeapBisim {
       if (ah.isEmpty) trivial
       else {
         findMin_bisim(ah, lh) &&
-        PermutationLemmas.permutation_delete(ah.toList, lh.toList, ah.findMin.get) &&
+        permutation_delete(ah.toList, lh.toList, ah.findMin.get) &&
         permutation_tran(ah.deleteMin.toList, delete(ah.toList, ah.findMin.get), lh.deleteMin.toList)
       }
     }
@@ -1209,10 +1205,10 @@ object ArrayHeapListHeapBisim {
   def insert_bisim (ah : ArrayHeap[BigInt], lh : ListHeap, e : BigInt) : Boolean = {
     require(bisim(ah, lh))
     bisim(ah.insert(e), lh.insert(e)) because {
-      PermutationLemmas.cons_snoc_perm(ah.toList, e) &&
+      cons_snoc_perm(ah.toList, e) &&
       permutation_comm(e :: ah.toList, ah.toList :+ e) &&
       permutation_tran(ah.insert(e).toList, ah.toList :+ e, e :: ah.toList) &&
-      PermutationLemmas.permutation_cons(ah.toList, lh.toList, e) &&
+      permutation_cons(ah.toList, lh.toList, e) &&
       permutation_tran(ah.insert(e).toList, e :: ah.toList, e :: lh.toList)
     }
   } holds
@@ -1220,7 +1216,7 @@ object ArrayHeapListHeapBisim {
   def merge_bisim (ah1 : ArrayHeap[BigInt], ah2 : ArrayHeap[BigInt], lh1 : ListHeap, lh2 : ListHeap, e : BigInt) : Boolean = {
     require(bisim(ah1, lh1) && bisim(ah2, lh2))
     bisim(ah1.merge(ah2), lh1.merge(lh2)) because {
-      PermutationLemmas.permutation_concat(ah1.toList, ah2.toList, lh1.toList, lh2.toList) &&
+      permutation_concat(ah1.toList, ah2.toList, lh1.toList, lh2.toList) &&
       permutation_tran(ah1.merge(ah2).toList, ah1.toList ++ ah2.toList, lh1.merge(lh2).toList)
     }
   } holds

@@ -7,7 +7,7 @@ import scala.language.postfixOps
 import duck.collection._
 import duck.spec.ListArray._
 import duck.spec.ListIterator._
-import duck.spec.ListLemmas._
+import duck.proof.ListLemmas._
 
 abstract class ListADT[T] extends Collection[T] {
   def append (e : T) : ListADT[T]
@@ -22,7 +22,10 @@ case class LinkedList[T] (list : List[T]) extends ListADT[T] {
 
   def append (e : T) : LinkedList[T] = LinkedList(list :+ e)
 
-  def head : T = list.head
+  def head : T = {
+    require(!list.isEmpty)
+    list.head
+  }
 
   def iterator : Iterator[T] = ListIterator(list)
 
@@ -30,7 +33,10 @@ case class LinkedList[T] (list : List[T]) extends ListADT[T] {
 
   def size : BigInt = list.size
 
-  def tail : LinkedList[T] = LinkedList(list.tail)
+  def tail : LinkedList[T] = {
+    require(!list.isEmpty)
+    LinkedList(list.tail)
+  }
 
 }
 
@@ -68,7 +74,7 @@ case class ArrayList[T] (array : ListArray[T]) /*extends ListADT[T]*/ {
   def size : BigInt = array.size
 
   def tail : ArrayList[T] = {
-    require(inv)
+    require(inv && size > 0)
     ArrayList(array.drop(1))
   } ensuring {
     res => res.inv
@@ -102,7 +108,7 @@ object ArrayListLemmas {
 object LinkedListArrayListBisimulation {
 
   def bisim[T] (a1 : LinkedList[T], a2 : ArrayList[T]) : Boolean = {
-    a1.list == a2.array.toList && a2.inv
+    a2.inv && a1.list == a2.array.toList
   }
 
   def append_bisim[T] (a1 : LinkedList[T], a2 : ArrayList[T], e : T) : Boolean = {
@@ -203,7 +209,7 @@ case class MapArrayList[T] (array : MapArray[T]) /*extends ListADT[T]*/ {
 object LinkedListMapArrayListBisimulation {
 
   def bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T]) : Boolean = {
-    a1.list == a2.array.toList && a2.inv
+    a2.inv && a1.list == a2.array.toList
   }
 
   def append_bisim[T] (a1 : LinkedList[T], a2 : MapArrayList[T], e : T) : Boolean = {
@@ -211,7 +217,7 @@ object LinkedListMapArrayListBisimulation {
     val a3 : LinkedList[T] = a1.append(e)
     val a4 : MapArrayList[T] = a2.append(e)
     bisim(a3, a4) because {
-      MapArrayLemmas.append_toList(a2.array, e)
+      MapArrayLemmas.snoc_toList(a2.array, e)
     }
   } holds
 
