@@ -1,4 +1,6 @@
-last.log
+.log
+.ori
+.bak
 leon/doc/api
 .idea/*
 target/*

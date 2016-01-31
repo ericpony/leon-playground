@@ -1,17 +1,15 @@
 package duck.spec
 
+import duck.proof.PermutationSpec._
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import duck.proof.DeleteOps._
-import duck.proof.DistinctOps._
 import duck.collection._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
-import scala.language.postfixOps
-
 import DistinctListOps._
-
+import scala.language.postfixOps
 
 case class DistinctList[V] (list : List[V]) {
 
@@ -29,12 +27,24 @@ case class DistinctList[V] (list : List[V]) {
     require(distinct(list))
     DistinctListOps.remove(list, e)
   } ensuring { distinct(_) }
-
 }
 
 object DistinctListOps {
 
+  /**
+    * Tell whether a list contains no duplicate elements.
+    * @param list a list
+    * @return whether list contains no duplicate elements
+    */
+  def distinct[V] (list : List[V]) : Boolean = {
+    if (list == Nil[V]()) trivial
+    else !list.tail.contains(list.head) && distinct(list.tail)
+  }
+
   def insert[V] (set : List[V], e : V) : List[V] = {
+    //    if (set.isEmpty) Cons(e, Nil[V])
+    //    else if (set.head == e) set
+    //    else set.head :: insert(set.tail, e)
     if (set.contains(e))
       set
     else
@@ -104,11 +114,11 @@ object DistinctListLemmas {
     distinct(delete(set, e))
   } holds /* verified */
 
-  //  @induct
-  //  def cons_distinct[V] (set : List[V], e : V) : Boolean = {
-  //    require(distinct(set) && !set.contains(e))
-  //    distinct(e::set)
-  //  } holds /* verified */
+//  @induct
+//  def cons_distinct[V] (set : List[V], e : V) : Boolean = {
+//    require(distinct(set) && !set.contains(e))
+//    distinct(e::set)
+//  } holds /* verified */
 
   //  def union_comm (l1 : List[BigInt], l2 : List[BigInt]) : Boolean = {
   //    require(distinct(l1) && distinct(l2))

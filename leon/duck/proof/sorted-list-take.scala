@@ -1,26 +1,23 @@
-package duck.spec
+package duck.proof
 
-import duck.proof.sugar._
 import duck.collection._
-import duck.proof.PermutationOps._
-import duck.proof.PermutationLemmas._
-import duck.proof.PermutationSpec._
-import duck.proof.MinSpec._
-import duck.proof.MinOps._
-import duck.proof.MinLemmas._
-import duck.proof.DeleteSpec._
-import duck.proof.DeleteOps._
 import duck.proof.DeleteLemmas._
-import duck.spec.ListLemmas._
+import duck.proof.DeleteOps._
+import duck.proof.DeleteSpec._
+import duck.proof.ListLemmas._
+import duck.proof.MinLemmas._
+import duck.proof.MinOps._
+import duck.proof.PermutationLemmas._
+import duck.proof.PermutationOps._
+import duck.proof.PermutationSpec._
+import duck.proof.SortedListTakeLemmas._
+import duck.proof.SortedListTakeOps._
+import duck.spec.SortedListLemmas._
+import duck.spec.SortedListOps.{isSorted, sort}
+import duck.spec.SortedListSpec._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
-
-import SortedListOps.{isSorted, sort}
-import SortedListSpec._
-import SortedListLemmas._
-import SortedListTakeOps._
-import SortedListTakeLemmas._
 
 import scala.language.postfixOps
 

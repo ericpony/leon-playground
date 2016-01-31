@@ -1,19 +1,13 @@
-package duck.spec
+package duck.proof
 
+import duck.collection.ListOps._
 import duck.collection._
-import duck.spec.DistinctListOps._
-
+import duck.proof.DistinctOps._
 import leon.annotation._
 import leon.lang._
 import leon.proof._
-import ListOps._
 
 import scala.language.postfixOps
-
-@library
-object ListSpec {
-  /* see SortedListSpec and DistinctSortedListSpec */
-}
 
 @library
 object ListLemmas {
