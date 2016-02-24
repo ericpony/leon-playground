@@ -5,8 +5,8 @@ import duck.proof.ListLemmas
 import duck.proof.PermutationOps._
 import duck.proof.PermutationLemmas._
 import leon.lang._
-import leon.annotation._
 import leon.proof._
+import leon.annotation._
 import scala.language.postfixOps
 import scala.language.implicitConversions
 

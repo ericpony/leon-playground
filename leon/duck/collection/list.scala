@@ -568,10 +568,11 @@ sealed abstract class List[T] {
   // not in Scala List
   def removeFirst (e : T) : List[T] = {
     this match {
-      case Nil()                   => Nil[T]()
-      case Cons(hd, tl) if hd == e => tl
-      case Cons(hd, tl)            => Cons(hd, tl.removeFirst(e))
+      case Nil()        => Nil[T]()
+      case Cons(hd, tl) => if (hd == e) tl else Cons(hd, tl.removeFirst(e))
     }
+  } ensuring {
+    res => this.contains(e) ==> (res.length == this.length - 1)
   }
 
   // not in Scala List
