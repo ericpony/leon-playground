@@ -427,12 +427,9 @@ sealed abstract class List[T] {
     //unknown
   }
 
-  def isDefinedAt (i : BigInt) : Boolean = i >= 0 && i < size
+  def isDefinedAt (i : BigInt) = i >= 0 && i < size
 
-  def isEmpty = this match {
-    case Nil() => true
-    case _     => false
-  }
+  def isEmpty = this != Nil()
 
   // not in Scala List
   def isPrefixOf (l : List[T]) : Boolean = {

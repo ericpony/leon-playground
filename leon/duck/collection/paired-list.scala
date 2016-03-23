@@ -513,6 +513,13 @@ package object PairList {
         l1.content == l2.content)
   }
 
+  def distinct[K, V] (list : PList[K, V]) : Boolean = {
+    list match {
+      case PNil()        => true
+      case PCons(hd, tl) => !tl.contains(hd) && distinct(tl)
+    }
+  }
+
   @ignore
   def apply[K, V] (elems : (K, V)*) : PList[K, V] = {
     var l : PList[K, V] = PNil[K, V]()
